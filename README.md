@@ -1,4 +1,4 @@
-![Introduction](github/main.png)
+![Introduction](res/main.png)
 
 소개
 =============
