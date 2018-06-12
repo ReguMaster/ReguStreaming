@@ -8,6 +8,7 @@
   "author": "ReguMaster",
   "license": "MIT",
   "dependencies": {
+    "colors": "^1.3.0",
     "cookie-parser": "~1.4.3",
     "debug": "~2.6.9",
     "express": "~4.16.0",

@@ -12,14 +12,10 @@
 		<script src="javascripts/bootstrap-notify.min.js"></script>
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 		<link rel="stylesheet" type="text/css" href="stylesheets/main.css">
+		<script src="javascripts/util.js"></script>
 		<script>
-			var socket = io();
+			var socket = io( );
 			var audio;
-			
-			var src;
-			var analyser;
-			var context;
-			var renderFlag = false;
 			
 			var musicPositionElement;
 			var elements = [
@@ -29,30 +25,15 @@
 				bg = null,
 				bgBuffer = null,
 				clientsDesc = null,
+				welcomeClientCount = null,
 				blurBG = null,
 				textContainer = null,
 				agreeContainer = null,
 				agreeButton = null
 			];
 			
-			var bufferLength;
-			var dataArray;
 			
-			var canvas;
-			var ctx;
-
-				//ctx.imageSmoothingEnabled = true;
-				
-				
-				
-				
-
-			var WIDTH = 0
-			var HEIGHT =0
-
-			var barWidth = 0
-			var barHeight;
-			var x = 0;
+			
 			var onLoaded = false;
 				
 			window.onload = function( )
@@ -61,31 +42,27 @@
 				elements.artist = $( "#musicArtist" );
 				elements.pos = $( "#musicPosition" );
 				elements.clientsDesc = $( "#clientsDesc" );
-				<!-- elements.pos = document.getElementById( "musicPosition" ); -->
 				
 				elements.bg = $( "#backgroundCover" );
 				elements.bgBuffer = $( "#backgroundBufferCover" );
 				elements.agreeContainer = $( "#agreeContainer" );
 				elements.agreeButton = $( "#agreeConnectButton" );
 				
+				elements.bg.css( "backgroundImage", "url( 'images/intro/" + ( Math.floor( Math.random( ) * 7 ) + 1 ) + ".png' )" );
+				elements.bgBuffer.css( "backgroundImage", elements.bg.css( "backgroundImage" ) );
+				
 				elements.blurBG = $( "#blurBackground" );
 				elements.textContainer = $( "#mainTextContainer" );
-				
-				canvas = document.getElementById("canvas");
-				canvas.width = window.innerWidth;
-				canvas.height = window.innerHeight;
-				ctx = canvas.getContext("2d");
-				
-				WIDTH = window.innerWidth;
-				HEIGHT = window.innerHeight;
-
-				barWidth = (WIDTH / bufferLength) * 2;
-				x = 0;
 				
 				<!-- if (window.Notification) { -->
 					<!-- Notification.requestPermission(); -->
 				<!-- } -->
 				//http://untitledtblog.tistory.com/107 [Untitled]
+				
+				
+				localClientData = {
+					name: makeRandomName( )
+				}
 				
 				elements.blurBG.hide( );
 				elements.textContainer.hide( );
@@ -95,13 +72,15 @@
 				
 				elements.agreeButton.on( "click", function( )
 				{
-					socket.emit( "join", {
-						name: makeRandomName( ),
-						userid: "test"
-					} );
+					socket.emit( "join", localClientData );
 					
 					elements.clientsDesc.show( );
 					
+					$( "#footerTitle" ).css( "animation", "footerTitleFadeOut 1s" );
+					$( "#footerTitle" ).animate( { opacity: "0" }, 1000, function( )
+					{
+						$( "#footerTitle" ).hide( );
+					} );
 					elements.agreeContainer.css( "animation", "agreeContainerFadeOut 1s" );
 					elements.agreeContainer.animate( { opacity: "0" }, 1000, function( )
 					{
@@ -109,9 +88,9 @@
 					} );
 				} );
 				
-				$('#mainTitle').click(function() {
-location.reload();
-});
+				initializeCanvas( );
+				
+				groundInitialize( ); // 추후 수정해야함;
 				
 				onLoaded = true;
 			}
@@ -133,6 +112,80 @@ location.reload();
 				}
 			}
 			
+			socket.on( "welcome", function( data )
+			{
+				if ( typeof elements.welcomeClientCount === "undefined" )
+					elements.welcomeClientCount = $( "#welcomeClientCount" );
+				
+				elements.welcomeClientCount.html( data.clientsCount + "명의 사람들이 접속 중입니다." );
+			} );
+			
+			let localClientData = { };
+			let anotherClientData = [ ];
+			
+			// *TODO;
+			// under construction;
+			socket.on( "clientDataRefresh", function( data )
+			{
+				switch( data.command )
+				{
+					case "register":
+						anotherClientData.push( data.data );
+						break;
+					case "update":
+						// not working;
+						anotherClientData[ data.index ] = data.newData;
+						break;
+				}
+			} );
+			
+			socket.on( "notification", function( data )
+			{
+				$.notify( {
+						icon: "glyphicon glyphicon-warning-sign",
+						title: data.title || "접속 오류 :",
+						message: data.message
+					},
+					{
+					allow_dismiss: false,
+					type: "warning",
+					placement: {
+						from: "top",
+						align: "center"
+					},
+					newest_on_top: true,
+					animate: {
+						enter: "animated fadeInDown",
+						exit: "animated fadeOutUp"
+					},
+					timer: 5000
+				} );
+			} );
+			
+			socket.on( "connection_reject", function( data )
+			{
+				if ( data == true )
+				{
+					if ( !onLoaded )
+					{
+						var agreeButtonInterval = setInterval( function( )
+						{
+							if ( onLoaded )
+							{
+								elements.agreeButton.off( "click" );
+								elements.agreeButton.attr( "disabled", data );
+								clearInterval( agreeButtonInterval );
+							}
+						}, 100 );
+					}
+					else if ( onLoaded )
+					{
+						elements.agreeButton.off( "click" );
+						elements.agreeButton.attr( "disabled", data );	
+					}
+				}
+			} );
+			
 			socket.on( "join", function( data ) {
 				if ( typeof elements.clientsDesc === "undefined" )
 					elements.clientsDesc = $( "#clientsDesc" );
@@ -145,25 +198,72 @@ location.reload();
 			
 			socket.on( "disconnect", function( data )
 			{
-				console.log("disconnected!");
-				
 				$.notify( {
-					icon: "glyphicon glyphicon-warning-sign",
-					title: "서버 연결 오류 : ",
-					message: "서버와의 연결이 끊겼습니다, 다시 접속하세요."
+						icon: "glyphicon glyphicon-warning-sign",
+						title: "서버 연결 끊김 :",
+						message: "서버와의 연결이 끊겼습니다, 죄송합니다."
 					},
 					{
-					allow_dismiss: false,
+					allow_dismiss: true,
 					type: "danger",
 					placement: {
 						from: "top",
 						align: "center"
 					},
+					newest_on_top: true,
 					animate: {
 						enter: "animated fadeInDown",
 						exit: "animated fadeOutUp"
 					},
-					timer: 0
+					timer: 3000
+				} );
+			} );
+			
+			socket.on( "reconnect_attempt", function( attemptNumber )
+			{
+				$.notify( {
+						icon: "glyphicon glyphicon-warning-sign",
+						title: "서버 연결 끊김 :",
+						message: "다시 접속을 시도합니다 ... (" + attemptNumber + "번 시도됨)"
+					},
+					{
+					allow_dismiss: true,
+					type: "warning",
+					placement: {
+						from: "top",
+						align: "center"
+					},
+					newest_on_top: true,
+					animate: {
+						enter: "animated fadeInDown",
+						exit: "animated fadeOutUp"
+					},
+					timer: 1000
+				} );
+			} );
+			
+			socket.on( "reconnect", function( attemptNumber )
+			{
+				socket.emit( "join", localClientData );
+				
+				$.notify( {
+						icon: "glyphicon glyphicon-warning-sign",
+						title: "서버 연결 완료 :",
+						message: "서버에 다시 접속되었습니다."
+					},
+					{
+					allow_dismiss: true,
+					type: "success",
+					placement: {
+						from: "top",
+						align: "center"
+					},
+					newest_on_top: true,
+					animate: {
+						enter: "animated fadeInDown",
+						exit: "animated fadeOutUp"
+					},
+					timer: 1000
 				} );
 			} );
 			
@@ -183,7 +283,7 @@ location.reload();
 					
 					audio.addEventListener( "timeupdate", function( )
 					{
-						elements.pos.html( formattime( audio.currentTime ) + " / " + formattime( audio.duration ) );
+						elements.pos.html( formatTime( audio.currentTime ) + " / " + formatTime( audio.duration ) );
 					}, false );
 				}
 				
@@ -192,16 +292,7 @@ location.reload();
 				
 				if ( src == null && analyser == null )
 				{
-					context = new AudioContext();
-					src = context.createMediaElementSource(audio);
-					analyser = context.createAnalyser();
-					
-					src.connect(analyser);
-					analyser.connect(context.destination);
-					analyser.fftSize = 1024;
-					
-					init();
-					renderFrame();
+					visualizerInitialize( );
 				}
 				
 				if ( !elements.blurBG.is( ":visible" ) )
@@ -261,6 +352,14 @@ location.reload();
 				notify( "음악 재생", data.musicArtist + " - " + data.musicName );
 			});
 			
+			socket.on( "music_changebg", function( data )
+			{
+				elements.bgBuffer.css( "backgroundImage", elements.bg.css( "backgroundImage" ) );
+				elements.bg.css( "backgroundImage", "url( '" + data + "' )" );
+				elements.bgBuffer.css( "opacity", "1" );
+				elements.bgBuffer.animate( { opacity: "0" }, 500 );
+			} );
+			
 			socket.on( "music_play", function( data ) {
 				if ( audio != null )
 				{
@@ -271,7 +370,7 @@ location.reload();
 			socket.on( "music_setpos", function( data ) {
 				if ( audio != null )
 				{
-					audio.currentTime = data.pos;
+					audio.currentTime = Number( data );
 				}
 			});
 			
@@ -283,130 +382,45 @@ location.reload();
 				}
 			});
 			
+			window.onbeforeunload = function( event )
+			{
+				<!-- event = event || window.event; -->
+				
+				<!-- if ( event ) -->
+					<!-- event.returnValue = "정말로 나가시겠습니까?"; -->
+				
+				<!-- return "정말로 나가시겠습니까?"; -->
+			};
+			
 			function makeRandomName(){
 				var name = "";
 				var possible = "abcdefghijklmnopqrstuvwxyz";
 				
-				for( var i = 0; i < 3; i++ ) {
+				for( var i = 0; i < 10; i++ ) {
 					name += possible.charAt(Math.floor(Math.random() * possible.length));
 				}
 			
 				return name;
 			}
 			
-			function resize_canvas() {
-					canvas.width  = window.innerWidth;
-					canvas.height = window.innerHeight;
-			}
 			
 			
-				
-			function init( )
+			function SetVolume( volume )
 			{
-				bufferLength = analyser.frequencyBinCount;
-				dataArray = new Uint8Array(bufferLength);
-				
-				barWidth = (WIDTH / bufferLength) * 1.5;
+				audio.volume = volume / 100;
 			}
 			
-			var dataArrayEight = new Uint8Array(8);
+				
 			
-			function renderFrame() {
-				
-				
-				 requestAnimationFrame(renderFrame);
-				 
-				 if ( !onLoaded )
-				{
-					console.log( "onLoaded is false!");
-					return;
-				}
-				
-				resize_canvas();
-				  
-				  x = 0;
-					x2= WIDTH;
-				  analyser.getByteFrequencyData(dataArray);
-				  
-				  
-				  
-				  //ctx.fillStyle = "#000";
-				ctx.clearRect(0, 0, WIDTH, HEIGHT);
-
-				var average = 0;
-				var count = 0;
-				
-				for ( var i = 0; i < 8; i++ )
-				{
-					var average = 0;
-					var sampleCount = Math.pow( 2, i ) * 2;
-					
-					if ( i == 7 ) sampleCount += 2;
-					
-					for ( var j = 0; j < sampleCount; j++ )
-					{
-						average += dataArray[ count ] * ( count + 1 );
-						count++;
-					}
-					
-					average /= count;
-					dataArrayEight[ i ] = average*5;
-				}
-				
-					var per = 100+( average / count );
-					elements.bg.css( "backgroundSize", per + "% " + per + "%");
-				
-				  for (var i = 0; i < bufferLength; i++) {
-					barHeight = dataArray[i]*0.5;
-					
-					var r = 200;
-					var g = 200;
-					var b = 200;
-					var a =	( barHeight / (HEIGHT / 2 )) ;
-
-					ctx.fillStyle = "rgba(" + r + "," + g + "," + b + ", " + a + ")";
-					ctx.fillRect(x, HEIGHT - barHeight, barWidth, barHeight);
-					
-					<!-- ctx.fillStyle = "rgba(" + r + "," + g + "," + b + ", " + a + ")"; -->
-					<!-- ctx.fillRect(x2, 0, barWidth, barHeight); -->
-
-					x += barWidth + 5;
-					<!-- x2 -= barWidth + 5; -->
-					average += dataArray[i];
-				  }
-				}
-
-			String.prototype.toMMSS = function () {
-				var sec_num = parseInt(this, 10); // don't forget the second param
-				var hours   = Math.floor(sec_num / 3600);
-				var minutes = Math.floor((sec_num - (hours * 3600)) / 60);
-				var seconds = sec_num - (hours * 3600) - (minutes * 60);
-
-				if (hours   < 10) {hours   = "0"+hours;}
-				if (minutes < 10) {minutes = "0"+minutes;}
-				if (seconds < 10) {seconds = "0"+seconds;}
-				return minutes+':'+seconds;
-			}
 			
-			function formattime(numberofseconds){    
-				var zero = '0', hours, minutes, seconds, time;
-
-				time = new Date(0, 0, 0, 0, 0, numberofseconds, 0);
-
-				mm = time.getMinutes();
-				ss = time.getSeconds();
-
-				// Pad zero values to 00
-				mm = (zero+mm).slice(-2);
-				ss = (zero+ss).slice(-2);
-
-				time = mm + ':' + ss
-				return time; 
-			}
+			
+			
+			
 
 			
 
 		</script>
+		<script src="javascripts/visualizer.js"></script>
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	</head>
@@ -415,7 +429,7 @@ location.reload();
 			<div id="backgroundBufferCover"></div>
 				<div id="cover">
 					<div id="header">
-						<font id="mainTitle">Regu Streaming</font>
+						<font id="mainTitle">ReguStreaming</font>
 						<font id="clientsDesc">0명의 사람들과 같이 듣는 중.</font>
 					</div>
 					
@@ -423,8 +437,10 @@ location.reload();
 					<div id="blurBackground" style="display: none;"></div>
 					
 					<div id="agreeContainer">
-						<p id="agreeContainerTitle">ReguStreaming에 오신 것을 환영합니다!</p>
-						<button type="button" class="btn btn-default" id="agreeConnectButton">접속</button>
+						<img src="images/agree/agreeContainerTop.png" style="position: absolute; left: 50%; margin-left: -256px"></img>
+						<p id="agreeContainerTitle">ReguStreaming 에 접속을 환영합니다.</p>
+						<p id="welcomeClientCount">0명의 사람들이 접속 중입니다.</p>
+						<button type="button" class="btn btn-default" id="agreeConnectButton">접속 (Connect)</button>
 					</div>
 					
 					
@@ -433,11 +449,20 @@ location.reload();
 						<font id="musicArtist">Music Artist</font>
 						
 						<p id="musicPosition">Music Pos / Max</p>
+						
+						<div class="musicVolumeControlContainer">
+							<!-- <img src="images/icon/volume.png" id="musicVolumeControlIcon"></span> -->
+							<input id="musicVolumeControl" class="musicVolumeControl" type="range" min="0" max="100" step="1" oninput="SetVolume(this.value)" onchange="SetVolume(this.value)"></input>
+						</div>
+					</div>
+					
+					<div id="footer">
+						<font id="footerTitle">Copyright 2018. <a href="https://steamcommunity.com/profiles/76561198011675377/" target="_blank">ReguMaster</a> all rights reserved.</font>
 					</div>
 				
 				</div>
 				
 				<canvas id="canvas" style="position:absolute; top:0%; left:0px; z-index:0"></canvas>
-		
+		</div>
 	</body>
 </html>

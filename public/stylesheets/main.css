@@ -14,17 +14,16 @@
 	height:100%;
 	
 	/* opacity: 0; */
-	background-image: url( /images/01.png );
+	/* background-image: url( /images/02.png ); */
 	background-position: center;
 	background-repeat: no-repeat;
     background-size: cover;
 	
 	position: absolute;
 	
-	z-index: -2;
+	animation: backgroundCoverIntro 1s;
 	
-	/* animation: scale 10s;  */
-    /* animation-iteration-count: infinite;  */
+	z-index: -2;
 }
 
 #backgroundBufferCover {
@@ -32,7 +31,7 @@
 	height:100%;
 	
 	/* opacity: 0; */
-	background-image: url( /images/01.png );
+	/* background-image: url( /images/01.png ); */
 	background-position: center;
 	background-repeat: no-repeat;
     background-size: cover;
@@ -41,8 +40,8 @@
 	
 	z-index: -2;
 	
+	animation: backgroundCoverIntro 1s;
 	/* animation: scale 10s;  */
-    /* animation-iteration-count: infinite;  */
 }
 
 @keyframes agreeContainerFadeIn {
@@ -54,6 +53,46 @@
 	0% { transform: scale( 1 ); }
     100% { transform: scale( 1.2 ); }
 }
+
+@keyframes backgroundCoverIntro {
+	0% { transform: scale( 1.1 ); }
+    100% { transform: scale( 1 ); }
+}
+
+@keyframes mainTitleIntro {
+	from {
+		margin-left: -200px;
+		opacity: 0;
+	}
+	to {
+		margin-left: 35px;
+		opacity: 1;
+	}
+}
+
+@keyframes footerTitleIntro {
+	from {
+		margin-right: -200px;
+		opacity: 0;
+	}
+	to {
+		margin-right: 0px;
+		opacity: 1;
+	}
+}
+
+@keyframes footerTitleFadeOut {
+	from {
+		margin-right: 0px;
+		opacity: 1;
+	}
+	to {
+		margin-right: -200px;
+		opacity: 0;
+	}
+}
+
+
 
 @keyframes shake {
     0% { transform: translate(1px, 1px); }
@@ -84,7 +123,7 @@
       }
       76% {
             transform: scale(1);
-             animation-timing-function: ease-in;
+            animation-timing-function: ease-in;
       }
       100% { transform: scale(1.02); }
 }
@@ -104,7 +143,7 @@
 	padding: 50px;
 	width:100%;
 	height:200px;
-	background-color: rgba( 30, 30, 30, 0.7 );
+	background-color: rgba( 50, 50, 50, 0.5 );
 	display:flex;
 	position:absolute;
 	top:0;
@@ -117,9 +156,9 @@
 
 #agreeContainer {
 	padding: 50px;
-	width:50%;
-	height:50%;
-	background-color: rgba( 30, 30, 30, 0.7 );
+	width:45%;
+	height: 60%;
+	background-color: rgba( 30, 30, 30, 0.25 );
 	display: block;
 	position: absolute;
 	top:0;
@@ -129,24 +168,39 @@
 	margin: auto;
 	z-index: 1;
 	opacity: 0;
-	
+	border-radius: 20px;
 	animation: agreeContainerFadeIn 1s;
-	animation-timing-function: ease-in;
+	animation-timing-function: cubic-bezier(0.64, 0.57, 0.67, 1.53);
 }
 
 #agreeContainerTitle {
 	margin: 15px;
 	text-align: center;
-	font-size: 20px;
+	font-size: 15px;
+	position: relative;
+	top: 80%;
 	font-family: 'Jeju Gothic', sans-serif;
 	color: rgb( 235, 235, 235 );
 }
 
+#welcomeClientCount {
+	margin: 15px;
+	text-align: center;
+	font-size: 13px;
+	position: relative;
+	top: 80%;
+	font-family: 'Jeju Gothic', sans-serif;
+	color: rgb( 200, 200, 200 );
+}
+
 #agreeConnectButton {
 	float: right;
-	padding: 15px;
+	padding: 13px;
+	padding-top: 5px;
+	padding-bottom: 5px;
 	margin: 15px;
-	display: block;
+	top: 75%;
+	position: relative;
 	font-size: 15px;
 	font-family: 'Jeju Gothic', sans-serif;
 }
@@ -177,9 +231,33 @@
 #mainTitle
 {
 	margin-left: 15px;
-	font-size: 30px;
+	font-size: 35px;
 	font-family: 'Nanum Pen Script', sans-serif;
 	color: rgb( 235, 235, 235 );
+	
+	animation: mainTitleIntro 1s;
+	animation-fill-mode: forwards;
+	animation-timing-function: cubic-bezier(0.64, 0.57, 0.67, 1.53);
+}
+
+#footer
+{
+	
+}
+
+#footerTitle
+{
+	z-index: 1;
+	top: 95%;
+	right: 3%;
+	position: fixed;
+	font-size: 20px;
+	font-family: 'Nanum Pen Script', sans-serif;
+	color: rgb( 235, 235, 235 );
+	
+	animation: footerTitleIntro 1s;
+	animation-fill-mode: forwards;
+	animation-timing-function: cubic-bezier(0.64, 0.57, 0.67, 1.53);
 }
 
 #clientsDesc
@@ -201,7 +279,7 @@ body {
 {
 	font-size: 50px;
 	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 100, 100 );
+	color: rgb( 235, 235, 235 );
 	opacity: 0;
 }
 
@@ -210,7 +288,7 @@ body {
 	margin-left: 15px;
 	font-size: 20px;
 	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
+	color: rgb( 235, 100, 100 );
 	opacity: 0;
 }
 
@@ -221,6 +299,72 @@ body {
 	font-family: 'Jeju Gothic', sans-serif;
 	color: rgb( 200, 200, 200 );
 	opacity: 0;
+}
+
+#musicVolumeIcon
+{
+	position: absolute;
+	right: 10%;
+}
+
+#musicVolumeControl
+{
+	position: absolute;
+	right: 10%;
+	display: inline;
+	width: 10%;
+}
+
+#musicVolumeControlIcon
+{
+	position: absolute;
+	width: 15%;
+	display: inline;
+	float: right;
+	
+}
+
+/* https://www.w3schools.com/howto/howto_js_rangeslider.asp */
+.musicVolumeControlContainer {
+    width: 30%; /* Width of the outside container */
+}
+
+/* The slider itself */
+.musicVolumeControl {
+    -webkit-appearance: none;  /* Override default CSS styles */
+    appearance: none;
+    width: 100%; /* Full-width */
+    height: 5px;
+    border-radius: 5px;
+	background: rgba( 150, 150, 150, 0.5 );
+    outline: none; /* Remove outline */
+    opacity: 0.5; /* Set transparency (for mouse-over effects on hover) */
+    -webkit-transition: .2s; /* 0.2 seconds transition on hover */
+    transition: opacity .2s;
+}
+
+/* Mouse-over effects */
+.musicVolumeControl:hover {
+    opacity: 1; /* Fully shown on mouse-over */
+}
+
+/* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */ 
+.musicVolumeControl::-webkit-slider-thumb {
+    -webkit-appearance: none; /* Override default look */
+    appearance: none;
+    width: 20px; /* Set a specific slider handle width */
+    height: 20px; /* Slider handle height */
+	border-radius: 10px;
+	background: rgb( 235, 235, 235 );
+    cursor: pointer; /* Cursor on hover */
+}
+
+.musicVolumeControl::-moz-range-thumb {
+    width: 20px; /* Set a specific slider handle width */
+    height: 20px; /* Slider handle height */
+	border-radius: 10px;
+    background: rgb( 235, 235, 235 );
+    cursor: pointer; /* Cursor on hover */
 }
 
 .navbar {
