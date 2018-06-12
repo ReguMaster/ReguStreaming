@@ -1,0 +1,261 @@
+@import url(//fonts.googleapis.com/earlyaccess/jejugothic.css);
+@import url(http://fonts.googleapis.com/earlyaccess/nanumpenscript.css);
+
+#cover {
+	width:100%;
+	height:100%;
+	
+	background-color: rgba( 30, 30, 30, 0.5 );
+	
+}
+
+#backgroundCover {
+	width:100%;
+	height:100%;
+	
+	/* opacity: 0; */
+	background-image: url( /images/01.png );
+	background-position: center;
+	background-repeat: no-repeat;
+    background-size: cover;
+	
+	position: absolute;
+	
+	z-index: -2;
+	
+	/* animation: scale 10s;  */
+    /* animation-iteration-count: infinite;  */
+}
+
+#backgroundBufferCover {
+	width:100%;
+	height:100%;
+	
+	/* opacity: 0; */
+	background-image: url( /images/01.png );
+	background-position: center;
+	background-repeat: no-repeat;
+    background-size: cover;
+	
+	position: absolute;
+	
+	z-index: -2;
+	
+	/* animation: scale 10s;  */
+    /* animation-iteration-count: infinite;  */
+}
+
+@keyframes agreeContainerFadeIn {
+	0% { transform: scale( 1.2 ); }
+    100% { transform: scale( 1 ); }
+}
+
+@keyframes agreeContainerFadeOut {
+	0% { transform: scale( 1 ); }
+    100% { transform: scale( 1.2 ); }
+}
+
+@keyframes shake {
+    0% { transform: translate(1px, 1px); }
+    10% { transform: translate(-1px, -2px); }
+    20% { transform: translate(-3px, 0px); }
+    30% { transform: translate(3px, 2px); }
+    40% { transform: translate(1px, -1px); }
+    50% { transform: translate(-1px, 2px); }
+    60% { transform: translate(-3px, 1px); }
+    70% { transform: translate(3px, 1px); }
+    80% { transform: translate(-1px, -1px); }
+    90% { transform: translate(1px, 2px); }
+    100% { transform: translate(1px, -2px); }
+}
+
+@keyframes scale {
+      0% {
+            transform: scale(1.02); 
+            animation-timing-function: ease-out;
+      }
+      23% {
+            transform: scale(1);
+            animation-timing-function: ease-in;
+      }
+      50% {
+            transform: scale(1.02);
+            animation-timing-function: ease-in;
+      }
+      76% {
+            transform: scale(1);
+             animation-timing-function: ease-in;
+      }
+      100% { transform: scale(1.02); }
+}
+
+#header {
+	padding: 50px;
+	width:100%;
+	height:200px;
+	display:block;
+	position:absolute;
+	z-index: 1;
+	
+}
+
+
+#blurBackground {
+	padding: 50px;
+	width:100%;
+	height:200px;
+	background-color: rgba( 30, 30, 30, 0.7 );
+	display:flex;
+	position:absolute;
+	top:0;
+	bottom:0;
+	right:0;
+	left:0; 
+	margin: auto;
+	filter: blur(15px);
+}
+
+#agreeContainer {
+	padding: 50px;
+	width:50%;
+	height:50%;
+	background-color: rgba( 30, 30, 30, 0.7 );
+	display: block;
+	position: absolute;
+	top:0;
+	bottom:0;
+	right:0;
+	left:0; 
+	margin: auto;
+	z-index: 1;
+	opacity: 0;
+	
+	animation: agreeContainerFadeIn 1s;
+	animation-timing-function: ease-in;
+}
+
+#agreeContainerTitle {
+	margin: 15px;
+	text-align: center;
+	font-size: 20px;
+	font-family: 'Jeju Gothic', sans-serif;
+	color: rgb( 235, 235, 235 );
+}
+
+#agreeConnectButton {
+	float: right;
+	padding: 15px;
+	margin: 15px;
+	display: block;
+	font-size: 15px;
+	font-family: 'Jeju Gothic', sans-serif;
+}
+
+#mainTextContainer {
+	padding: 50px;
+	width:100%;
+	height:200px;
+	text-align: center;
+	display:block;
+	position:absolute;
+	top:0;
+	bottom:0;
+	right:0;
+	left:0; 
+	margin: auto;
+	z-index: 1;
+}
+
+#musicInfoContainer {
+	width:100%;
+	height:100%;
+	display:block;
+	position:absolute;
+	margin: auto;
+}
+
+#mainTitle
+{
+	margin-left: 15px;
+	font-size: 30px;
+	font-family: 'Nanum Pen Script', sans-serif;
+	color: rgb( 235, 235, 235 );
+}
+
+#clientsDesc
+{
+	margin-left: 15px;
+	font-size: 25px;
+	font-family: 'Nanum Pen Script', sans-serif;
+	color: rgb( 235, 235, 235 );
+	float: right;
+	display: none;
+	opacity: 0;
+}
+
+body {
+	
+}
+
+#musicTitle
+{
+	font-size: 50px;
+	font-family: 'Jeju Gothic', sans-serif;
+	color: rgb( 235, 100, 100 );
+	opacity: 0;
+}
+
+#musicArtist
+{
+	margin-left: 15px;
+	font-size: 20px;
+	font-family: 'Jeju Gothic', sans-serif;
+	color: rgb( 235, 235, 235 );
+	opacity: 0;
+}
+
+#musicPosition
+{
+	margin-left: 30px;
+	font-size: 15px;
+	font-family: 'Jeju Gothic', sans-serif;
+	color: rgb( 200, 200, 200 );
+	opacity: 0;
+}
+
+.navbar {
+	margin-bottom: 20px;
+}
+
+.form-signin {
+	max-width: 400px;
+	padding: 20px 20px 20px;
+	background-color: #fff;
+	border: 2px solid #e5e5e5;
+	-webkit-border-radius: 5px;
+	-moz-border-radius: 5px;
+	border-radius: 5px;
+}
+
+.form-signin .form-signin-heading,
+.form-signin .checkbox {
+	margin-bottom: 5px;
+}
+
+.form-signin input[type="text"],
+.form-signin input[type="password"], .form-signin input[type="email"], .form-signin input[type="number"] {
+	font-size: 15px;
+	height: auto;
+	margin-bottom: 10px;
+	width: 300px;
+	padding: 7px 10px;
+}
+
+.fade {
+	opacity: 0;
+	-webkit-transition: opacity 0.1s linear;
+	-moz-transition: opacity 0.1s linear;
+	-ms-transition: opacity 0.1s linear;
+	-o-transition: opacity 0.1s linear;
+	transition: opacity 0.1s linear;
+}
