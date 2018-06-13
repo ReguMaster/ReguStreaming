@@ -6,15 +6,19 @@
 		
         <title>레그 스트리밍</title>
 		<script src="/socket.io/socket.io.js"></script>
+		<script src="/siofu/client.js"></script>
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
 		<link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
 		<script src="//code.jquery.com/jquery-1.11.0.min.js"></script>
 		<script src="javascripts/bootstrap-notify.min.js"></script>
 		<script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
 		<link rel="stylesheet" type="text/css" href="stylesheets/main.css">
+		<link rel="stylesheet" type="text/css" href="stylesheets/animate.css">
 		<script src="javascripts/util.js"></script>
+		<script src="javascripts/beatdetektor.js"></script>
 		<script>
 			var socket = io( );
+			var siofu = new SocketIOFileUpload(socket);
 			var audio;
 			
 			var musicPositionElement;
@@ -29,11 +33,21 @@
 				blurBG = null,
 				textContainer = null,
 				agreeContainer = null,
-				agreeButton = null
+				agreeButton = null,
+				volumeController = null
 			];
 			
+			var loginSuccessed = false;
 			
 			
+			//수정바람
+			var allowType = [
+		"image/png",
+		"image/gif",
+		"image/jpg",
+		"image/jpeg"
+	];
+	
 			var onLoaded = false;
 				
 			window.onload = function( )
@@ -54,15 +68,12 @@
 				elements.blurBG = $( "#blurBackground" );
 				elements.textContainer = $( "#mainTextContainer" );
 				
+				elements.volumeController = $( "#musicVolumeControl" );
+				
 				<!-- if (window.Notification) { -->
 					<!-- Notification.requestPermission(); -->
 				<!-- } -->
 				//http://untitledtblog.tistory.com/107 [Untitled]
-				
-				
-				localClientData = {
-					name: makeRandomName( )
-				}
 				
 				elements.blurBG.hide( );
 				elements.textContainer.hide( );
@@ -72,28 +83,117 @@
 				
 				elements.agreeButton.on( "click", function( )
 				{
+					controlDisableTemp( $( this ) );
+					
+					var nickName = $( "#nickNameTextField" ).val( ).trim( )
+					var nickNameNoSpace = nickName.replace( " ", "" );
+					
+					if ( nickName.length <= 0 || nickNameNoSpace.length < 4 || nickNameNoSpace.length > 10 )
+					{
+						$.notify( {
+							icon: "glyphicon glyphicon-warning-sign",
+								title: "접속 거부 :",
+								message: "올바른 닉네임을 입력해주세요.<br/>(공백 제외 4자~10자)"
+							},
+							{
+							allow_dismiss: true,
+							type: "warning",
+							placement: {
+								from: "bottom",
+								align: "center"
+							},
+							newest_on_top: true,
+							animate: {
+								enter: "animated zoomInUp",
+								exit: "animated zoomOutDown"
+							},
+							delay: 1500,
+							timer: 1000
+						} );
+						
+						return;
+					}
+					
+					localClientData = {
+						name: nickName
+					}
+				
 					socket.emit( "join", localClientData );
-					
-					elements.clientsDesc.show( );
-					
-					$( "#footerTitle" ).css( "animation", "footerTitleFadeOut 1s" );
-					$( "#footerTitle" ).animate( { opacity: "0" }, 1000, function( )
-					{
-						$( "#footerTitle" ).hide( );
-					} );
-					elements.agreeContainer.css( "animation", "agreeContainerFadeOut 1s" );
-					elements.agreeContainer.animate( { opacity: "0" }, 1000, function( )
-					{
-						elements.agreeContainer.hide( );
-					} );
 				} );
 				
+				$( "#nickNameTextField" ).keydown( function( event )
+				{
+					if ( event.keyCode == 13 ) // Enter
+					{
+						controlDisableTemp( $( this ) );
+						
+						elements.agreeButton.trigger( "click" );
+						
+						return false;
+					}
+				} );
+				
+				$( "#chatTextField" ).keydown( function( event )
+				{
+					if ( event.keyCode == 13 ) // Enter
+					{
+						var chatMessage = $( this ).val( ).trim( );
+						
+						if ( chatMessage.length > 0 )
+						{
+							socket.emit( "chatPost", {
+								localClientData: localClientData,
+								chatMessage: chatMessage
+							} );
+							
+							$( this ).val( "" );
+						}
+						
+						return false;
+					}
+				} );
+				
+				$( "#chatTextFieldContainer" ).hide( );
+				
+				siofu.addEventListener("choose", function(event){
+					var file = event.files.item( 0 );
+					
+					if ( allowType.indexOf( file.type ) == -1 )
+					{
+						$.notify( {
+							icon: "glyphicon glyphicon-warning-sign",
+								title: "업로드 실패 :",
+								message: "올바르지 않은 파일입니다. (png, jpg, gif)"
+							},
+							{
+							allow_dismiss: true,
+							type: "warning",
+							placement: {
+								from: "bottom",
+								align: "center"
+							},
+							newest_on_top: true,
+							animate: {
+								enter: "animated zoomInUp",
+								exit: "animated zoomOutDown"
+							},
+							delay: 2000,
+							timer: 1000
+						} );
+						
+						return false;
+					}
+					
+					<!-- console.log(event.files.item( 0 )); -->
+				});
+
 				initializeCanvas( );
 				
 				groundInitialize( ); // 추후 수정해야함;
 				
 				onLoaded = true;
 			}
+			
 			
 			function notify(title, text) {
 				if (Notification.permission !== 'granted') {
@@ -118,6 +218,104 @@
 					elements.welcomeClientCount = $( "#welcomeClientCount" );
 				
 				elements.welcomeClientCount.html( data.clientsCount + "명의 사람들이 접속 중입니다." );
+			} );
+			
+			socket.on( "loginResult", function( data )
+			{
+				loginSuccessed = data.success;
+				
+				if ( data.success )
+				{
+					elements.clientsDesc.show( );
+					
+					$( "#footerTitle" ).css( "animation", "footerTitleFadeOut 1s" );
+					$( "#footerTitle" ).animate( { opacity: "0" }, 1000, function( )
+					{
+						$( this ).hide( );
+					} );
+					elements.agreeContainer.css( "animation", "agreeContainerFadeOut 1s" );
+					elements.agreeContainer.animate( { opacity: "0" }, 1000, function( )
+					{
+						$( this ).hide( );
+					} );
+					
+					$( "#chatTextFieldContainer" ).show( );
+					$( "#chatTextFieldContainer" ).css( "opacity", "0" );
+					$( "#chatTextFieldContainer" ).animate( { opacity: "1" }, 1000 );
+				}
+				else
+				{
+					$.notify( {
+						icon: "glyphicon glyphicon-warning-sign",
+							title: "접속 차단 :",
+							message: data.why
+						},
+						{
+						allow_dismiss: false,
+						type: "warning",
+						placement: {
+							from: "top",
+							align: "center"
+						},
+						newest_on_top: true,
+						animate: {
+							enter: "animated zoomInUp",
+							exit: "animated zoomOutDown"
+						},
+						delay: 2000,
+						timer: 1000
+					} );
+				}
+			} );
+			
+			let chatCount = 0;
+			//let chatMessages = [ ];
+			
+			socket.on( "chatReceive", function( data )
+			{
+				var currentChatCount = chatCount;
+				
+				if ( data.type == "img" )
+				{
+					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/favicon/icon_64.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p><img style='object-fit: fit; width: 333px; padding-left: 8px' src='" + data.dir + "' /></div>" );
+					
+					$( "#chatMessageContainer_" + currentChatCount ).css( "opacity", "0" );
+					$( "#chatMessageContainer_" + currentChatCount ).animate( { opacity: 1 }, 500 );
+					
+					$( "#chatMessage_" + currentChatCount ).text( data.name );
+				}
+				else if ( data.type == "system" )
+				{
+					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/favicon/icon_64.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p></div>" );
+					
+					$( "#chatMessageContainer_" + currentChatCount ).css( "opacity", "0" );
+					$( "#chatMessageContainer_" + currentChatCount ).animate( { opacity: 1 }, 500 );
+					
+					$( "#chatMessage_" + currentChatCount ).text( "시스템 : " + data.message );
+				}
+				else
+				{
+					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/favicon/icon_64.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p></div>" );
+					
+					$( "#chatMessageContainer_" + currentChatCount ).css( "opacity", "0" );
+					$( "#chatMessageContainer_" + currentChatCount ).animate( { opacity: 1 }, 500 );
+					$( "#chatMessage_" + currentChatCount ).text(data.name+" : "+data.chatMessage);
+					
+					// *TODO;
+					// need another way..
+					<!-- setTimeout( function( ) -->
+					<!-- { -->
+						<!-- $( "#chatMessageContainer_" + currentChatCount ).animate( { opacity: 0 }, 1500, function( ) -->
+						<!-- { -->
+							<!-- $( this ).remove( ); -->
+						<!-- } ); -->
+						
+					<!-- }, 30 * 1000 ); -->
+				}
+				
+				$( ".chatBox" ).scrollTop( $( ".chatBox" )[ 0 ].scrollHeight );
+				
+				chatCount++;
 			} );
 			
 			let localClientData = { };
@@ -158,7 +356,32 @@
 						enter: "animated fadeInDown",
 						exit: "animated fadeOutUp"
 					},
-					timer: 5000
+					delay: 5000,
+					timer: 1000
+				} );
+			} );
+			
+			socket.on( "serverNotification", function( data )
+			{
+				$.notify( {
+						icon: "glyphicon glyphicon-flash",
+						title: data.title || "공지 사항 :",
+						message: data.message
+					},
+					{
+					allow_dismiss: false,
+					type: "info",
+					placement: {
+						from: "top",
+						align: "center"
+					},
+					newest_on_top: true,
+					animate: {
+						enter: "animated fadeInDown",
+						exit: "animated fadeOutUp"
+					},
+					delay: 5000,
+					timer: 1000
 				} );
 			} );
 			
@@ -215,7 +438,8 @@
 						enter: "animated fadeInDown",
 						exit: "animated fadeOutUp"
 					},
-					timer: 3000
+					delay: 5000,
+					timer: 1000
 				} );
 			} );
 			
@@ -238,13 +462,17 @@
 						enter: "animated fadeInDown",
 						exit: "animated fadeOutUp"
 					},
+					delay: 1000,
 					timer: 1000
 				} );
 			} );
 			
 			socket.on( "reconnect", function( attemptNumber )
 			{
-				socket.emit( "join", localClientData );
+				if ( loginSuccessed )
+				{
+					socket.emit( "join", localClientData );
+				}
 				
 				$.notify( {
 						icon: "glyphicon glyphicon-warning-sign",
@@ -263,6 +491,7 @@
 						enter: "animated fadeInDown",
 						exit: "animated fadeOutUp"
 					},
+					delay: 1500,
 					timer: 1000
 				} );
 			} );
@@ -270,13 +499,16 @@
 			socket.on( "music_define", function( data ) {
 				if ( typeof audio === "undefined" )
 				{
+					var volume = Number( localStorage.getItem( "regustreaming.audio_volume" ) || "0.2" );
+					
 					audio = new Audio( );
 					audio.controls = false;
 					audio.loop = false;
 					audio.autoplay = false;
 					audio.preload = "auto";
 					audio.pause( );
-					audio.volume = 0.5;
+					audio.volume = volume;
+					elements.volumeController.val( 100 * volume);
 					
 					if ( typeof elements.pos === "undefined" )
 						elements.pos = $( "#musicPosition" );
@@ -335,15 +567,23 @@
 					elements.pos.animate( { opacity: "1" }, 1000 );
 				} );
 				
-				
-				
-				
-				
-				
-				elements.bgBuffer.css( "backgroundImage", elements.bg.css( "backgroundImage" ) );
-				elements.bg.css( "backgroundImage", "url( '" + data.musicCover + "' )" );
-				elements.bgBuffer.css( "opacity", "1" );
-				elements.bgBuffer.animate( { opacity: "0" }, 500 );
+				if ( data.musicCover != null )
+				{
+					$("#musicVideo").hide();
+					elements.bgBuffer.css( "backgroundImage", elements.bg.css( "backgroundImage" ) );
+					elements.bg.css( "backgroundImage", "url( '" + data.musicCover + "' )" );
+					elements.bgBuffer.css( "opacity", "1" );
+					elements.bgBuffer.animate( { opacity: "0" }, 500 );
+				}
+				else if ( data.musicVideo )
+				{
+					console.log(data.musicVideo);
+					$("#musicVideo").show();
+					$("#musicVideo").attr("src", data.musicVideo);
+					//동영상을 다시 load 함
+					$("#musicVideo").load();
+					$( "#musicVideo" ).get(0).play();
+				}
 				
 				<!-- $( "#bgCover" ).css( "backgroundImage", "url( '" + data.musicCover + "' )" ); -->
 				<!-- $( "#bgCover" ).css( "opacity", "0" ); -->
@@ -403,65 +643,178 @@
 				return name;
 			}
 			
-			
-			
-			function SetVolume( volume )
+			function setVolume( volume )
 			{
 				audio.volume = volume / 100;
+				localStorage.setItem( "regustreaming.audio_volume", volume / 100 );
 			}
 			
+			function controlDisableTemp( element, delay )
+			{
+				element.attr( "disabled", true );
+				setTimeout( function( )
+				{
+					element.attr( "disabled", false );
+				}, delay || 3000 );
+			}
+			
+			function imageUpload( )
+			{
+				var photo = $( "#photo" );
+				var file = photo.files[0];
 				
+				console.log("File name: " + file.fileName);
+				console.log("File size: " + file.fileSize);
+			}
 			
+			function imageUploadButtonClicked( )
+			{
+				var formData = new FormData( );
+				var fileObj = $( "#photo_upload" );
+				
+				formData.append( "photoFile", fileObj[0].files[0] );
+				<!-- for(var i=0; i<$('#photo_upload')[0].files.length; i++){ -->
+					<!-- formData.append('uploadFile', $('#photo_upload')[0].files[0 ]); -->
+				<!-- } -->
+			 
+				$.ajax({
+					url: '/upload',
+					data: formData,
+					processData: false,
+					contentType: false,
+					type: 'POST',
+					success: function (data) {
+						alert("이미지 업로드 성공");
+					}
+				});
+			}
 			
-			
-			
-			
-
-			
-
+			function voteRun( )
+			{
+				//voteURLTextField
+				var url = $( "#voteURLTextField" ).val( ).trim( );
+				
+				if ( url.length > 0 )
+				{
+				// under construction
+					socket.emit( "voteCreate", {
+						url: url
+					} );
+				}
+				else
+				{
+					alert( "error");
+				}
+			}
 		</script>
 		<script src="javascripts/visualizer.js"></script>
 		<meta charset="utf-8">
 		<meta http-equiv="X-UA-Compatible" content="IE=edge">
 	</head>
 	<body>
+		
+		
 		<div id="backgroundCover"></div>
 			<div id="backgroundBufferCover"></div>
 				<div id="cover">
 					<div id="header">
-						<font id="mainTitle">ReguStreaming</font>
-						<font id="clientsDesc">0명의 사람들과 같이 듣는 중.</font>
+						<div id="leftHeader">
+							<img src="images/icon/main.png" style="margin-top: -16px; margin-right: -6px"></img>
+							<font id="mainTitle">ReguStreaming</font>
+						</div>
+						
 					</div>
 					
 					
 					<div id="blurBackground" style="display: none;"></div>
 					
 					<div id="agreeContainer">
-						<img src="images/agree/agreeContainerTop.png" style="position: absolute; left: 50%; margin-left: -256px"></img>
+						<img src="images/agree/agreeContainerTop.png" style="display: block; margin-left: auto; margin-right: auto; max-width: 100%; max-height: 100%;"></img>
 						<p id="agreeContainerTitle">ReguStreaming 에 접속을 환영합니다.</p>
 						<p id="welcomeClientCount">0명의 사람들이 접속 중입니다.</p>
-						<button type="button" class="btn btn-default" id="agreeConnectButton">접속 (Connect)</button>
+						
+						<input type="text" name="nickNameTextField" class="nickNameTextField" id="nickNameTextField" placeholder="닉네임 입력" autofocus />
+						<button type="button" class="btn btn-default" id="agreeConnectButton">접속</button>
 					</div>
 					
 					
 					<div id="mainTextContainer" style="display: none;">
+						<font id="musicPlayingTitle">현재 재생 중 ...</font>
 						<font id="musicTitle">Music Title</font>
 						<font id="musicArtist">Music Artist</font>
 						
 						<p id="musicPosition">Music Pos / Max</p>
 						
-						<div class="musicVolumeControlContainer">
+						<!-- <div class="musicVolumeControlContainer"> -->
 							<!-- <img src="images/icon/volume.png" id="musicVolumeControlIcon"></span> -->
-							<input id="musicVolumeControl" class="musicVolumeControl" type="range" min="0" max="100" step="1" oninput="SetVolume(this.value)" onchange="SetVolume(this.value)"></input>
+							
+						<!-- </div> -->
+					</div>
+					
+					<div id="voteContainer" style="display: none;">
+						<div id="voteContainerTitle">
+							<p id="voteContainerTitleText">
+								투표 (Dev)
+							</p>
+							
+							<p class="containerMiddleText" style="margin-top: 24px">투표할 음악을 골라주세요 ...</p>
+							<p class="containerSmallText">띠요오오옹.</p>
+							
+							<input type="text" name="voteURLTextField" class="voteURLTextField" id="voteURLTextField" placeholder="Youtube URL 입력" autofocus />
+							
+							<button type="button" class="btn btn-default" id="voteCancelButton" onclick="$( '#voteContainer' ).hide();">취소</button>
+							<button type="button" class="btn btn-default" id="voteRunButton" onclick="voteRun()">투표 실행</button>
 						</div>
 					</div>
 					
+					
+					<div id="chatTextFieldContainer">
+						<div id="chatContainerTitleBase">
+							<p id="chatContainerTitle">
+								채팅
+							</p>
+							
+							<p id="clientsDesc">0명의 사람들과 같이 듣는 중.</p>
+						</div>
+						<!-- <form action="url" method="GET"> -->
+							<!-- 닉네임 : -->
+						<input type="text" name="chatTextField" class="chatTextField" id="chatTextField" placeholder="채팅 입력" autofocus />
+						<div class="chatBoxOutter">
+							<div class="chatBox">
+							
+							</div>
+						</div>
+						
+						<button type="button" class="btn btn-default" id="voteCreateButton" onclick="$( '#voteContainer' ).show();">투표 생성</button>
+						
+						<!-- <form name="imageUploadForm" id="imageUploadForm" style="z-index: 1; bottom: 0; position: absolute;" action="/upload" method="post" enctype="multipart/form-data"> -->
+							<!-- <input type="file" id="photo_upload"> -->
+							<!-- <input type="button" value="완료" id="files_send" onclick="siofu.prompt( )"> -->
+						<!-- </form> -->
+						
+						<!-- 수정바람... -->
+						<img src="images/icon/camera.png" class="imageSendIcon" id="files_send" onclick="siofu.prompt( )"/>
+						<img src="images/icon/volume.png" id="musicVolumeControlIcon" />
+						<input id="musicVolumeControl" class="musicVolumeControl" type="range" min="0" max="100" step="1" oninput="setVolume( this.value )" onchange="setVolume( this.value )"></input>
+						
+						
+						<!-- <button type="button" class="btn btn-default" id="volumeControllerButton">볼륨 설정</button> -->
+							
+							<!-- <input type="submit" /> -->
+						<!-- </form> -->
+					</div>
+					
+					
+					
+					
 					<div id="footer">
-						<font id="footerTitle">Copyright 2018. <a href="https://steamcommunity.com/profiles/76561198011675377/" target="_blank">ReguMaster</a> all rights reserved.</font>
+						<font id="footerTitle">Copyright 2018. <a href="https://steamcommunity.com/profiles/76561198011675377/" target="_blank" class="aRegu">ReguMaster</a> all rights reserved.</font>
 					</div>
 				
 				</div>
-				
+				<video width="100%" height="100%" style="z-index: -1; position: absolute; top: 0; display: inline; object-fit: cover;" id="musicVideo" muted>
+		  <source src="" type="video/mp4">
+		</video>
 				<canvas id="canvas" style="position:absolute; top:0%; left:0px; z-index:0"></canvas>
 		</div>
 	</body>

@@ -7,9 +7,14 @@ const path = require( "path" );
 const route = require( "./routes/index.js" );
 const express = require( "express" );
 const fileStream = require( "fs" );
-const app = express( );
+
 const consoleColor = require( "colors" );
 var Main = { };
+const passport = require( "passport" );
+var SocketIOFileUpload = require('socketio-file-upload');
+const app = express( );
+
+app.use(SocketIOFileUpload.router);
 
 let server = require( "http" ).createServer( app );
 
@@ -22,9 +27,23 @@ Main.InitializeServer = function( )
 	require( "console-title" )( "ReguStreaming : Server" );
 	
 	app.use( express.static( path.join( __dirname, "public" ) ) );
+	// app.use( express.static( path.join( __dirname, "userUploaded" ) ) );
+	app.use( "/files", express.static( "userUploaded" ) );
 	app.use( express.urlencoded( ) );
+	
+	app.use(require('cookie-parser')());
+	app.use(require('express-session')({
+	  secret: 'keyboard cat',
+	  resave: true,
+	  saveUninitialized: true
+	}));
+	app.use(require('body-parser').urlencoded({ extended: true }));
+	app.use(passport.initialize());
+	app.use(passport.session());
 
 	app.use( "/", route );
+	
+	
 	
 	app.use( function( req, res, next )
 	{
@@ -41,6 +60,8 @@ Main.InitializeServer = function( )
 }
 
 Main.InitializeServer( );
+
+module.exports = Main;
 
 /*
 var server = require('greenlock-express').create({
@@ -110,7 +131,7 @@ server.listen( 8085, "1.224.53.166", function( )
 } );
 
 
-module.exports = Main;
+
 
 require( "./modules/interact.js" );
 const musicProvider = require( "./modules/musicprovider.js" );

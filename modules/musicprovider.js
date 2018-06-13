@@ -3,6 +3,8 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
+'use strict';
+
 const path = require( "path" );
 const MusicProvider = { };
 const consoleColor = require( "colors" );
@@ -102,11 +104,53 @@ MusicProvider.musicList = [
 		musicName: "｢This Little Girl｣",
 		musicArtist: "Cady Groves (Nightcore)",
 		musicCover: "images/14.png"
+	},
+	{
+		musicDir: "sounds/15.mp3",
+		musicName: "｢Drive｣",
+		musicArtist: "Carly Rae Jepsen (Nightcore)",
+		musicCover: "images/15.png"
+	},
+	{
+		musicDir: "sounds/16.mp3",
+		musicName: "｢The Lonely Wolf｣",
+		musicArtist: "3R2",
+		musicCover: "images/16.png"
+	},
+	{
+		musicDir: "sounds/17.mp3",
+		musicName: "｢Miles Away｣",
+		musicArtist: "Wontolla, Kasger & Limitless",
+		musicCover: "images/17.png"
+	},
+	{
+		musicDir: "sounds/18.mp3",
+		musicName: "｢Puzzle｣",
+		musicArtist: "RetroVision",
+		musicCover: "images/18.png"
+	},
+	{
+		musicDir: "sounds/19.mp3",
+		musicName: "｢Entropy｣",
+		musicArtist: "Distrion & Alex Skrindo",
+		musicCover: "images/19.png"
+	},
+	{
+		musicDir: "sounds/20.mp3",
+		musicName: "｢チルノのパーフェクトさんすう教室｣",
+		musicArtist: "IOSYS",
+		musicCover: "images/20.png"
+	},
+	{
+		musicDir: "sounds/21.mp3",
+		musicName: "｢Outbreak (feat. MYLK)｣",
+		musicArtist: "Feint",
+		musicCover: "images/21.png"
 	}
 ];
 
 MusicProvider.currentMusicPos = 0;
-MusicProvider.currentMusic = MusicProvider.musicList[ 8 ]; // 0
+MusicProvider.currentMusic = MusicProvider.musicList[ 20 ]; // 0
 
 MusicProvider.TickTok = function( )
 {
@@ -124,6 +168,7 @@ MusicProvider.TickTok = function( )
 
 setInterval( MusicProvider.TickTok, 1000 );
 
+// this 로 변경할것
 MusicProvider.MusicPlay = function( )
 {
 	MusicProvider.currentMusicPos = 0;
@@ -132,6 +177,12 @@ MusicProvider.MusicPlay = function( )
 	
 	Main.io.emit( "music_define", newArr );
 	Main.io.emit( "music_play" );
+	
+	Main.io.emit( "chatReceive", {
+		// name: client.name,
+		message: MusicProvider.currentMusic.musicArtist + " - " + MusicProvider.currentMusic.musicName + " 음악을 재생합니다.",
+		type: "system",
+	} );
 }
 
 module.exports = MusicProvider;

@@ -5,6 +5,8 @@
 // defined variables //
 // canvas
 
+'use strict';
+
 let canvas;
 let canvas2D;
 
@@ -23,18 +25,22 @@ function initializeCanvas( )
 	canvas = document.getElementById( "canvas" );
 	canvas2D = canvas.getContext( "2d" );
 	
-	canvas.width = window.innerWidth;
+	canvas.width = window.innerWidth - 350;
 	canvas.height = window.innerHeight;
 	
-	setInterval( resizeCanvas, 100 );
+	// setInterval( beatDetect, 100 );
 }
 
 function resizeCanvas( )
 {
 	if ( typeof canvas === "undefined" ) return;
 	
-	canvas.width = window.innerWidth;
-	canvas.height = window.innerHeight;
+	if (canvas.width !== window.innerWidth - 350 || canvas.height !== window.innerHeight)
+	{
+		canvas.width = window.innerWidth - 350;
+		canvas.height = window.innerHeight;
+		visualizerBarWidth = ( canvas.width / visualizerBufferLength ) * 0.7;
+	}
 }
 
 function visualizerInitialize( )
@@ -77,9 +83,15 @@ var thumbImg = document.createElement('img');
 
 thumbImg.src = 'favicon/icon_64.png';
 
+function avatarGoTo( data, x, y )
+{
+	
+}
+
 function visualizerRender( )
 {
 	requestAnimationFrame( visualizerRender );
+	resizeCanvas( );
 	
 	if ( !onLoaded ) return;
 	
@@ -93,6 +105,7 @@ function visualizerRender( )
 	canvas2D.clearRect( 0, 0, canvas.width, canvas.height );
 	
 	//ground;
+	/*
 	canvas2D.fillStyle = "rgba( 50, 50, 50, 0.5 )"
 	canvas2D.fillRect( canvas.width * 0.2, canvas.height * 0.7, canvas.width * 0.6, 15 );
 
@@ -104,6 +117,7 @@ function visualizerRender( )
 		// canvas2D.fillRect( data.x, data.y, 150, 30 );
 		
 		
+		canvas2D.save( );
 		canvas2D.beginPath( );
 		canvas2D.arc( data.x, data.y, 32, 0, 2 * Math.PI, false );
 		canvas2D.fillStyle = "rgba( 255, 255, 255, 0.75 )"
@@ -115,10 +129,14 @@ function visualizerRender( )
 		canvas2D.clip( );
 		
 		canvas2D.drawImage( thumbImg, 0, 0, 64, 64, data.x - (64/2), data.y - (64/2), 64, 64 );
+		canvas2D.restore( );
+		
 		
 		canvas2D.font = "20px Jeju Gothic";
+		
+		canvas2D.fillStyle = "rgba( 255, 255, 255, 0.75 )"
 		canvas2D.fillText( data.name, data.x + ( 32 / 2 ) - ( canvas2D.measureText( data.name ).width / 2 ), data.y - 92 / 2 );
-	}
+	}*/
 // var average = 0;
 // var count = 0;
 
@@ -143,21 +161,21 @@ function visualizerRender( )
 
 	for ( var i = 0; i < visualizerBufferLength; i++ )
 	{
-		visualizerBarHeight = visualizerDataArray[ i ] * 0.5;
+		visualizerBarHeight = visualizerDataArray[ i ];
 		
-		var r = 150;
-		var g = 150;
-		var b = 150;
-		var a =	150;//( visualizerBarHeight / ( canvas.height / 4 ) );
+		var r = 200;
+		var g = 200;
+		var b = 200;
+		var a =	( visualizerBarHeight / ( canvas.height / 3 ) );
 		
 		canvas2D.fillStyle = "rgba(" + r + "," + g + "," + b + ", " + a + ")";
 		canvas2D.fillRect( visualizerX, canvas.height - visualizerBarHeight, visualizerBarWidth, visualizerBarHeight );
 
-		visualizerX += visualizerBarWidth + 7;
+		visualizerX += visualizerBarWidth + 5;
 		
-		average += visualizerBarHeight;
+		average += visualizerDataArray[ i ] / 2;
 	}
 	
-	backgroundBeatPer = Math.lerp( backgroundBeatPer, Math.clamp( 70 + ( average / visualizerBufferLength ), 100, 130 ), 0.45 );
-	elements.bg.css( "backgroundSize", backgroundBeatPer + "% " + backgroundBeatPer + "%");
+	// backgroundBeatPer = Math.lerp( backgroundBeatPer, Math.clamp( 80 + ( average / visualizerBufferLength ), 100, 115 ), 0.3 );
+	// elements.bg.css( "backgroundSize", backgroundBeatPer + "% " + backgroundBeatPer + "%");
 }

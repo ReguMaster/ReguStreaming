@@ -10,6 +10,7 @@ const musicProvider = require( "./musicprovider.js" );
 
 var mcMode = false; // mc mode?
 var mlMode = false; // ml mode?
+var notiMode = false; // noti mode?
 
 Interact.test = 0;
 //https://stackoverflow.com/questions/8128578/reading-value-from-console-interactively
@@ -37,6 +38,19 @@ Interact.main = process.openStdin( ).addListener( "data", function( data )
 		
 		return;
 	}
+	
+	if ( notiMode )
+	{
+		var message = data.toString( ).trim( );
+		
+		global.io.emit( "serverNotification", {
+			message: message
+		} );
+		
+		console.log( `"메세지 전송 완료. ${ message }"` );
+		notiMode = false;
+		return;
+	}
 		
 	switch( data.toString( ).trim( ) )
 	{
@@ -50,6 +64,10 @@ Interact.main = process.openStdin( ).addListener( "data", function( data )
 		case "msl":
 			console.log( "이제 설정할 음악의 위치(초)를 설정하세요.");
 			mlMode = true;
+			break;
+		case "noti":
+			console.log( "이제 알림 메세지를 입력하세요." );
+			notiMode = true;
 			break;
 	}
 } );
