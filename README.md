@@ -1,4 +1,4 @@
-![Introduction](res/main.png)
+![Introduction](res/intro.png)
 
 소개
 =============
