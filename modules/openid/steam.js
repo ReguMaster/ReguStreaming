@@ -10,7 +10,7 @@ const path = require( "path" );
 const consoleColor = require( "colors" );
 const Main = require( "../../app.js" );
 
-const LogManager = require( "../logmanager.js" );
+const Logger = require( "../logger.js" );
 require('passport-openid')
 // const passport = require( "passport" );
 

@@ -9,8 +9,7 @@ const VoteManager = { };
 const path = require( "path" );
 const consoleColor = require( "colors" );
 const Main = require( "../app.js" );
-const LogManager = require( "./logmanager.js" );
-const MusicProvider = require( "./musicprovider.js" );
+const Logger = require( "./logger.js" );
 const horizon = require( "horizon-youtube-mp3" );
 
 VoteManager.test = 110;
@@ -54,7 +53,7 @@ VoteManager.ioEventConnection = function( socket, client )
 
 VoteManager.ConvertToMp3 = function( url, rand, successConvert )
 {
-	var downPath = "C:/Users/L7D/Desktop/mp3stream/regustreaming/public/sounds";
+	
 	
 	
 	var response;

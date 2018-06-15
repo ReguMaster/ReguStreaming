@@ -26,7 +26,7 @@ function initializeCanvas( )
 	canvas2D = canvas.getContext( "2d" );
 	
 	canvas.width = window.innerWidth - 350;
-	canvas.height = window.innerHeight;
+	canvas.height = window.innerHeight - 130;
 	
 	// setInterval( beatDetect, 100 );
 }
@@ -35,10 +35,10 @@ function resizeCanvas( )
 {
 	if ( typeof canvas === "undefined" ) return;
 	
-	if (canvas.width !== window.innerWidth - 350 || canvas.height !== window.innerHeight)
+	if (canvas.width !== window.innerWidth - 350 || canvas.height - 130 !== window.innerHeight)
 	{
 		canvas.width = window.innerWidth - 350;
-		canvas.height = window.innerHeight;
+		canvas.height = window.innerHeight - 130;
 		visualizerBarWidth = ( canvas.width / visualizerBufferLength ) * 0.7;
 	}
 }
@@ -79,9 +79,9 @@ function groundRender( )
 	
 }
 
-var thumbImg = document.createElement('img');
+// var thumbImg = document.createElement('img');
 
-thumbImg.src = 'favicon/icon_64.png';
+// thumbImg.src = 'favicon/icon_64.png';
 
 function avatarGoTo( data, x, y )
 {
@@ -161,7 +161,7 @@ function visualizerRender( )
 
 	for ( var i = 0; i < visualizerBufferLength; i++ )
 	{
-		visualizerBarHeight = visualizerDataArray[ i ];
+		visualizerBarHeight = visualizerDataArray[ i ] * 0.65;
 		
 		var r = 200;
 		var g = 200;

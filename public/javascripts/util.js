@@ -53,3 +53,17 @@ function formatTime(numberofseconds){
 	time = mm + ':' + ss
 	return time; 
 }
+
+if ( !String.format )
+{
+	// https://code.i-harness.com/ko/q/95066
+	String.format = function( format )
+	{
+		var args = Array.prototype.slice.call( arguments, 1 );
+		
+		return format.replace( /{(\d+)}/g, function( match, number )
+		{ 
+			return typeof args[ number ] != "undefined" ? args[ number ]  : match;
+		} );
+	}
+}

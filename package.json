@@ -8,12 +8,34 @@
   "author": "ReguMaster",
   "license": "MIT",
   "dependencies": {
+    "body-parser": "^1.18.3",
+    "bpm-detective": "^2.0.3",
     "colors": "^1.3.0",
-    "cookie-parser": "~1.4.3",
+    "cookie-parser": "^1.4.3",
+    "dateformat": "^3.0.3",
     "debug": "~2.6.9",
     "express": "~4.16.0",
+    "express-session": "^1.15.6",
+    "horizon-youtube-mp3": "^1.9.0",
     "http-errors": "~1.6.2",
+    "moment": "^2.22.2",
     "morgan": "~1.9.0",
-    "pug": "2.0.0-beta11"
+    "multer": "^1.3.0",
+    "passport": "^0.4.0",
+    "pug": "2.0.0-beta11",
+    "readline": "^1.3.0",
+    "socketio-file-upload": "^0.6.0",
+    "winston": "^3.0.0",
+    "winston-daily-rotate-file": "^3.2.1"
+  },
+  "nodemonConfig": {
+    "ignore": [
+      "start.bat",
+      "package.json",
+      "public",
+      "res",
+      "files",
+      "logs"
+    ]
   }
 }

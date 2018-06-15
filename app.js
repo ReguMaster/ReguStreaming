@@ -3,32 +3,34 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
+var Main = { };
+
 const path = require( "path" );
 const route = require( "./routes/index.js" );
 const express = require( "express" );
 const fileStream = require( "fs" );
-
-const consoleColor = require( "colors" );
-var Main = { };
 const passport = require( "passport" );
-var SocketIOFileUpload = require('socketio-file-upload');
 const app = express( );
+const Logger = require( "./modules/logger.js" );
 
-app.use(SocketIOFileUpload.router);
+app.use( require( "socketio-file-upload" ).router );
 
 let server = require( "http" ).createServer( app );
 
-Main.test = Math.floor(Math.random() * 1000 - 10 );
+Main.config = { };
+Main.config.host = "1.224.53.166";
+Main.config.port = 8085;
+
 Main.app = app;
 Main.io = require( "socket.io" )( server );
 Main.InitializeServer = function( )
 {
-	console.info( "서버 부팅 중 ...;" );
+	Logger.write( Logger.LogType.Info, "Booting server ..." );
 	require( "console-title" )( "ReguStreaming : Server" );
 	
 	app.use( express.static( path.join( __dirname, "public" ) ) );
 	// app.use( express.static( path.join( __dirname, "userUploaded" ) ) );
-	app.use( "/files", express.static( "userUploaded" ) );
+	app.use( "/files", express.static( "public/userfiles" ) );
 	app.use( express.urlencoded( ) );
 	
 	app.use(require('cookie-parser')());
@@ -43,8 +45,6 @@ Main.InitializeServer = function( )
 
 	app.use( "/", route );
 	
-	
-	
 	app.use( function( req, res, next )
 	{
 		res.status( 404 ).send( "404 Not Found!" );
@@ -56,7 +56,7 @@ Main.InitializeServer = function( )
 		res.status( 500 ).send( "서버에서 오류가 발생했습니다." );
 	} );
 	
-	console.info( "서버 부팅 완료 ...;" );
+	Logger.write( Logger.LogType.Info, "Booting server finished." );
 }
 
 Main.InitializeServer( );
@@ -112,27 +112,16 @@ var server = require('greenlock-express').create({
     // outSampleRate: options.samplerate,
     // mode: (options.mono ? lame.MONO : lame.STEREO) // STEREO (default), JOINTSTEREO, DUALCHANNEL or MONO
   // });
-  
 
-
-
-
-
-
-
-
-
-
-
-
-server.listen( 8085, "1.224.53.166", function( )
+server.listen( Main.config.port, Main.config.host, function( )
 {
-	console.info( "서버 리스닝 완료 ...;" );
+	Logger.write( Logger.LogType.Event, "Listening at " + Main.config.host + ":" + Main.config.port );
 } );
 
-
-
+require( "./util.js" );
+require( "./client.js" );
 
 require( "./modules/interact.js" );
-const musicProvider = require( "./modules/musicprovider.js" );
-require( "./modules/clientmanager.js" );
+require( "./modules/queue.js" );
+require( "./modules/chat.js" );
+require( "./modules/fileupload.js" );

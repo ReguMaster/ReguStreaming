@@ -9,16 +9,24 @@ const BanManager = { };
 const path = require( "path" );
 const consoleColor = require( "colors" );
 const Main = require( "../app.js" );
-const LogManager = require( "./logmanager.js" );
+const Logger = require( "./logger.js" );
 
 BanManager.test = 110;
 
 BanManager._list = [
+// {
+	// duration: 0,
+	// why: "doshigati!"
+// }
 	// "1.224.53.166"
 ];
-BanManager.register = function( )
+BanManager.register = function( ipAddress, reason )
 {
-	
+	BanManager._list.push( {
+		identification: ipAddress,
+		duration: 0,
+		why: reason
+	} );
 }
 
 BanManager.getCount = function( )
@@ -33,19 +41,19 @@ BanManager.remove = function( )
 
 BanManager.isBanned = function( ipAddress )
 {
-	if ( this._list.indexOf( ipAddress ) > -1 )
+	var banData = { banned: false };
+	
+	this._list.some( function( ban )
 	{
-		return {
-			banned: true,
-			duration: 0,
-			why: "doshigatai!" // DOSHIGATAI
+		if ( ban.identification == ipAddress )
+		{
+			banData.banned = true;
+			banData = ban;
+			return true;
 		}
-	}
-	else
-	{
-		return { banned: false };
-	}
-	// return false;
+	} );
+	
+	return banData;
 }
 
 module.exports = BanManager;

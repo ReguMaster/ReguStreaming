@@ -34,7 +34,8 @@
 				textContainer = null,
 				agreeContainer = null,
 				agreeButton = null,
-				volumeController = null
+				volumeController = null,
+				videoContainer = null
 			];
 			
 			var loginSuccessed = false;
@@ -42,11 +43,11 @@
 			
 			//수정바람
 			var allowType = [
-		"image/png",
-		"image/gif",
-		"image/jpg",
-		"image/jpeg"
-	];
+				"image/png",
+				"image/gif",
+				"image/jpg",
+				"image/jpeg"
+			];
 	
 			var onLoaded = false;
 				
@@ -62,7 +63,9 @@
 				elements.agreeContainer = $( "#agreeContainer" );
 				elements.agreeButton = $( "#agreeConnectButton" );
 				
-				elements.bg.css( "backgroundImage", "url( 'images/intro/" + ( Math.floor( Math.random( ) * 7 ) + 1 ) + ".png' )" );
+				elements.videoContainer = $( "#musicVideo" );
+				
+				elements.bg.css( "backgroundImage", "url( 'images/intro/" + ( Math.floor( Math.random( ) * 13 ) + 1 ) + ".png' )" );
 				elements.bgBuffer.css( "backgroundImage", elements.bg.css( "backgroundImage" ) );
 				
 				elements.blurBG = $( "#blurBackground" );
@@ -119,6 +122,19 @@
 					}
 				
 					socket.emit( "join", localClientData );
+				} );
+				
+				$( "#voteURLTextField" ).keydown( function( event )
+				{
+					if ( event.keyCode == 13 ) // Enter
+					{
+						$( "#voteRunButton" ).trigger( "click" );
+						
+						controlDisableTemp( $( this ) );
+						controlDisableTemp( $( "#voteRunButton" ) );
+						
+						return false;
+					}
 				} );
 				
 				$( "#nickNameTextField" ).keydown( function( event )
@@ -212,6 +228,30 @@
 				}
 			}
 			
+			socket.on( "serverErrorNotify", function( data )
+			{
+				$.notify( {
+					icon: "glyphicon glyphicon-warning-sign",
+						title: "서버 오류 :",
+						message: data.why
+					},
+					{
+					allow_dismiss: true,
+					type: "danger",
+					placement: {
+						from: "bottom",
+						align: "center"
+					},
+					newest_on_top: true,
+					animate: {
+						enter: "animated zoomInUp",
+						exit: "animated zoomOutDown"
+					},
+					delay: 0,
+					timer: 1000
+				} );
+			} );
+			
 			socket.on( "welcome", function( data )
 			{
 				if ( typeof elements.welcomeClientCount === "undefined" )
@@ -242,6 +282,13 @@
 					$( "#chatTextFieldContainer" ).show( );
 					$( "#chatTextFieldContainer" ).css( "opacity", "0" );
 					$( "#chatTextFieldContainer" ).animate( { opacity: "1" }, 1000 );
+					
+					$( "#queueContainer" ).show( );
+					$( "#queueContainer" ).css( "opacity", "0" );
+					$( "#queueContainer" ).animate( { opacity: "1" }, 1000 );
+					
+					<!-- queueCount = 0; -->
+					<!-- queueListClient = [ ]; -->
 				}
 				else
 				{
@@ -268,8 +315,178 @@
 				}
 			} );
 			
+			// 수정바람
+			var queueEventString = '<div class="queueContainerVideoChild" id="queueContainerVideoChild_{0}"> \
+				<p class="queueContainerVideoChildIndex" id="queueContainerVideoChildIndexRecentVideo"> \
+					{1} \
+				</p> \
+				<p class="queueContainerVideoChildLength"> \
+					{2} \
+				</p> \
+				\
+				<div class="queueContainerVideoChildThumbnail" id="queueContainerVideoChildThumbnail" style="background-image: url( {3} )"> \
+					<div class="queueContainerVideoChildThumbnailCover"> \
+						<p class="queueContainerVideoChildTitle"> \
+							{4} \
+						</p> \
+						<p class="queueContainerVideoChildAuthor"> \
+							{5} \
+						</p> \
+					</div> \
+				</div> \
+			</div>'
+			
+			let queueCount = 0;
+			
+			socket.on( "queueRegisterReceive", function( data )
+			{
+				<!-- $( "#voteRunButton" ).attr( "disabled", false ); -->
+				
+				if ( data.success )
+				{
+					$.notify( {
+						icon: "glyphicon glyphicon-warning-sign",
+							title: "영상 추가 :",
+							message: "귀하가 요청한 영상을 목록에 추가했습니다."
+						},
+						{
+						allow_dismiss: true,
+						type: "success",
+						placement: {
+							from: "bottom",
+							align: "center"
+						},
+						newest_on_top: true,
+						animate: {
+							enter: "animated zoomInUp",
+							exit: "animated zoomOutDown"
+						},
+						delay: 2000,
+						timer: 1000
+					} );
+				}
+				else
+				{
+					$.notify( {
+						icon: "glyphicon glyphicon-warning-sign",
+							title: "영상 추가 실패 :",
+							message: data.why
+						},
+						{
+						allow_dismiss: true,
+						type: "warning",
+						placement: {
+							from: "bottom",
+							align: "center"
+						},
+						newest_on_top: true,
+						animate: {
+							enter: "animated zoomInUp",
+							exit: "animated zoomOutDown"
+						},
+						delay: 2500,
+						timer: 1000
+					} );				
+				}
+			} );
+			
+			let queueListClient = [ ];
+			
+			socket.on( "queueEvent", function( data )
+			{
+				<!-- var element; -->
+				
+				if ( data.type == "register" )
+				{
+					$( "#queueContainerVideoList" ).append( String.format( queueEventString, queueCount, "다음 영상", formatTime( data.videoLength ), data.videoThumb, data.videoName, "by " + ( data.owner || "Unknown" ) ) );
+					
+					var newElement = $( "#queueContainerVideoChild_" + queueCount );
+					
+					newElement.css( "opacity", "0" );
+					newElement.animate( { opacity: 1 }, 500 );
+					
+					console.log(element);
+					
+					queueListClient.push( newElement );
+					
+					console.log(queueListClient);
+					
+					queueCount = Math.clamp( queueCount + 1, 0, 1000 ); // 숫자 수정바람
+				}
+				else if ( data.type == "removeRecent" )
+				{
+					var element = queueListClient[ 0 ];
+					
+					console.log(queueListClient);
+					
+					if ( typeof element != "undefined" )
+					{
+						element.css( "opacity", "1" );
+						element.animate( { opacity: 0 }, 500, function( )
+						{
+							element.remove( );
+							queueListClient.splice( 0, 1 );
+						} );
+					}
+					
+					//queueCount = Math.clamp( queueCount - 1, 0, 1000 ); // 숫자 수정바람
+				}
+				else if ( data.type == "removeAt" )
+				{
+					var element = queueListClient[ data.index ];
+					
+					if ( typeof element != "undefined" )
+					{
+						element.css( "opacity", "1" );
+						element.animate( { opacity: 0 }, 500, function( )
+						{
+							$( this ).remove( );
+							queueListClient.splice( data.index, 1 );
+						} );
+					}
+					
+					//queueCount = Math.clamp( queueCount - 1, 0, 1000 ); // 숫자 수정바람
+				}
+				else if ( data.type == "dataReq" )
+				{
+					queueCount = 0;
+					
+					for ( var i = 0; i < queueListClient.length; i++ )
+					{
+						if ( typeof queueListClient[ i ] != "undefined" )
+							queueListClient[ i ].remove( );
+					}
+					
+					queueListClient = [ ];
+					var queueList = data.queueList;
+					
+					for ( var i = 0; i < queueList.length; i++ )
+					{
+						$( "#queueContainerVideoList" ).append( String.format( queueEventString, queueCount, "다음 영상", formatTime( queueList[ i ].videoLength ), queueList[ i ].videoThumb, queueList[ i ].videoName,
+							"by " + ( queueList[ i ].owner || "Unknown" ) ) );
+						
+						var newElement = $( "#queueContainerVideoChild_" + queueCount );
+						
+						setTimeout( function( )
+						{
+							newElement.css( "opacity", "0" );
+							newElement.animate( { opacity: 1 }, 500 );
+						}, 500 * i );
+						
+						queueListClient.push( newElement );
+						queueCount = Math.clamp( queueCount + 1, 0, 1000 ); // 숫자 수정바람
+					}
+				}
+			} );
+			
 			let chatCount = 0;
 			//let chatMessages = [ ];
+			
+			function imageOnLoaded( )
+			{
+				<!-- $( ".chatBox" ).scrollTop( $( ".chatBox" )[ 0 ].scrollHeight ); -->
+				$( ".chatBox" ).animate( { scrollTop: $( ".chatBox" )[ 0 ].scrollHeight }, 300, 'swing' );
+			}
 			
 			socket.on( "chatReceive", function( data )
 			{
@@ -277,7 +494,7 @@
 				
 				if ( data.type == "img" )
 				{
-					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/favicon/icon_64.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p><img style='object-fit: fit; width: 333px; padding-left: 8px' src='" + data.dir + "' /></div>" );
+					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/images/icon/user_64.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p><img style='object-fit: fit; width: 333px; padding-left: 8px; padding-right: 16px; padding-bottom: 8px;' onload='imageOnLoaded( )' src='" + data.dir + "' /></div>" );
 					
 					$( "#chatMessageContainer_" + currentChatCount ).css( "opacity", "0" );
 					$( "#chatMessageContainer_" + currentChatCount ).animate( { opacity: 1 }, 500 );
@@ -286,7 +503,7 @@
 				}
 				else if ( data.type == "system" )
 				{
-					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/favicon/icon_64.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p></div>" );
+					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/images/icon/main.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p></div>" );
 					
 					$( "#chatMessageContainer_" + currentChatCount ).css( "opacity", "0" );
 					$( "#chatMessageContainer_" + currentChatCount ).animate( { opacity: 1 }, 500 );
@@ -295,7 +512,7 @@
 				}
 				else
 				{
-					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/favicon/icon_64.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p></div>" );
+					$( ".chatBox" ).append( "<div class='chatMessageContainer' id='chatMessageContainer_" + currentChatCount + "'><img src='/images/icon/user_64.png' width='24px' height='24px' alt='ProfileImage' class='chatProfileIcon'><p class='chatMessage' id='chatMessage_" + currentChatCount + "'></p></div>" );
 					
 					$( "#chatMessageContainer_" + currentChatCount ).css( "opacity", "0" );
 					$( "#chatMessageContainer_" + currentChatCount ).animate( { opacity: 1 }, 500 );
@@ -313,7 +530,8 @@
 					<!-- }, 30 * 1000 ); -->
 				}
 				
-				$( ".chatBox" ).scrollTop( $( ".chatBox" )[ 0 ].scrollHeight );
+				$( ".chatBox" ).animate( { scrollTop: $( ".chatBox" )[ 0 ].scrollHeight }, 300, 'swing' );
+				<!-- $( ".chatBox" ).scrollTop( $( ".chatBox" )[ 0 ].scrollHeight ); -->
 				
 				chatCount++;
 			} );
@@ -365,14 +583,14 @@
 			{
 				$.notify( {
 						icon: "glyphicon glyphicon-flash",
-						title: data.title || "공지 사항 :",
+						title: "공지 사항 :",
 						message: data.message
 					},
 					{
-					allow_dismiss: false,
+					allow_dismiss: true,
 					type: "info",
 					placement: {
-						from: "top",
+						from: "bottom",
 						align: "center"
 					},
 					newest_on_top: true,
@@ -380,7 +598,7 @@
 						enter: "animated fadeInDown",
 						exit: "animated fadeOutUp"
 					},
-					delay: 5000,
+					delay: 0,
 					timer: 1000
 				} );
 			} );
@@ -430,13 +648,13 @@
 					allow_dismiss: true,
 					type: "danger",
 					placement: {
-						from: "top",
+						from: "bottom",
 						align: "center"
 					},
 					newest_on_top: true,
 					animate: {
-						enter: "animated fadeInDown",
-						exit: "animated fadeOutUp"
+						enter: "animated zoomInUp",
+						exit: "animated zoomOutDown"
 					},
 					delay: 5000,
 					timer: 1000
@@ -454,13 +672,13 @@
 					allow_dismiss: true,
 					type: "warning",
 					placement: {
-						from: "top",
+						from: "bottom",
 						align: "center"
 					},
 					newest_on_top: true,
 					animate: {
-						enter: "animated fadeInDown",
-						exit: "animated fadeOutUp"
+						enter: "animated zoomInUp",
+						exit: "animated zoomOutDown"
 					},
 					delay: 1000,
 					timer: 1000
@@ -483,18 +701,20 @@
 					allow_dismiss: true,
 					type: "success",
 					placement: {
-						from: "top",
+						from: "bottom",
 						align: "center"
 					},
 					newest_on_top: true,
 					animate: {
-						enter: "animated fadeInDown",
-						exit: "animated fadeOutUp"
+						enter: "animated zoomInUp",
+						exit: "animated zoomOutDown"
 					},
 					delay: 1500,
 					timer: 1000
 				} );
 			} );
+			
+			var videoSynchronizer;
 			
 			socket.on( "music_define", function( data ) {
 				if ( typeof audio === "undefined" )
@@ -515,12 +735,14 @@
 					
 					audio.addEventListener( "timeupdate", function( )
 					{
+						if ( audio.paused ) return;
+						
 						elements.pos.html( formatTime( audio.currentTime ) + " / " + formatTime( audio.duration ) );
 					}, false );
 				}
 				
-				audio.src = data.musicDir;
-				audio.currentTime = data.musicPos;
+				audio.src = data.soundFile;
+				audio.currentTime = data.musicPos || 0;
 				
 				if ( src == null && analyser == null )
 				{
@@ -539,7 +761,6 @@
 					
 				if ( !elements.textContainer.is( ":visible" ) )
 				{
-				
 					elements.textContainer.show( );
 					elements.textContainer.css( "opacity", "0" );
 					elements.textContainer.animate( { opacity: "1" }, 1000, function( )
@@ -548,18 +769,27 @@
 					} );
 				}
 				
+				if ( data.empty )
+				{
+					$( "#musicPlayingTitle" ).html( "영상 큐가 비었습니다." );
+				}
+				else
+				{
+					$( "#musicPlayingTitle" ).html( "현재 재생 중 ..." );
+				}
+				
 				elements.title.animate( { opacity: "0" }, 1000, function( )
 				{
 					elements.title.animate( { opacity: "1" }, 1000 );
 					
-					elements.title.html( data.musicName );
+					elements.title.html( data.videoName || "영상을 추가하세요." );
 				} );
 				
 				elements.artist.animate( { opacity: "0" }, 1000, function( )
 				{
 					elements.artist.animate( { opacity: "1" }, 1000 );
 					
-					elements.artist.html( data.musicArtist );
+					<!-- elements.artist.html( data.videoArtist || "Youtube" ); -->
 				} );
 				
 				elements.pos.animate( { opacity: "0" }, 1000, function( )
@@ -567,30 +797,78 @@
 					elements.pos.animate( { opacity: "1" }, 1000 );
 				} );
 				
-				if ( data.musicCover != null )
+				if ( data.videoFile != null && data.videoFile != "" )
 				{
-					$("#musicVideo").hide();
+					elements.videoContainer.attr( "src", data.videoFile );
+					elements.videoContainer.load( );
+					
+					
+					elements.videoContainer[ 0 ].currentTime = data.musicPos;
+					
+					elements.videoContainer.css( "opacity", "0" );
+					elements.videoContainer.show( );
+					elements.videoContainer.animate( { opacity: "1" }, 1500 );
+					
 					elements.bgBuffer.css( "backgroundImage", elements.bg.css( "backgroundImage" ) );
-					elements.bg.css( "backgroundImage", "url( '" + data.musicCover + "' )" );
+					elements.bg.css( "backgroundImage", "url( 'images/intro/" + ( Math.floor( Math.random( ) * 13 ) + 1 ) + ".png' )" );
+					
 					elements.bgBuffer.css( "opacity", "1" );
-					elements.bgBuffer.animate( { opacity: "0" }, 500 );
+					elements.bgBuffer.animate( { opacity: "0" }, Math.clamp( data.videoLength - data.musicPos, 500, 5000000 ) );
+					
+					
+					<!-- if ( videoSynchronizer == null ) -->
+					<!-- { -->
+						<!-- videoSynchronizer = setInterval( function( ) -->
+						<!-- { -->
+							<!-- if ( typeof audio == "undefined" || audio.paused ) return; -->
+							
+							<!-- console.log( "runned" ); -->
+							<!-- elements.videoContainer[ 0 ].currentTime = audio.currentTime; -->
+						<!-- }, 20000 ); -->
+					<!-- } -->
 				}
-				else if ( data.musicVideo )
+				else
 				{
-					console.log(data.musicVideo);
-					$("#musicVideo").show();
-					$("#musicVideo").attr("src", data.musicVideo);
-					//동영상을 다시 load 함
-					$("#musicVideo").load();
-					$( "#musicVideo" ).get(0).play();
+					if ( !elements.bgBuffer.is( ":visible" ) || !elements.bg.is( ":visible" ) )
+					{
+						elements.bgBuffer.show( );
+						elements.bg.show( );
+					}
+						
+					<!-- elements.bgBuffer.css( "backgroundImage", elements.bg.css( "backgroundImage" ) ); -->
+					<!-- elements.bg.css( "backgroundImage", "url( 'images/intro/" + ( Math.floor( Math.random( ) * 7 ) + 1 ) + ".png' )" ); -->
+					
+					elements.videoContainer.css( "opacity", "1" );
+					elements.videoContainer.animate( { opacity: "0" }, 1500, function( )
+					{
+						elements.videoContainer.hide( );
+					} );
 				}
-				
-				<!-- $( "#bgCover" ).css( "backgroundImage", "url( '" + data.musicCover + "' )" ); -->
-				<!-- $( "#bgCover" ).css( "opacity", "0" ); -->
-				<!-- $( "#bgCover" ).animate( { opacity: "1" }, 500 ); -->
-				
-				notify( "음악 재생", data.musicArtist + " - " + data.musicName );
 			});
+			
+			socket.on( "kickResult", function( data )
+			{
+				$.notify( {
+					icon: "glyphicon glyphicon-warning-sign",
+						title: "강제 퇴장 처리됨 :",
+						message: data.message
+					},
+					{
+					allow_dismiss: true,
+					type: "danger",
+					placement: {
+						from: "bottom",
+						align: "center"
+					},
+					newest_on_top: true,
+					animate: {
+						enter: "animated zoomInUp",
+						exit: "animated zoomOutDown"
+					},
+					delay: 0,
+					timer: 1000
+				} );
+			} );
 			
 			socket.on( "music_changebg", function( data )
 			{
@@ -601,9 +879,10 @@
 			} );
 			
 			socket.on( "music_play", function( data ) {
-				if ( audio != null )
+				if ( audio != null && audio.src != "" )
 				{
-					audio.play();
+					audio.play( );
+					elements.videoContainer.get( 0 ).play( );
 				}
 			});
 			
@@ -611,6 +890,7 @@
 				if ( audio != null )
 				{
 					audio.currentTime = Number( data );
+					elements.videoContainer[ 0 ].currentTime = audio.currentTime;
 				}
 			});
 			
@@ -658,53 +938,146 @@
 				}, delay || 3000 );
 			}
 			
-			function imageUpload( )
+			//http://vucket.com/index.php/topic/view/36
+			function urlParameters(url, paramName)
 			{
-				var photo = $( "#photo" );
-				var file = photo.files[0];
-				
-				console.log("File name: " + file.fileName);
-				console.log("File size: " + file.fileSize);
-			}
+				var parameters = (url.slice(url.indexOf('?') + 1, url.length)).split('&');
 			
-			function imageUploadButtonClicked( )
-			{
-				var formData = new FormData( );
-				var fileObj = $( "#photo_upload" );
-				
-				formData.append( "photoFile", fileObj[0].files[0] );
-				<!-- for(var i=0; i<$('#photo_upload')[0].files.length; i++){ -->
-					<!-- formData.append('uploadFile', $('#photo_upload')[0].files[0 ]); -->
-				<!-- } -->
-			 
-				$.ajax({
-					url: '/upload',
-					data: formData,
-					processData: false,
-					contentType: false,
-					type: 'POST',
-					success: function (data) {
-						alert("이미지 업로드 성공");
+				for (var i = 0; i < parameters.length; i++) {
+					var varName = parameters[i].split('=')[0];
+					
+					if (varName.toUpperCase() == paramName.toUpperCase()) {
+						return decodeURIComponent(parameters[i].split('=')[1]);
 					}
-				});
-			}
+				}
+			};
 			
-			function voteRun( )
+			function queueContainerStatus( status )
 			{
-				//voteURLTextField
-				var url = $( "#voteURLTextField" ).val( ).trim( );
+				var element = $( "#voteContainer" );
 				
-				if ( url.length > 0 )
-				{
-				// under construction
-					socket.emit( "voteCreate", {
-						url: url
+				if ( element.is( ":visible" ) )
+				{	
+					element.css( "animation", "fadeOutDown 0.5s" );
+					element.css( "opacity", "1" );
+					element.animate( { opacity: 0 }, 500, function( )
+					{
+						element.hide( );
 					} );
 				}
 				else
 				{
-					alert( "error");
+					element.css( "opacity", "1" );
+					element.css( "animation", "fadeInUp 0.5s" );
+					element.show( );
+					element.animate( { opacity: 1 }, 500 );
 				}
+			}
+			
+			function queueRegister( )
+			{
+				//voteURLTextField
+				controlDisableTemp( $( "#voteRunButton" ) );
+				
+				var url = $( "#voteURLTextField" ).val( ).trim( );
+				
+				if ( url.length > 0 )
+				{
+					var isYoutube = urlParameters( url, "v" );
+					
+					if ( isYoutube != null )
+					{
+						<!-- $.notify( { -->
+							<!-- icon: "glyphicon glyphicon-warning-sign", -->
+								<!-- title: "영상 추가 요청됨 :", -->
+								<!-- message: "영상 추가가 서버에 요청되었습니다, 목록에 추가되기까지 시간이 걸릴 수 있습니다." -->
+							<!-- }, -->
+							<!-- { -->
+							<!-- allow_dismiss: true, -->
+							<!-- type: "success", -->
+							<!-- placement: { -->
+								<!-- from: "bottom", -->
+								<!-- align: "center" -->
+							<!-- }, -->
+							<!-- newest_on_top: true, -->
+							<!-- animate: { -->
+								<!-- enter: "animated zoomInUp", -->
+								<!-- exit: "animated zoomOutDown" -->
+							<!-- }, -->
+							<!-- delay: 3000, -->
+							<!-- timer: 1000 -->
+						<!-- } ); -->
+						
+						socket.emit( "queueRegister", {
+							url: url
+						} );
+						
+						queueContainerStatus( false );
+						$( "#voteURLTextField" ).val( "" );
+						
+						<!-- $( "#voteRunButton" ).attr( "disabled", true ); -->
+					}
+					else
+					{
+						startAnimation( "jello 0.5s", "#voteURLTextField" );
+						
+						$.notify( {
+							icon: "glyphicon glyphicon-warning-sign",
+								title: "영상 추가 실패 :",
+								message: "올바르지 않은 주소를 입력했습니다."
+							},
+							{
+							allow_dismiss: true,
+							type: "warning",
+							placement: {
+								from: "bottom",
+								align: "center"
+							},
+							newest_on_top: true,
+							animate: {
+								enter: "animated zoomInUp",
+								exit: "animated zoomOutDown"
+							},
+							delay: 2000,
+							timer: 1000
+						} );
+					}
+				}
+				else
+				{
+					startAnimation( "jello 0.5s", "#voteURLTextField" );
+					
+					$.notify( {
+						icon: "glyphicon glyphicon-warning-sign",
+							title: "영상 추가 실패 :",
+							message: "올바르지 않은 주소를 입력했습니다."
+						},
+						{
+						allow_dismiss: true,
+						type: "warning",
+						placement: {
+							from: "bottom",
+							align: "center"
+						},
+						newest_on_top: true,
+						animate: {
+							enter: "animated zoomInUp",
+							exit: "animated zoomOutDown"
+						},
+						delay: 2000,
+						timer: 1000
+					} );
+				}
+			}
+			
+			// https://gist.github.com/Papacidero/5195681
+			function startAnimation (animationProprierties , targetElementClass) {
+				var targetElement = $(targetElementClass)
+				targetElement.css('animation', animationProprierties);
+				targetElement.on('animationend webkitAnimationEnd oanimationend MSAnimationEnd', function () {
+				targetElement.css('animation','');
+				targetElement.off();
+				});
 			}
 		</script>
 		<script src="javascripts/visualizer.js"></script>
@@ -733,17 +1106,17 @@
 						<p id="agreeContainerTitle">ReguStreaming 에 접속을 환영합니다.</p>
 						<p id="welcomeClientCount">0명의 사람들이 접속 중입니다.</p>
 						
-						<input type="text" name="nickNameTextField" class="nickNameTextField" id="nickNameTextField" placeholder="닉네임 입력" autofocus />
-						<button type="button" class="btn btn-default" id="agreeConnectButton">접속</button>
+						<input type="text" name="nickNameTextField" class="reguTextField" id="nickNameTextField" placeholder="닉네임 입력" autofocus />
+						<button type="button" class="btn btn-primary" id="agreeConnectButton">접속</button>
 					</div>
 					
 					
 					<div id="mainTextContainer" style="display: none;">
-						<font id="musicPlayingTitle">현재 재생 중 ...</font>
-						<font id="musicTitle">Music Title</font>
-						<font id="musicArtist">Music Artist</font>
+						<font id="musicPlayingTitle">영상 큐가 비었습니다.</font>
+						<font id="musicTitle">영상을 추가하세요.</font>
+						<!-- <font id="musicArtist"></font> -->
 						
-						<p id="musicPosition">Music Pos / Max</p>
+						<p id="musicPosition">0:00 / 0:00</p>
 						
 						<!-- <div class="musicVolumeControlContainer"> -->
 							<!-- <img src="images/icon/volume.png" id="musicVolumeControlIcon"></span> -->
@@ -754,23 +1127,24 @@
 					<div id="voteContainer" style="display: none;">
 						<div id="voteContainerTitle">
 							<p id="voteContainerTitleText">
-								투표 (Dev)
+								영상 목록에 추가
 							</p>
 							
-							<p class="containerMiddleText" style="margin-top: 24px">투표할 음악을 골라주세요 ...</p>
-							<p class="containerSmallText">띠요오오옹.</p>
+							<p class="containerMiddleText" style="margin-top: 24px">목록에 추가할 Youtube 영상 주소를 입력하세요.</p>
+							<p class="containerSmallText">- 영상 추가 후 30초 동안 추가가 불가능합니다.</p>
+							<p class="containerSmallText">- 7분 이상의 영상 추가는 불가능합니다.</p>
 							
-							<input type="text" name="voteURLTextField" class="voteURLTextField" id="voteURLTextField" placeholder="Youtube URL 입력" autofocus />
+							<input type="text" name="voteURLTextField" class="reguTextField" id="voteURLTextField" placeholder="Youtube URL 입력" autofocus />
 							
-							<button type="button" class="btn btn-default" id="voteCancelButton" onclick="$( '#voteContainer' ).hide();">취소</button>
-							<button type="button" class="btn btn-default" id="voteRunButton" onclick="voteRun()">투표 실행</button>
+							<button type="button" class="btn btn-default" id="voteCancelButton" onclick="queueContainerStatus( false );">취소</button>
+							<button type="button" class="btn btn-primary" id="voteRunButton" onclick="queueRegister( );">영상 목록에 추가</button>
 						</div>
 					</div>
 					
 					
 					<div id="chatTextFieldContainer">
-						<div id="chatContainerTitleBase">
-							<p id="chatContainerTitle">
+						<div id="chatContainerTitleBar">
+							<p class="containerTitle" id="chatContainerTitle">
 								채팅
 							</p>
 							
@@ -778,14 +1152,14 @@
 						</div>
 						<!-- <form action="url" method="GET"> -->
 							<!-- 닉네임 : -->
-						<input type="text" name="chatTextField" class="chatTextField" id="chatTextField" placeholder="채팅 입력" autofocus />
+						<input type="text" name="chat" class="reguTextField" id="chatTextField" placeholder="채팅 입력" autofocus />
 						<div class="chatBoxOutter">
 							<div class="chatBox">
 							
 							</div>
 						</div>
 						
-						<button type="button" class="btn btn-default" id="voteCreateButton" onclick="$( '#voteContainer' ).show();">투표 생성</button>
+						<button type="button" class="btn btn-primary" id="voteCreateButton" onclick="queueContainerStatus( true );">영상 추가</button>
 						
 						<!-- <form name="imageUploadForm" id="imageUploadForm" style="z-index: 1; bottom: 0; position: absolute;" action="/upload" method="post" enctype="multipart/form-data"> -->
 							<!-- <input type="file" id="photo_upload"> -->
@@ -804,17 +1178,39 @@
 						<!-- </form> -->
 					</div>
 					
-					
-					
+					<div id="queueContainer">
+						<div id="queueContainerTitleBar">
+							<p class="containerTitle" id="queueContainerTitle">
+								영상 목록
+							</p>
+						</div>
+						
+						<div class="queueContainerVideoList" id="queueContainerVideoList">
+							<!-- <div class="queueContainerVideoChild" id="queueContainerVideoChild_0"> -->
+								<!-- <p class="queueContainerVideoChildIndex" id="queueContainerVideoChildIndexRecentVideo"> -->
+									<!-- 다음 영상 -->
+								<!-- </p> -->
+								
+								<!-- <div class="queueContainerVideoChildThumbnail"> -->
+									<!-- <div class="queueContainerVideoChildThumbnailCover"> -->
+										<!-- <p class="queueContainerVideoChildTitle"> -->
+											<!-- 나나치 도시가타이 -->
+										<!-- </p> -->
+									<!-- </div> -->
+								<!-- </div> -->
+							<!-- </div> -->
+						</div>
+					</div>
 					
 					<div id="footer">
 						<font id="footerTitle">Copyright 2018. <a href="https://steamcommunity.com/profiles/76561198011675377/" target="_blank" class="aRegu">ReguMaster</a> all rights reserved.</font>
 					</div>
-				
 				</div>
-				<video width="100%" height="100%" style="z-index: -1; position: absolute; top: 0; display: inline; object-fit: cover;" id="musicVideo" muted>
-		  <source src="" type="video/mp4">
-		</video>
+				
+				<video width="100%" height="100%" id="musicVideo" muted>
+					<source src="" type="video/mp4">
+				</video>
+				
 				<canvas id="canvas" style="position:absolute; top:0%; left:0px; z-index:0"></canvas>
 		</div>
 	</body>

@@ -9,15 +9,18 @@ const ChatManager = { };
 const path = require( "path" );
 const consoleColor = require( "colors" );
 const Main = require( "../app.js" );
-const ClientManager = require( "./clientmanager.js" );
+const ClientManager = require( "../client.js" );
+const Logger = require( "./logger.js" );
 
 ChatManager.test = 110;
-ChatManager.ioEventConnection = function( socket, client )
+
+ClientManager.hooks.push( function( socket, client )
 {
+	var ipAddress = socket.handshake.address;
+	
 	socket.on( "chatPost", ( data ) =>
 	{
 		var chatMessage = data.chatMessage;
-		console.log("Chat received... " + chatMessage);
 		
 		// chatMessage = chatMessage.replace(/\<|\>|\"|\'|\%|\;|\(|\)|\&|\+|\-/g, "_#XSSDETECTED_");
 		
@@ -38,17 +41,23 @@ ChatManager.ioEventConnection = function( socket, client )
 			// return;
 		// }
 		
-		Main.io.emit( "chatReceive", {
-			// name: client.name,
-			name: client.name + "#" + client.userID,
-			chatMessage: chatMessage
+		
+		
+		ClientManager.getAll( true ).forEach( function( client2, index2 )
+		{
+			client2.socket.emit( "chatReceive", {
+				name: client.name + "#" + client.userID,
+				chatMessage: chatMessage
+			} );
 		} );
+		
+		Logger.write( Logger.LogType.Info, `[Chat] ${ client.name }#${ client.userID } ${ ipAddress } : ${ chatMessage }` );
 	} );
 	
 	// socket.on( "chatReceive", ( data ) =>
 	// {
 		// socket.disconnect( );
 	// } );
-}
+} );
 
 module.exports = ChatManager;
