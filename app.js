@@ -3,125 +3,190 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
-var Main = { };
+'use struct'
 
+const Main = {};
+
+const uniqid = require( "uniqid" );
 const path = require( "path" );
-const route = require( "./routes/index.js" );
-const express = require( "express" );
 const fileStream = require( "fs" );
 const passport = require( "passport" );
+const reguUtil = require( "./util" );
+const Logger = require( "./modules/logger" );
+const express = require( "express" );
+const session = require( "express-session" );
+const redisClient = require( "redis" )
+    .createClient( );
+const RedisStore = require( "connect-redis" )( session );
 const app = express( );
-const Logger = require( "./modules/logger.js" );
 
-app.use( require( "socketio-file-upload" ).router );
+const expressWebServer = require( "http" )
+    .createServer( app );
 
-let server = require( "http" ).createServer( app );
+const expressWebServerSSL = require( "https" )
+    .createServer(
+    {
+        ca: fileStream.readFileSync( "./ssl/ca_bundle.crt" ),
+        cert: fileStream.readFileSync( "./ssl/certificate.crt" ),
+        key: fileStream.readFileSync( "./ssl/private.key" )
+    }, app );
 
-Main.config = { };
-Main.config.host = "1.224.53.166";
-Main.config.port = 8085;
+const sessionMiddleware = session(
+{
+    name: "sessionID",
+    cookie:
+    {
+        maxAge: 24 * 60 * 60 * 1000, // 24 hours
+        secure: true,
+        httpOnly: true
+    },
+    store: new RedisStore(
+    {
+        client: redisClient
+    } ),
+    genid: function( req )
+    {
+        return uniqid( "session-" );
+    },
+    secret: "*",
+    resave: false,
+    saveUninitialized: true
+} );
+
+Main.config = {};
+Main.config.host = reguUtil.getLocalIP( )
+    .ipAddress;
+Main.config.devMode = process.argv[ 2 ] === "-dev";
+Main.config.enableAutoQueue = false;
 
 Main.app = app;
-Main.io = require( "socket.io" )( server );
+Main.socketIO = require( "socket.io" )( expressWebServerSSL );
+
+process.title = "ReguStreaming : Server";
+
+redisClient.on( "connect", function( )
+{
+    Logger.write( Logger.LogType.Info, `[Redis] Redis database connected.` );
+} );
+
+redisClient.on( "reconnecting", function( )
+{
+    Logger.write( Logger.LogType.Warning, `[Redis] Reconnecting ...` );
+} );
+
+redisClient.on( "error", function( err )
+{
+    Logger.write( Logger.LogType.Error, `[Redis] ERROR! : ${ err.message }` );
+} );
+
+process.on( "exit", function( code )
+{
+    Logger.write( Logger.LogType.Info, `ReguStreaming is shutting down ... ${ code }` );
+} );
+
+process.on( "uncaughtException", function( err )
+{
+    Logger.write( Logger.LogType.Error, `[SERVER] Unhandled exception!\n${ err.stack }` );
+} );
+
 Main.InitializeServer = function( )
 {
-	Logger.write( Logger.LogType.Info, "Booting server ..." );
-	require( "console-title" )( "ReguStreaming : Server" );
-	
-	app.use( express.static( path.join( __dirname, "public" ) ) );
-	// app.use( express.static( path.join( __dirname, "userUploaded" ) ) );
-	app.use( "/files", express.static( "public/userfiles" ) );
-	app.use( express.urlencoded( ) );
-	
-	app.use(require('cookie-parser')());
-	app.use(require('express-session')({
-	  secret: 'keyboard cat',
-	  resave: true,
-	  saveUninitialized: true
-	}));
-	app.use(require('body-parser').urlencoded({ extended: true }));
-	app.use(passport.initialize());
-	app.use(passport.session());
+    Logger.write( Logger.LogType.Info, "Booting server ..." );
+    require( "console-title" )( "ReguStreaming : Server" );
 
-	app.use( "/", route );
-	
-	app.use( function( req, res, next )
-	{
-		res.status( 404 ).send( "404 Not Found!" );
-	} );
-	
-	app.use( function( err, req, res, next )
-	{
-		console.error( err.stack );
-		res.status( 500 ).send( "서버에서 오류가 발생했습니다." );
-	} );
-	
-	Logger.write( Logger.LogType.Info, "Booting server finished." );
+    app.use( express.static( path.join( __dirname, "public" ) ) );
+    // app.use( express.static( path.join( __dirname, "b" ) ) );
+
+    app.use( require( "body-parser" )
+        .urlencoded(
+        {
+            extended: false
+        } ) );
+    app.use( require( "compression" )( ) );
+    app.use( require( "cookie-parser" )( ) );
+    app.use( require( "socketio-file-upload" )
+        .router );
+
+    app.use( function( req, res, next )
+    {
+        // https://www.npmjs.com/package/cache-headers
+        // res.setHeader( "Cache-Control", "no-cache, no-store" );
+        res.setHeader( "X-Powered-By", "Doshigatai" );
+        next( );
+    } );
+
+    app.use( sessionMiddleware );
+    app.use( passport.initialize( ) );
+    app.use( passport.session( ) );
+
+    Main.socketIO.use( require( "express-socket.io-session" )( sessionMiddleware ) );
+
+    // app.use( require( "express-status-monitor" )(
+    // {
+    //     websocket: Main.ioSSL,
+    //     port: 443
+    // } ) );
+
+    app.set( "trust proxy", true );
+    app.set( "views", path.join( __dirname, "views" ) );
+    app.set( "view engine", "ejs" );
+    app.engine( "html", require( "ejs" )
+        .renderFile );
+
+    expressWebServer.listen( 80, "regustreaming.oa.to", function( )
+    {
+        Logger.write( Logger.LogType.Info, `[HTTP] Listening at ${ Main.config.host }:80` );
+    } );
+
+    expressWebServerSSL.listen( 443, "regustreaming.oa.to", function( )
+    {
+        Logger.write( Logger.LogType.Info, `[HTTPS] Listening at ${ Main.config.host }:443` );
+    } );
 }
 
 Main.InitializeServer( );
 
 module.exports = Main;
 
-/*
-var server = require('greenlock-express').create({
+const hook = require( "./hook" );
 
-  // Let's Encrypt v2 is ACME draft 11
-  version: 'draft-11'
-
-, server: 'https://acme-v02.api.letsencrypt.org/directory'
-  // Note: If at first you don't succeed, switch to staging to debug
-  // https://acme-staging-v02.api.letsencrypt.org/directory
-
-  // You MUST change this to a valid email address
-, email: 'smhjyh2009@gmail.com'
-
-  // You MUST NOT build clients that accept the ToS without asking the user
-, agreeTos: true
-
-  // You MUST change these to valid domains
-  // NOTE: all domains will validated and listed on the certificate
-, approveDomains: [ ]
-
-  // You MUST have access to write to directory where certs are saved
-  // ex: /home/foouser/acme/etc
-, configDir: require('path').join(require('os').homedir(), 'acme', 'etc')
-
-, app: app
-
-  // Join the community to get notified of important updates and help me make greenlock better
-, communityMember: true
-
-  // Contribute telemetry data to the project
-, telemetry: true
-
-, debug: true
-
-}).listen(80, 443);*/
-
-
-
-// var encoder = new lame.Encoder({
-    // input
-    // channels: 2,        // 2 channels (left and right)
-    // bitDepth: 16,       // 16-bit samples
-    // sampleRate: 44100,  // 44,100 Hz sample rate
-
-    // output
-    // bitRate: options.bitrate,
-    // outSampleRate: options.samplerate,
-    // mode: (options.mono ? lame.MONO : lame.STEREO) // STEREO (default), JOINTSTEREO, DUALCHANNEL or MONO
-  // });
-
-server.listen( Main.config.port, Main.config.host, function( )
+setInterval( function( )
 {
-	Logger.write( Logger.LogType.Event, "Listening at " + Main.config.host + ":" + Main.config.port );
+    hook.run( "TickTok" );
+}, 1000 );
+
+hook.register( "Initialize", function( )
+{
+    app.use( "/", function( req, res, next )
+    {
+        // request was via https, so do no special handling
+        if ( req.secure )
+            next( );
+        else
+            res.redirect( "https://" + req.headers.host + req.url );
+    } );
+    app.use( "/", require( "./routes/index" ) );
+    app.use( function( req, res, next )
+    {
+        res.status( 404 )
+            .render( "error",
+            {
+                code: 404
+            } );
+
+        Logger.write( Logger.LogType.Warning, `[SERVER] ${ req.ip || "Unknown" } requested non-exists file. -> ${ req.originalUrl }` );
+    } );
+
+    app.use( function( err, req, res, next )
+    {
+        res.status( 500 )
+            .render( "error",
+            {
+                code: 500
+            } );
+
+        Logger.write( Logger.LogType.Error, `[SERVER] ${ req.ip || "Unknown" } failed to processing. -> ${ req.originalUrl }\n${ err.stack }` );
+    } );
 } );
 
-require( "./util.js" );
-require( "./client.js" );
-
-require( "./modules/interact.js" );
-require( "./modules/queue.js" );
-require( "./modules/chat.js" );
-require( "./modules/fileupload.js" );
+require( "./server" );

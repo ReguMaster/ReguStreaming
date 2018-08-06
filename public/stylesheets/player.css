@@ -1,0 +1,1936 @@
+/*
+	ReguStreaming
+	Copyright 2018. ReguMaster all rights reserved.
+*/
+
+#topSettingButton {
+    width: 54px;
+    background-color: rgb(50, 50, 50);
+    /* background-image: url("/images/icon/setting.png");
+    background-size: 24px;
+    background-position: center center; */
+}
+
+#queueRegisterButton {
+    width: 150px;
+    /* background-image: url("/images/icon/queueRegister.png");
+    background-size: 24px;
+    background-position: center center; */
+    background-color: rgb(52, 170, 204);
+}
+
+#queueSkipVoteButton {
+    width: 82px;
+    background-color: rgb(140, 56, 56);
+}
+
+@keyframes serviceStatusIconInfoAnimate {
+    0% {
+        transform: scale( 1);
+    }
+
+    50% {
+        box-shadow: 0px 0px 16px rgb( 56, 110, 156);
+        transform: scale( 1.1);
+    }
+
+    100% {
+        transform: scale( 1);
+    }
+}
+
+@keyframes serviceStatusIconWarningAnimate {
+    0% {
+        transform: scale( 1);
+    }
+
+    50% {
+        box-shadow: 0px 0px 16px rgb( 255, 141, 58);
+        transform: scale( 1.1);
+    }
+
+    100% {
+        transform: scale( 1);
+    }
+}
+
+@keyframes serviceStatusIconDangerAnimate {
+    0% {
+        transform: scale( 1);
+    }
+
+    50% {
+        box-shadow: 0px 0px 16px rgb( 202, 64, 61);
+        transform: scale( 1.1);
+    }
+
+    100% {
+        transform: scale( 1);
+    }
+}
+
+.serviceStatusIcon {
+    position: relative;
+    width: 24px;
+    height: 24px;
+    margin-top: 6px;
+    margin-left: 6px;
+    cursor: pointer;
+    border-radius: 50%;
+    /* animation-iteration-count: infinite;
+    animation-direction: alternate;
+    animation: serviceStatusIconAnimate 1s infinite; */
+}
+
+.serviceNotificationContainer {
+    position: fixed;
+    width: 350px;
+    top: 116px;
+    left: 290px;
+    border-radius: 12px;
+    background-color: rgba( 235, 235, 235, 1);
+    z-index: 10;
+    display: none;
+}
+
+@keyframes stretch {
+    0%,
+    40%,
+    100% {
+        transform: scaleY(0.4)
+    }
+    20% {
+        transform: scaleY(1)
+    }
+}
+
+@keyframes serviceNotificationContainerBounceInDown {
+    from,
+    60%,
+    75%,
+    90%,
+    to {
+        -webkit-animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+        animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
+
+    0% {
+        opacity: 0;
+        -webkit-transform: translate3d(0, 5px, 0);
+        transform: translate3d(0, 5px, 0);
+    }
+
+    60% {
+        opacity: 1;
+        -webkit-transform: translate3d(0, 20px, 0);
+        transform: translate3d(0, 20px, 0);
+    }
+
+    75% {
+        -webkit-transform: translate3d(0, -10px, 0);
+        transform: translate3d(0, -10px, 0);
+    }
+
+    90% {
+        -webkit-transform: translate3d(0, 5px, 0);
+        transform: translate3d(0, 5px, 0);
+    }
+
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes serviceNotificationContainerBounceOutUp {
+    20% {
+        -webkit-transform: translate3d(0, -10px, 0);
+        transform: translate3d(0, -10px, 0);
+    }
+
+    40%,
+    45% {
+        opacity: 1;
+        -webkit-transform: translate3d(0, 20px, 0);
+        transform: translate3d(0, 20px, 0);
+    }
+
+    to {
+        opacity: 0;
+        -webkit-transform: translate3d(0, -35px, 0);
+        transform: translate3d(0, -35px, 0);
+    }
+}
+
+
+/* #processBackgroundText {
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    top: 55%;
+    position: absolute;
+    width: 100%;
+    height: 100px;
+    text-align: center;
+    margin: 0 auto;
+    color: white;
+    font-size: 15px;
+} */
+
+.dialogBackground {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    margin: auto;
+    z-index: 10;
+    display: block;
+    display: none;
+    background-color: rgba( 0, 0, 0, 0.7);
+}
+
+.processBackground {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    margin: auto;
+    opacity: 0;
+    z-index: 50;
+    display: block;
+    display: none;
+    background-color: rgba( 0, 0, 0, 0.7);
+    /* pointer-events: none; */
+    /* background-size: 62px;
+    background-position: center center;
+    background-repeat: no-repeat;
+    background-image: url("/images/msg.gif"); */
+}
+
+.processBackgroundText {
+    width: 100%;
+    height: 15px;
+    position: absolute;
+    top: 100px;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    margin: auto;
+    font-size: 15px;
+    text-align: center;
+    color: white;
+}
+
+.processBackgroundSpinner {
+    width: 50px;
+    height: 40px;
+    /* text-align: center;
+    font-size: 10px; */
+    margin: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+}
+
+.processBackgroundSpinner>div {
+    background-color: white;
+    height: 100%;
+    width: 6px;
+    display: inline-block;
+    animation: stretch 1s infinite;
+    animation-delay: 0s;
+}
+
+.processBackgroundSpinner .rect2 {
+    animation-delay: -0.8s;
+}
+
+.processBackgroundSpinner .rect3 {
+    animation-delay: -0.6s;
+}
+
+.processBackgroundSpinner .rect4 {
+    animation-delay: -0.4s;
+}
+
+.processBackgroundSpinner .rect5 {
+    animation-delay: -0.2s;
+}
+
+.innerHeader {
+    width: 100%;
+    height: 46px;
+    min-width: 900px;
+    display: block;
+    display: none;
+    top: 0;
+    left: 0;
+    position: absolute;
+    z-index: 2;
+
+    /* width: -webkit-calc(100% - 350px);
+    width: -moz-calc(100% - 350px);
+    width: calc(100% - 350px); */
+    background-color: rgba(50, 50, 50, 0.5);
+    box-shadow: 0 0 12px rgb( 50, 50, 50);
+}
+
+#canvas {
+    display: block;
+    display: none;
+    position: absolute;
+    top: 46px;
+    left: 0px;
+    z-index: 0
+}
+
+#innerHeaderImage {
+    margin-left: 8px;
+    margin-top: 8px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.btn-blue {
+    background-color: rgb(235, 235, 235);
+    color: black;
+    border-color: #9ecaed;
+    box-shadow: 0 0 10px #9ecaed;
+}
+
+#agreeContainer {
+    padding: 30px;
+    width: 800px;
+    height: 100%;
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    margin: auto;
+    z-index: 1;
+    opacity: 0;
+    animation: flipInX 1s;
+}
+
+#agreeContainerTitle {
+    margin: 15px;
+    text-align: center;
+    font-size: 17px;
+    position: relative;
+
+    color: rgb( 235, 235, 235);
+}
+
+#welcomeClientCount {
+    margin: 25px;
+    margin-top: 15px;
+    text-align: center;
+    font-size: 13px;
+    position: relative;
+
+    color: rgb( 200, 200, 200);
+}
+
+#agreeConnectButton {
+    float: right;
+    padding: 13px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin: 15px;
+    position: relative;
+    font-size: 15px;
+
+}
+
+#nickNameTextField {
+    padding: 13px;
+    padding-top: 5px;
+    padding-bottom: 5px;
+    margin: 5px;
+    position: relative;
+    font-size: 15px;
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+    height: 0px;
+    border: 0;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba( 0, 0, 0, 0);
+    -webkit-border-radius: 0px;
+    border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb {
+    height: 2px;
+    width: 50px;
+    background: rgb( 235, 235, 235);
+    -webkit-border-radius: 0px;
+    border-radius: 0px;
+}
+
+.chatContainer {
+    width: 250px;
+
+    height: -webkit-calc(100% - 112px);
+    height: -moz-calc(100% - 112px);
+    height: calc(100% - 112px);
+    /* height: -webkit-calc(100% - 192px);
+    height: -moz-calc(100% - 192px);
+    height: calc(100% - 192px); */
+    top: 46px;
+    right: 0;
+    position: absolute;
+    display: block;
+    display: none;
+    /* background-color: rgba( 200, 200, 200, 0.2); */
+    /* background-size: cover;
+    background-image: url("/images/regu.png");
+    background-position: center bottom;
+    background-repeat: no-repeat; */
+    /* opacity: 0.3;
+    transition: all ease 0.2s; */
+    z-index: 3;
+}
+
+/* .chatContainer:focus {
+    opacity: 1;
+}
+
+.chatContainer:active {
+    opacity: 1;
+}
+
+.chatContainer:hover {
+    opacity: 1;
+} */
+
+/* .chatBoxOutter {
+    display: block;
+    position: relative;
+    overflow-y: auto;
+    overflow-x: hidden !important;
+    width: 100%;
+
+    height: -webkit-calc(100% - 52px);
+    height: -moz-calc(100% - 52px);
+    height: calc(100% - 52px);
+} */
+
+#sysMessageTypeIcon {
+    display: block;
+    margin: 12px;
+    margin-bottom: 0;
+}
+
+.chatBoxInner {
+    bottom: 12px;
+    max-height: 100%;
+    position: absolute;
+    overflow-x: hidden !important;
+    overflow-y: overlay !important;
+    padding-right: 17px;
+    /* Increase/decrease this value for cross-browser compatibility */
+    box-sizing: content-box;
+    /* So the width will be 100% + 17px */
+    width: 100%;
+}
+
+/* https://stackoverflow.com/questions/1882429/how-can-i-append-content-to-the-bottom-of-a-fixed-height-div-and-have-it-overflo */
+
+.chatBox {
+    display: block;
+    position: relative;
+    width: 100%;
+
+    /* height: -webkit-calc(100% - 12px);
+    height: -moz-calc(100% - 12px);
+    height: calc(100% - 12px); */
+    height: 100%;
+    /* bottom: 12px; */
+}
+
+.chatInputContainer {
+    width: 330px;
+    position: fixed;
+    bottom: 6px;
+    right: 6px;
+    z-index: 5;
+}
+
+.chatInputContainer:active {
+    opacity: 1;
+}
+
+
+.chatBoxImageUploadButton {
+    width: 28px;
+    height: 28px;
+    position: absolute;
+    right: 12px;
+    bottom: 10px;
+    margin: 0;
+    padding: 0;
+    cursor: pointer;
+}
+
+/*
+#chatContainerTitleBase
+{
+	width: 100%;
+	height: 42px;
+	position: absolute;
+	background-color: rgb( 200, 200, 200 );
+	z-index: 0;
+	
+    box-shadow: 0 0 16px #C8C8C8;
+}
+
+#chatContainerTitle
+{
+	margin: 12px;
+	font-size: 15px;
+	
+	
+	
+}
+#chatContainerTitleBase
+{
+	width: 100%;
+	height: 42px;
+	position: absolute;
+	background-color: rgb( 200, 200, 200 );
+	z-index: 0;
+	
+    box-shadow: 0 0 16px #C8C8C8;
+}
+
+#chatContainerTitle
+{
+	margin: 12px;
+	font-size: 15px;
+	
+}
+
+*/
+
+.containerTitle {
+    font-size: 15px;
+    color: white;
+}
+
+.queueVideoListContainer {
+    width: -webkit-calc(100% - 24px);
+    width: -moz-calc(100% - 24px);
+    width: calc(100% - 24px);
+
+    height: 42px;
+
+    /* background-color: rgba( 200, 200, 200, 0.2); */
+    /* background-color: rgb( 50, 50, 50); */
+    display: block;
+    display: none;
+    position: fixed;
+
+    bottom: 12px;
+    left: 12px;
+
+    z-index: 2;
+}
+
+#videoContainer {
+    z-index: 0;
+    opacity: 0;
+    position: absolute;
+    top: 46px;
+    left: 0;
+    object-fit: contain;
+    background-size: cover;
+    background-color: rgba( 0, 0, 0, 1);
+    /* width: -webkit-calc(100% - 350px);
+    width: -moz-calc(100% - 350px);
+    width: calc(100% - 350px); */
+    width: 100%;
+
+    /* height: -webkit-calc(100% - 192px);
+    height: -moz-calc(100% - 192px);
+    height: calc(100% - 192px); */
+    height: -webkit-calc(100% - 112px);
+    height: -moz-calc(100% - 112px);
+    height: calc(100% - 112px);
+
+    display: block;
+    display: none;
+}
+
+/* #queueContainerVideoList {
+    left: 0;
+    bottom: 0;
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: block;
+    overflow-x: scroll;
+    overflow-y: scroll;
+} */
+
+/* .queueContainerVideoListEmpty {
+    width: 100%;
+    height: auto;
+    text-align: center;
+
+    color: rgb( 235, 235, 235);
+    display: block;
+    display: none;
+    text-shadow: 0px 0px 6px rgba( 30, 30, 30, 1);
+}
+
+.queueContainerVideoListEmptyIcon {
+    width: 26px;
+    height: 26px;
+    top: 42px;
+    position: relative;
+}
+
+.queueContainerVideoListEmptyText {
+    font-size: 15px;
+    top: 56px;
+    position: relative;
+}
+
+.queueContainerVideoList.horizontal {
+    width: 100%;
+    height: 100%;
+    overflow: auto;
+} */
+
+.queueItem {
+    /* padding: 6px; */
+    margin: 0;
+    margin-right: 12px;
+
+    /* width: 230px; */
+    width: 42px;
+    height: 42px;
+
+    display: inline-block;
+    cursor: pointer;
+}
+
+.queueItemIndex {
+    width: 100%;
+    position: relative;
+    padding: 4px;
+    padding-left: 8px;
+    font-size: 13px;
+    margin-bottom: 0px;
+
+    color: black;
+    background-color: rgba( 153, 204, 255, 0.8);
+    box-shadow: 0 0 16px rgb( 153, 204, 255);
+}
+
+.queueItemTitle {
+    margin: 0;
+    margin-left: 12px;
+
+    display: inline-block;
+
+    position: relative;
+    text-shadow: 0px 0px 6px rgba( 0, 0, 0, 1);
+
+    color: white;
+    word-wrap: break-word;
+
+    font-size: 13px;
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
+}
+
+.queueItemAuthor {
+    width: 100%;
+    padding: 0;
+    margin: 0;
+    position: absolute;
+    bottom: 10px;
+
+    text-shadow: 0px 0px 12px rgba( 20, 20, 20, 1);
+    text-align: center;
+    font-size: 13px;
+
+    color: rgb( 235, 235, 235);
+    z-index: 2;
+    word-wrap: break-word;
+
+    cursor: pointer;
+}
+
+.queueItemDuration {
+    margin: 6px;
+    padding: 3px;
+    top: 0;
+    right: 0;
+    position: relative;
+
+    float: right;
+
+    background-color: rgba(5, 5, 5, 0.75);
+    text-shadow: 0px 0px 12px rgba( 20, 20, 20, 1);
+
+    font-size: 13px;
+
+    z-index: 2;
+
+    color: rgb( 235, 235, 235);
+}
+
+.queueItemThumbnail {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    border-radius: 50%;
+    object-fit: cover;
+
+    border: 1px solid rgb(150, 150, 150);
+    box-shadow: 0px 0px 6px rgb( 150, 150, 150);
+}
+
+.queueItemThumbnailCover {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    background-color: rgba( 15, 15, 15, 0.5);
+    /* border-radius: 8px; */
+    z-index: 1;
+}
+
+.dialogContainer {
+    width: 600px;
+    height: 390px;
+    background-color: rgba( 235, 235, 235, 0.9);
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    margin: auto;
+    z-index: 30;
+    border-radius: 10px;
+}
+
+.dialogTitleBar {
+    top: 0;
+    display: block;
+    width: 100%;
+    height: 42px;
+    position: absolute;
+    background-color: rgba( 73, 161, 255, 1);
+}
+
+.dialogTitleText {
+    margin: 12px;
+    font-size: 15px;
+    color: white;
+    text-shadow: 0px 0px 12px rgba( 100, 100, 100, 0.7);
+}
+
+#settingContainerTitleBar {
+    background-color: rgba( 60, 60, 60, 1);
+}
+
+#settingContainerCloseButton {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}
+
+#userInfoContainer {}
+
+#userInfoContainerTitleBar {
+    background-color: rgba( 60, 60, 60, 1);
+}
+
+#userInfoContainerCloseButton {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}
+
+#userInfoContainerProfileImage {
+    width: 184px;
+    height: 184px;
+    margin: 15px;
+    margin-top: 57px;
+    border-radius: 6px;
+    object-fit: cover;
+}
+
+#userInfoContainerProfileName {
+    display: inline-block;
+    bottom: 54px;
+    margin: 0;
+    font-size: 25px;
+    color: rgb( 30, 30, 30);
+}
+
+#userInfoContainerProfileIP {
+    top: 90px;
+    left: 206px;
+    position: absolute;
+}
+
+#userInfoContainerProfileRank {
+    top: 56px;
+    right: 26px;
+    position: absolute;
+}
+
+#userInfoContainerProfileProvider {
+    top: 126px;
+    right: 26px;
+    position: absolute;
+}
+
+#userInfoContainerProfileReportButton {
+    position: absolute;
+    bottom: 15px;
+    left: 15px;
+}
+
+.userRightMenu {
+    width: 250px;
+    background-color: rgba( 235, 235, 235, 1);
+    box-shadow: 0px 0px 12px rgba( 50, 50, 50, 0.5);
+    border-style: solid;
+    border-width: 1px;
+    border-color: grey;
+    border-radius: 2px;
+    position: fixed;
+    display: none;
+    z-index: 20;
+}
+
+.userRightMenu-item {
+    height: 18px;
+    font-size: 13px;
+    margin: 3px;
+    padding-top: 1px;
+    padding-left: 3px;
+    transition: all ease 0.2s;
+}
+
+.userRightMenu-item:hover {
+    background-color: rgba( 153, 204, 255, 0.8);
+    cursor: pointer;
+}
+
+#queueRegisterContainer {
+    width: 600px;
+    height: 390px;
+    background-color: rgb( 235, 235, 235);
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    right: 0;
+    left: 0;
+    margin: auto;
+    z-index: 15;
+    border-radius: 10px;
+}
+
+#queueRegisterContainerTitleBar {
+    top: 0;
+    display: block;
+    width: 100%;
+    height: 42px;
+    position: absolute;
+    background-color: rgba( 73, 161, 255, 1);
+}
+
+#queueRegisterContainerTitleText {
+    margin: 12px;
+    font-size: 15px;
+    color: white;
+    text-shadow: 0px 0px 12px rgba( 100, 100, 100, 0.7);
+}
+
+.chatMessageContainer {
+    width: -webkit-calc(100% - 20px);
+    width: -moz-calc(100% - 20px);
+    width: calc(100% - 20px);
+    height: auto;
+    overflow: hidden !important;
+    margin: 10px;
+    margin-bottom: 0;
+    padding: 0;
+    background-color: rgba( 255, 255, 255, 0.9);
+    /* background-image: linear-gradient( to right, rgba(30, 30, 30, 0.35), rgba(70, 70, 70, 0.5)); */
+    border-radius: 6px;
+
+    opacity: 0.4;
+    transition: all ease 0.2s;
+    /* box-shadow: 0 0 12px rgba( 50, 50, 50, 0.55); */
+}
+
+.chatContainer:hover .chatMessageContainer {
+    opacity: 1;
+}
+
+/* .chatMessageContainer:hover {
+    opacity: 1;
+} */
+
+.chatProfileAvatar {
+    width: 28px;
+    height: 28px;
+    margin: 6px;
+    margin-right: 2px;
+    border-radius: 50%;
+    cursor: pointer;
+}
+
+.chatReceivedTime {
+    position: relative;
+    margin: 0;
+    margin-top: 12px;
+    margin-right: 12px;
+    float: right;
+    font-size: 10px;
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
+    color: rgb( 100, 100, 100);
+
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.chatProfileName {
+    position: relative;
+    display: inline-block;
+    top: -1px;
+    margin: 0;
+    margin-left: 3px;
+    font-size: 13px;
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
+    color: rgb( 70, 70, 70);
+    cursor: pointer;
+
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+.chatMessage {
+    display: block;
+    position: relative;
+    margin-top: -6px;
+    margin-right: 12px;
+    margin-left: 42px;
+    margin-bottom: 6px;
+    font-size: 13px;
+    word-wrap: break-word;
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
+    color: rgb( 0, 0, 0);
+
+    font-weight: 600;
+
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+}
+
+#volumeControllerButton {
+    height: auto;
+    position: absolute;
+    bottom: 0;
+    margin: 10px;
+    display: block;
+    z-index: 1;
+}
+
+.reguTextField:focus {
+    outline: none;
+    border-color: #9ecaed;
+    box-shadow: 0 0 10px #9ecaed;
+}
+
+.reguTextField::placeholder {
+    /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: rgb( 30, 30, 30);
+    opacity: 1;
+}
+
+.reguTextField:-ms-input-placeholder {
+    /* Internet Explorer 10-11 */
+    color: rgb( 30, 30, 30);
+}
+
+.reguTextField::-ms-input-placeholder {
+    /* Microsoft Edge */
+    color: rgb( 30, 30, 30);
+}
+
+.reguTextField::placeholder {
+    /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: rgb( 30, 30, 30);
+    opacity: 1;
+}
+
+#chatTextField {
+    width: 330px;
+    height: 38px;
+    right: 6px;
+    bottom: 6px;
+
+    background-color: rgba( 235, 235, 235, 1);
+    color: black;
+    position: absolute;
+    padding: 5px;
+
+    font-size: 13px;
+}
+
+#voteContainer {
+    width: 400px;
+    height: 200px;
+    position: absolute;
+    z-index: 1;
+    top: 82px;
+    left: 0;
+    right: 0;
+    margin: 0 auto;
+    border-radius: 16px;
+    box-shadow: 0 0 10px rgba( 150, 150, 150, 0.5);
+    background-color: rgba( 50, 50, 50, 0.6);
+}
+
+#voteContainerAcceptButton {
+    position: absolute;
+    font-size: 15px;
+
+    bottom: 20px;
+    left: 20px;
+
+    padding-left: 32px;
+    padding-right: 32px;
+}
+
+#voteContainerRejectButton {
+    position: absolute;
+    font-size: 15px;
+
+    bottom: 20px;
+    right: 20px;
+
+    padding-left: 32px;
+    padding-right: 32px;
+}
+
+#queueRegisterURLTextField {
+    width: -webkit-calc(100% - 40px);
+    width: -moz-calc(100% - 40px);
+    width: calc(100% - 40px);
+
+    background-color: white;
+    color: black;
+    margin-left: 20px;
+    position: relative;
+    top: 32px;
+    padding: 10px;
+
+    font-size: 13px;
+}
+
+#queueRegisterStartTimeTitleText {
+    display: inline;
+    margin: 0px;
+    margin-left: 20px;
+    margin-right: 0px;
+    font-size: 12px;
+    position: relative;
+    top: 42px;
+}
+
+#queueRegisterStartTimeHelpText {
+    display: inline;
+    margin: 6px;
+    position: relative;
+    font-size: 12px;
+    top: 42px;
+}
+
+#queueRegisterStartTimeTextFieldMin {
+    width: 64px;
+    background-color: white;
+    color: black;
+    margin-left: 6px;
+    position: relative;
+    top: 42px;
+    padding: 5px;
+    font-size: 12px;
+}
+
+#queueRegisterStartTimeTextFieldSec {
+    width: 64px;
+    background-color: white;
+    color: black;
+    margin-left: 0px;
+    position: relative;
+    top: 42px;
+    padding: 5px;
+    font-size: 12px;
+}
+
+/* http://dgkim5360.tistory.com/entry/Bootstrap-modal-custom-size-and-location */
+
+.modal.modal-center {
+    text-align: center;
+}
+
+@media screen and (min-width: 768px) {
+    .modal.modal-center:before {
+        display: inline-block;
+        vertical-align: middle;
+        content: "";
+        height: 100%;
+    }
+}
+
+.modal-dialog.modal-center {
+    display: inline-block;
+    text-align: left;
+    vertical-align: middle;
+}
+
+.footer {
+    position: absolute;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    width: 100%;
+    margin: 0 auto;
+}
+
+.footerTitle {
+    position: absolute;
+    font-size: 13px;
+    left: 0;
+    right: 0;
+    bottom: 28px;
+    text-align: center;
+    color: rgb( 235, 235, 235);
+
+    /* animation: bounceInUp 2s; */
+    /* animation: footerTitleIntro 1s;
+    animation-fill-mode: forwards;
+    animation-timing-function: cubic-bezier(0.64, 0.57, 0.67, 1.53); */
+}
+
+.footerCommunityDiscord {
+    width: 42px;
+    height: 42px;
+    left: 36px;
+    bottom: 24px;
+    position: relative;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.footerCommunityGithub {
+    width: 42px;
+    height: 42px;
+    left: 64px;
+    bottom: 24px;
+    position: relative;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.currentRoomInformation {
+    font-size: 13px;
+
+    color: white;
+    text-align: right;
+    /* float: left; */
+    /* display: none; */
+    float: right;
+    opacity: 0;
+    margin-top: 14px;
+    margin-right: 14px;
+    top: 0;
+}
+
+#clientOptionButton {
+    height: 32px;
+    font-size: 15px;
+
+    position: relative;
+    display: inline;
+}
+
+.reguTextField {
+    border: 2px solid rgba( 0, 0, 0, 0);
+    border-radius: 7px;
+}
+
+.reguTextField:focus {
+    outline: none;
+    border-color: #9ecaed;
+    box-shadow: 0 0 10px #9ecaed;
+}
+
+#queueRegisterRunButton {
+    position: absolute;
+    right: 85px;
+    bottom: 15px;
+
+    animation: bounceIn 1s;
+}
+
+#queueRegisterCancelButton {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+}
+
+#blurBackground {
+    display: block;
+    position: absolute;
+    /* background: linear-gradient(to right, rgba( 100, 255, 255, 0.2 ), rgba( 100, 255, 255, 0 )); */
+    top: 20%;
+    right: 0;
+    left: -10px;
+
+    width: 80%;
+    height: 150px;
+
+    z-index: 1;
+    filter: blur(10px);
+}
+
+#mainTextContainer {
+    /* padding: 50px; */
+    width: 50%;
+    height: 150px;
+    padding: 20px;
+
+    display: block;
+    position: fixed;
+    top: 10px;
+
+    right: 25%;
+
+    /* left: 70%; */
+    /* left: 64px;  */
+    /* margin: auto; */
+    z-index: 1;
+}
+
+
+#musicPlayingTitle {
+    font-size: 17px;
+    display: block;
+
+    color: rgb( 255, 255, 255);
+    margin-bottom: 6px;
+    text-align: right;
+    margin-right: 36px;
+}
+
+.videoInformationContainer {
+    left: 50px;
+    top: 80px;
+    position: absolute;
+    background-color: rgba( 30, 30, 30, 0.5);
+    max-width: 55%;
+    max-height: 200px;
+    width: auto;
+    height: auto;
+    overflow: auto;
+    z-index: 1;
+    display: block;
+    display: none;
+}
+
+.videoTitle {
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
+    color: white;
+
+    font-size: 13px;
+    padding: 0;
+    margin: 8px;
+    top: 2px;
+    position: relative;
+    display: inline-block;
+
+    cursor: pointer;
+}
+
+.videoBuffering {
+    /* width: -webkit-calc(100% - 350px);
+    width: -moz-calc(100% - 350px);
+    width: calc(100% - 350px); */
+    width: 100%;
+
+    height: -webkit-calc(100% - 112px);
+    height: -moz-calc(100% - 112px);
+    height: calc(100% - 112px);
+
+    /* background-color: rgba( 0, 0, 0, 0.5); */
+    background-image: url("/images/msg.gif");
+    background-size: 82px;
+    background-position: center center;
+    background-repeat: no-repeat;
+    display: block;
+    display: none;
+    z-index: 2;
+    position: absolute;
+    top: 46px;
+    left: 0;
+}
+
+.videoAutoPlayAgree {
+    width: 100%;
+
+    height: -webkit-calc(100% - 112px);
+    height: -moz-calc(100% - 112px);
+    height: calc(100% - 112px);
+
+    background-color: rgba( 0, 0, 0, 0.7);
+    display: block;
+    display: none;
+    z-index: 3;
+    position: absolute;
+    top: 46px;
+    left: 0;
+}
+
+.videoAutoPlayAgreeIcon {
+    font-size: 32px;
+    display: block;
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: white;
+    margin: auto;
+    width: 32px;
+    height: 32px;
+}
+
+.videoAutoPlayAgreeText {
+    font-size: 15px;
+    display: block;
+    position: absolute;
+    top: 84px;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    color: white;
+    margin: auto;
+    width: 100%;
+    height: 16px;
+    text-align: center;
+}
+
+.videoLikeButton {
+    width: 24px;
+    height: 24px;
+    float: right;
+    cursor: pointer;
+    margin: 6px;
+    margin-top: 12px;
+
+    position: relative;
+    right: 16px;
+
+    background-image: url("/images/icon/like.png");
+    background-size: 100%;
+    background-position: center center;
+    background-repeat: no-repeat;
+
+    transition: all ease 0.3s;
+}
+
+.videoLikeButton:hover {
+    width: 24px;
+    height: 24px;
+    float: right;
+    cursor: pointer;
+    margin: 6px;
+    margin-top: 12px;
+
+    transform: scale(1.2);
+}
+
+.videoUnLikeButton {
+    width: 24px;
+    height: 24px;
+    float: right;
+    cursor: pointer;
+    margin: 6px;
+    margin-top: 12px;
+    position: relative;
+    right: 16px;
+
+    background-image: url("/images/icon/unlike.png");
+    background-size: 100%;
+    background-position: center center;
+    background-repeat: no-repeat;
+
+    transition: all ease 0.3s;
+}
+
+.videoUnLikeButton:hover {
+    width: 24px;
+    height: 24px;
+    float: right;
+    cursor: pointer;
+    margin: 6px;
+    margin-top: 12px;
+
+    transform: scale(1.2);
+}
+
+.videoPositionBar {
+    position: absolute;
+    top: 46px;
+    height: 2px;
+    background-color: rgba(0, 247, 255, 0.2);
+
+    /* width: -webkit-calc(100% - 350px);
+    width: -moz-calc(100% - 350px);
+    width: calc(100% - 350px); */
+    width: 100%;
+}
+
+.videoPositionFullBar {
+    background-color: rgba(0, 247, 255, 0.7);
+    box-shadow: 0px 0px 16px rgba(0, 247, 255, 0.95);
+    width: 100%;
+    height: 2px;
+    transition: all ease 0.5s;
+    border-top-right-radius: 50%;
+    border-bottom-right-radius: 50%;
+}
+
+.videoRequesterInformation {
+    display: inline-block;
+}
+
+.videoRequesterProfileImage {
+    border-radius: 16px;
+    /* left: 3px; */
+    margin-top: 6px;
+    position: relative;
+    cursor: pointer;
+    width: 24px;
+    height: 24px;
+
+    display: inline-block;
+}
+
+.videoRequesterProfileName {
+    display: inline-block;
+    color: white;
+    font-size: 13px;
+    top: 2px;
+    left: 6px;
+    margin: 0;
+    position: relative;
+    cursor: pointer;
+}
+
+#videoTime {
+    font-size: 15px;
+    padding: 0;
+    margin: 0;
+    margin-top: 6px;
+    margin-bottom: 6px;
+    margin-left: 16px;
+    position: relative;
+    color: white;
+}
+
+#videoLocationBar {
+    background-color: rgba( 200, 200, 200, 1);
+    width: -webkit-calc(100% - 350px);
+    width: -moz-calc(100% - 350px);
+    width: calc(100% - 350px);
+    left: 0;
+    bottom: 130px;
+    position: absolute;
+    height: 22px;
+}
+
+#videoLocationBarKnob {
+    background-color: rgba( 200, 0, 0, 1);
+    border-radius: 16px;
+    left: 0;
+    bottom: 4px;
+    position: relative;
+    width: 32px;
+    height: 32px;
+    z-index: 3;
+}
+
+#musicArtist {
+    font-size: 13px;
+    margin-left: 10px;
+    display: inline;
+
+    color: rgb( 235, 235, 235);
+    text-shadow: 0px 2px 12px rgba( 255, 255, 255, 1);
+    opacity: 0;
+    margin-right: 36px;
+}
+
+#musicPosition {
+    font-size: 13px;
+    display: block;
+    margin-right: 36px;
+
+    color: rgb( 235, 235, 235);
+    text-shadow: 0px 2px 12px rgba( 255, 255, 255, 1);
+    opacity: 0;
+    text-align: right;
+}
+
+/* The slider itself */
+
+.videoVolumeController {
+    -webkit-appearance: none;
+    /* Override default CSS styles */
+    appearance: none;
+    width: 100%;
+    /* Full-width */
+    height: 5px;
+    border-radius: 5px;
+    background: rgba( 100, 100, 100, 0.5);
+    outline: none;
+}
+
+#videoVolumeController {
+    width: 72px;
+    height: 12px;
+    position: absolute;
+    right: 52px;
+    bottom: 18px;
+    margin: 0;
+    display: block;
+    z-index: 1;
+}
+
+/* Mouse-over effects */
+
+.videoVolumeController:hover {
+    /*opacity: 1; /* Fully shown on mouse-over */
+}
+
+/* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */
+
+.videoVolumeController::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    /* Override default look */
+    appearance: none;
+    width: 20px;
+    /* Set a specific slider handle width */
+    height: 20px;
+    /* Slider handle height */
+    border-radius: 10px;
+    background: rgb( 255, 255, 255);
+    cursor: pointer;
+    /* Cursor on hover */
+}
+
+.videoVolumeController::-moz-range-thumb {
+    width: 20px;
+    /* Set a specific slider handle width */
+    height: 20px;
+    /* Slider handle height */
+    border-radius: 10px;
+    background: rgb( 255, 255, 255);
+    cursor: pointer;
+    /* Cursor on hover */
+}
+
+.videoVolumeControllerIcon {
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    right: 92px;
+    bottom: 6px;
+    margin: 4px;
+    display: block;
+    z-index: 1;
+}
+
+.imageSendIcon {
+    width: 32px;
+    height: 32px;
+    position: absolute;
+    right: 126px;
+    bottom: 6px;
+    margin: 4px;
+    display: block;
+    z-index: 1;
+    cursor: pointer;
+}
+
+.roomListContainerLoginRequired {
+    width: 100%;
+    height: 100%;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    display: none;
+}
+
+.roomListContainerLoginRequiredText {
+    font-size: 17px;
+    color: white;
+    top: 16px;
+    bottom: 0;
+    position: absolute;
+    margin: auto;
+    text-align: center;
+    text-shadow: 0px 0px 12px rgba( 0, 0, 0, 1);
+    width: 100%;
+    height: 24px;
+}
+
+.roomListContainerLoginRequiredIcon {
+    top: 0;
+    bottom: 82px;
+    left: 0;
+    right: 0;
+    position: absolute;
+    margin: auto;
+}
+
+#loginWithContainer {
+    display: block;
+    display: none;
+    margin: 0;
+    position: fixed;
+    top: 64px;
+    right: 64px;
+}
+
+#loginWithTitle {
+    font-size: 17px;
+    color: white;
+    text-align: center;
+    margin: 32px;
+}
+
+.loginWithSNSButton {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    margin: 0 auto;
+    cursor: pointer;
+    margin-left: 16px;
+}
+
+#loginWithSteamButton {}
+
+#loginWithNaverButton {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    margin: 0 auto;
+    cursor: pointer;
+
+}
+
+#loginWithGoogleButton {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    margin: 0 auto;
+    cursor: pointer;
+    margin-left: 16px;
+}
+
+#loginWithKakaoButton {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    margin: 0 auto;
+    cursor: pointer;
+    margin-left: 16px;
+}
+
+#loginWithGuestText {
+    position: relative;
+    margin: 16px;
+    margin-top: 12px;
+    float: right;
+    font-size: 15px;
+    color: white;
+}
+
+#loginWithGuestButton {
+    float: right;
+    margin-top: 5px;
+    font-size: 13px;
+    padding: 6px;
+}
+
+#logoutButton {
+    display: block;
+    display: none;
+    float: right;
+    margin-right: 6px;
+}
+
+.headerLoginInformationContainer {
+    display: inline-block;
+    display: none;
+    padding: 0;
+    position: fixed;
+    top: 64px;
+    right: 64px;
+}
+
+.headerLoginInformationContainerProfileImage {
+    margin-left: 6px;
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
+}
+
+.headerLoginInformationContainerProfileName {
+    color: white;
+    font-size: 20px;
+    display: inline-block;
+    margin: 0;
+    top: 2px;
+    right: 6px;
+    position: relative;
+}
+
+.headerLoginInformationContainerProfileProvider {
+    color: white;
+    font-size: 11px;
+    display: inline-block;
+    margin: 0;
+    top: 2px;
+    right: 6px;
+    position: relative;
+    margin-left: 6px;
+}
+
+.headerLoginInformationContainerLogout {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    cursor: pointer;
+    margin: 12px;
+}
+
+.loginInformationContainer {
+    display: inline-block;
+    padding: 0;
+}
+
+#loginInformationContainerProfileImage {
+    margin-left: 6px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+}
+
+#loginInformationContainerProfileName {
+    color: white;
+    font-size: 15px;
+    display: inline-block;
+    margin-left: 6px;
+}
+
+
+.roomListContainer {
+    /* position: fixed; */
+    width: 800px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    -moz-transform: translate(-50%, -50%);
+    -o-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
+}
+
+.roomListTitleBar {
+    width: 100%;
+    height: 32px;
+    background-color: rgba( 200, 200, 200, 0.3);
+}
+
+.roomList {}
+
+/* .roomListChildTitle {
+    color: white;
+    margin-top: 32px;
+    font-size: 17px;
+    text-align: center;
+    text-shadow: 0px 0px 6px rgba( 20, 20, 20, 0.5);
+
+} */
+
+.roomListBarTitle {
+    color: white;
+    font-size: 15px;
+    padding: 6px;
+    padding-left: 12px;
+    text-shadow: 0px 0px 6px rgba( 20, 20, 20, 0.5);
+
+}
+
+.roomChild {
+    width: 100%;
+    height: 72px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    background-color: rgba( 200, 200, 200, 0.2);
+    cursor: pointer;
+}
+
+
+.roomChildTitle {
+    height: auto;
+    /* padding: 12px; */
+    font-size: 17px;
+    top: 5px;
+    margin: 0;
+    margin-left: 24px;
+    margin-top: 12px;
+    width: auto;
+    color: white;
+    text-shadow: 0px 0px 16px rgb(32, 147, 255);
+    display: inline-block;
+}
+
+.roomChildTitleSmall {
+    height: auto;
+    padding: 12px;
+    font-size: 12px;
+
+    color: white;
+    display: inline-block;
+
+    margin-left: -10px;
+    padding-left: 0px;
+    padding-top: 21px;
+}
+
+.roomChildDesc {
+    padding: 0;
+    font-size: 13px;
+    color: white;
+    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 1);
+    margin-top: 8px;
+    margin-left: 24px;
+    position: absolute;
+    height: auto;
+}
+
+.roomChildCurrentPlaying {
+    padding: 0;
+    font-size: 11px;
+    color: white;
+    top: 0;
+    left: 27%;
+    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 1);
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
+    margin-top: 28px;
+    margin-left: 24px;
+    max-width: 55%;
+    position: absolute;
+    height: auto;
+
+    /* http://juve.tistory.com/119 */
+    padding-left: 4em;
+    text-indent: -4em;
+}
+
+.roomChildCount {
+    padding: 0;
+
+    font-size: 15px;
+    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 0.5);
+
+    color: rgb( 119, 206, 249);
+
+    float: right;
+    margin: 0 auto;
+    margin-top: 28px;
+    margin-right: 20px;
+}
+
+#roomChildConnectButton {
+    height: auto;
+    width: 100px;
+    padding: 8px;
+    font-size: 15px;
+    float: right;
+    margin: 16px;
+    margin-right: 16px;
+}
+
+/* https://www.w3schools.com/howto/howto_js_rangeslider.asp */
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+.form-signin {
+    max-width: 400px;
+    padding: 20px 20px 20px;
+    background-color: #fff;
+    border: 2px solid #e5e5e5;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+.form-signin .form-signin-heading,
+.form-signin .checkbox {
+    margin-bottom: 5px;
+}
+
+.form-signin input[type="text"],
+.form-signin input[type="password"],
+.form-signin input[type="email"],
+.form-signin input[type="number"] {
+    font-size: 15px;
+    height: auto;
+    margin-bottom: 10px;
+    width: 300px;
+    padding: 7px 10px;
+}
+
+.fade {
+    opacity: 0;
+    -webkit-transition: opacity 0.1s linear;
+    -moz-transition: opacity 0.1s linear;
+    -ms-transition: opacity 0.1s linear;
+    -o-transition: opacity 0.1s linear;
+    transition: opacity 0.1s linear;
+}

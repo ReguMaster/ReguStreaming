@@ -5,59 +5,191 @@
 
 'use strict';
 
-const ChatManager = { };
-const path = require( "path" );
-const consoleColor = require( "colors" );
-const Main = require( "../app.js" );
-const ClientManager = require( "../client.js" );
-const Logger = require( "./logger.js" );
+const ChatManager = {};
 
-ChatManager.test = 110;
+const Server = require( "../server" );
+const reguUtil = require( "../util" );
+const Logger = require( "./logger" );
+const hook = require( "../hook" );
+// let datastream = require( "../datastream" );
 
-ClientManager.hooks.push( function( socket, client )
+const xss = require( "xss" ); // https://www.npmjs.com/package/xss
+
+ChatManager.config = {};
+ChatManager.config.allowChatRegexExpression = /^[가-힣ㄱ-ㅎㅏ-ㅣ\x20|a-z|A-Z|0-9|!~?"'@#$%^&=*/()-_ ;|+.\*]+$/;
+ChatManager.config.xssRegexExpression = /\<|\>|\"|\'|\%|\;|\(|\)|\&|\+|\-/g;
+
+ChatManager.color = {
+    normal: 0,
+    red: 1,
+    green: 2,
+    blue: 3
+}
+
+ChatManager.checkXSS = function( chatMessage, callback )
 {
-	var ipAddress = socket.handshake.address;
-	
-	socket.on( "chatPost", ( data ) =>
-	{
-		var chatMessage = data.chatMessage;
-		
-		// chatMessage = chatMessage.replace(/\<|\>|\"|\'|\%|\;|\(|\)|\&|\+|\-/g, "_#XSSDETECTED_");
-		
-		// if ( chatMessage.indexOf( "_#XSSDETECTED_" ) > -1 )
-		// {
-			// Main.io.emit( "chatReceive", {
-				// name: "시스템",
-				// chatMessage: socket.handshake.address + " -> XSS 공격으로 강퇴 처리"
-			// } );
-			
-			// socket.emit( "notification", {
-				// message: "XSS 공격으로 차단되었습니다. (SERVER_REJECT_ATTACK)"
-			// } );
-			// socket.disconnect( );
-			
-			// console.log( `[Client] Client kicked! -> 'reason: XSS' 'ipAddress: ${ socket.handshake.address }'`.bold.red );
-		
-			// return;
-		// }
-		
-		
-		
-		ClientManager.getAll( true ).forEach( function( client2, index2 )
-		{
-			client2.socket.emit( "chatReceive", {
-				name: client.name + "#" + client.userID,
-				chatMessage: chatMessage
-			} );
-		} );
-		
-		Logger.write( Logger.LogType.Info, `[Chat] ${ client.name }#${ client.userID } ${ ipAddress } : ${ chatMessage }` );
-	} );
-	
-	// socket.on( "chatReceive", ( data ) =>
-	// {
-		// socket.disconnect( );
-	// } );
+    // var filtered = xssF.filter( chatMessage ); // this sucks
+
+    // callback( filtered !== chatMessage, filtered );
+
+    // return ChatManager.config.xssRegexExpression.test( chatMessage );
+
+    var filtered = xss( chatMessage );
+
+    callback( filtered !== chatMessage );
+}
+
+ChatManager.saySystem = function( roomID, message, icon, noDiscord )
+{
+    Server.sendMessage( roomID, "regu.chat",
+    {
+        message: message,
+        type: "system",
+        icon: icon
+    } );
+
+    if ( !noDiscord )
+    {
+        Server.emitDiscord( roomID,
+        {
+            embed:
+            {
+                color: 10181046,
+                description: message,
+                author:
+                {
+                    name: "시스템"
+                },
+                url: "https://regustreaming.oa.to",
+                timestamp: new Date( ),
+                footer:
+                {
+                    text: "시스템 메세지"
+                }
+            }
+        } );
+    }
+}
+
+// 이미지에 관리자 스타일 적용안댐
+ChatManager.emitImage = function( client, fileID )
+{
+    Server.sendMessage( client.roomID, "regu.chat",
+    {
+        profileImage: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ), // 최적화 필요함.
+        name: client.name,
+        userID: client.userID,
+        type: "img",
+        fileID: fileID,
+        isAdmin: client.ipAddress === "1.224.53.166" // wow doge
+    } );
+
+    Logger.write( Logger.LogType.Info, `[Chat] ${ client.information( ) } : <IMAGE> ${ fileID }` );
+}
+
+ChatManager.sayGlobal = function( message )
+{
+    Server.sendMessage( null, "regu.chat",
+    {
+        message: message,
+        type: "system",
+    } );
+}
+
+ChatManager.canChat = function( client, chatMessage )
+{
+    if ( chatMessage.length <= 0 || chatMessage.length > 200 )
+        return false;
+
+    return true;
+}
+
+hook.register( "PostClientConnected", function( client, socket )
+{
+    // ClientManager.sendMessageToAll( client.room, "regu.chat",
+    // {
+    //     profileImage: client.getPassportField( "avatar", "/images/icon/user_64.png" ),
+    //     name: client.name,
+    //     userID: client.userID,
+    //     message: "test message",
+    //     isAdmin: client.ipAddress === "1.224.53.166"
+    // } );
+
+    socket.on( "regu.chat", function( data )
+    {
+        if ( !reguUtil.isValidSocketData( data, "string" ) )
+        {
+            Logger.write( Logger.LogType.Important, `[Chat] Chat rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            return;
+        }
+
+        var chatMessage = data.trim( );
+
+        if ( !ChatManager.canChat( client, chatMessage ) )
+        {
+            socket.emit( "regu.notification",
+            {
+                type: 1,
+                title: "채팅 불가 :",
+                time: 2000,
+                message: "채팅 메세지는 1자 이상 200자 이하 되어야 합니다."
+            } );
+
+            Logger.write( Logger.LogType.Warning, `[Chat] Chat rejected. (#NotAllowed) -> ${ client.information( ) } : ${ chatMessage }` );
+
+            return;
+        }
+
+        ChatManager.checkXSS( chatMessage, function( detected )
+        {
+            if ( detected )
+            {
+                socket.emit( "regu.notification",
+                {
+                    type: 1,
+                    title: "채팅 불가 :",
+                    time: 2000,
+                    message: "채팅 메세지에 입력할 수 없는 문장입니다."
+                } );
+
+                Logger.write( Logger.LogType.Important, `[Chat] WARNING! : XSS attack detected! -> ${ client.information( ) } : ${ chatMessage }` );
+                return;
+            }
+
+            Server.sendMessage( client.room, "regu.chat",
+            {
+                profileImage: client.getPassportField( "avatar", "/images/icon/user_64.png" ),
+                name: client.name,
+                userID: client.userID,
+                rank: client.rank,
+                message: chatMessage
+            } );
+
+            Server.emitDiscord( client.room, client.name + " : " + chatMessage );
+
+            Logger.write( Logger.LogType.Info, `[Chat] ${ client.information( ) } : ${ chatMessage }` );
+        } );
+    } );
+} );
+
+hook.register( "PostClientConnected", function( client )
+{
+    ChatManager.saySystem( client.room, `${ client.name }님이 접속하셨습니다.`, "glyphicon glyphicon-user" );
+} );
+
+hook.register( "ClientDisconnected", function( client )
+{
+    ChatManager.saySystem( client.room, `${ client.name }님이 접속을 종료하셨습니다.`, "glyphicon glyphicon-user" );
+} );
+
+hook.register( "OnKicked", function( client )
+{
+    ChatManager.saySystem( client.room, client.name + "님이 서비스 약관 위반의 결과로 접속이 종료되었습니다.", "glyphicon glyphicon-ban-circle" );
+} );
+
+hook.register( "OnBanned", function( client )
+{
+    ChatManager.saySystem( client.room, client.name + "님이 서비스 약관 위반의 결과로 접속이 종료되었습니다.", "glyphicon glyphicon-ban-circle" );
 } );
 
 module.exports = ChatManager;

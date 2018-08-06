@@ -1,0 +1,348 @@
+/*
+	ReguStreaming
+	Copyright 2018. ReguMaster all rights reserved.
+*/
+
+@import url(//fonts.googleapis.com/earlyaccess/jejugothic.css);
+@import url(//fonts.googleapis.com/earlyaccess/nanumpenscript.css);
+@import url(//fonts.googleapis.com/earlyaccess/nanumgothic.css);
+
+.dialogModal {
+    width: 450px;
+    height: 500px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 1;
+    margin: auto;
+
+    background-color: rgba( 235, 235, 235, 1);
+    display: block;
+    border-radius: 10px;
+}
+
+.dialogModal-header {
+    margin: 0;
+    width: 100%;
+    height: 42px;
+    background-color: rgba( 73, 161, 255, 1);
+}
+
+.dialogModal-header-title {
+    margin: 12px;
+    color: white;
+    font-size: 15px;
+    display: inline-block;
+    text-shadow: 0px 0px 12px rgba( 100, 100, 100, 0.7);
+}
+
+input[type=checkbox] {
+    visibility: hidden;
+}
+
+html {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+
+    scrollbar-arrow-color: #333333;
+    scrollbar-base-color: #fff;
+    scrollbar-3dlight-color: #fff;
+    scrollbar-darkshadow-color: #fff;
+    scrollbar-face-color: #333333;
+    scrollbar-highlight-color: #fff;
+    scrollbar-shadow-color: #fff;
+    scrollbar-track-color: #fff;
+
+    overflow-y: hidden !important;
+    overflow-x: hidden !important;
+}
+
+body {
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    padding: 0;
+
+    font-family: 'Jeju Gothic', '맑은 고딕', 'sans-serif';
+    overflow-y: hidden !important;
+    overflow-x: hidden !important;
+}
+
+.containerMiddleText {
+    margin: 15px;
+    margin-bottom: 6px;
+    font-size: 19.5px;
+    position: relative;
+
+    color: rgb( 60, 60, 60);
+}
+
+.containerSmallText {
+    margin: 6px;
+    margin-left: 15px;
+    font-size: 13px;
+    position: relative;
+
+    color: rgb( 30, 30, 30);
+}
+
+.reguSimpleButton {
+    -webkit-appearance: none;
+    appearance: none;
+
+    border: none;
+    outline: none;
+
+    height: 100%;
+
+    cursor: pointer;
+    position: relative;
+    float: right;
+
+    transition: all ease 0.2s;
+}
+
+.reguSimpleButton:hover {
+    transform: translateY( -3px);
+}
+
+.reguSimpleButton:active {}
+
+.reguSimpleButton:disabled {
+    background-color: rgb(37, 37, 37);
+}
+
+.reguSimpleButtonText {
+    font-size: 13px;
+    color: white;
+    margin-top: 8px;
+}
+
+.reguImageButton {
+    /* Override default look */
+    -webkit-appearance: none;
+    appearance: none;
+
+    border: none;
+    outline: none;
+
+    height: 100%;
+
+    cursor: pointer;
+    position: relative;
+    float: right;
+
+    background-size: 20px;
+    background-position: center center;
+    background-repeat: no-repeat;
+
+    transition: all ease 0.2s;
+}
+
+.reguImageButton:active {
+    transform: scale( 1.1);
+}
+
+[data-notify="container"][class*="alert-pastel-"] {
+    background-color: rgb(255, 255, 255);
+    border-width: 0px;
+    border-left: 15px solid rgb(255, 240, 106);
+    border-radius: 6px;
+    box-shadow: 0px 0px 5px rgba(51, 51, 51, 0.3);
+    letter-spacing: 1px;
+    width: 512px;
+    max-width: 100%;
+}
+
+[data-notify="container"].alert-pastel-success {
+    border-left-color: rgb(82, 212, 42);
+}
+
+[data-notify="container"].alert-pastel-info {
+    border-left-color: rgb(40, 79, 255);
+}
+
+[data-notify="container"].alert-pastel-warning {
+    border-left-color: rgb(255, 179, 40);
+}
+
+[data-notify="container"].alert-pastel-danger {
+    border-left-color: rgb(255, 103, 76);
+}
+
+[data-notify="container"][class*="alert-pastel-"]>[data-notify="title"] {
+    color: rgb(80, 80, 80);
+    display: inline-block;
+    margin-bottom: 12px;
+}
+
+[data-notify="container"][class*="alert-pastel-"]>[data-notify="message"] {
+    font-weight: normal;
+    display: block;
+}
+
+.aRegu {
+    transition: all ease 0.2s;
+    text-decoration: none !important;
+}
+
+.aRegu:link {
+    color: rgb( 102, 179, 255)
+}
+
+.aRegu:visited {
+    color: rgb( 102, 179, 255)
+}
+
+.aRegu:hover {
+    color: rgb( 255, 51, 102)
+}
+
+.aRegu:active {
+    color: rgb( 102, 179, 255)
+}
+
+.backgroundCover {
+    width: 100%;
+    height: 100%;
+    background-color: rgba( 0, 0, 0, 0.7);
+    z-index: -1;
+}
+
+.background {
+    width: 100%;
+    height: 100%;
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    position: absolute;
+    z-index: -2;
+    /* filter: blur(5px);
+    -webkit-filter: blur(5px); */
+    background-image: url("/background");
+    /* animation: backgroundZoomIn 1s; */
+    /* animation-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000); */
+}
+
+@keyframes backgroundZoomIn {
+    0% {
+        transform: scale( 1.3);
+    }
+    100% {
+        transform: scale( 1);
+    }
+}
+
+::-webkit-scrollbar {
+    width: 4px;
+    height: 0px;
+    border: 0;
+}
+
+::-webkit-scrollbar-track {
+    background: rgba( 0, 0, 0, 0);
+    -webkit-border-radius: 0px;
+    border-radius: 0px;
+}
+
+::-webkit-scrollbar-thumb {
+    height: 2px;
+    width: 50px;
+    background: rgb( 235, 235, 235);
+    -webkit-border-radius: 0px;
+    border-radius: 0px;
+}
+
+.reguTextField:focus {
+    outline: none;
+    border-color: #9ecaed;
+    box-shadow: 0 0 10px #9ecaed;
+}
+
+.reguTextField::placeholder {
+    /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: rgb( 30, 30, 30);
+    opacity: 1;
+}
+
+.reguTextField:-ms-input-placeholder {
+    /* Internet Explorer 10-11 */
+    color: rgb( 30, 30, 30);
+}
+
+.reguTextField::-ms-input-placeholder {
+    /* Microsoft Edge */
+    color: rgb( 30, 30, 30);
+}
+
+.reguTextField::placeholder {
+    /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: rgb( 30, 30, 30);
+    opacity: 1;
+}
+
+/* http://dgkim5360.tistory.com/entry/Bootstrap-modal-custom-size-and-location */
+
+.modal.modal-center {
+    text-align: center;
+}
+
+@media screen and (min-width: 768px) {
+    .modal.modal-center:before {
+        display: inline-block;
+        vertical-align: middle;
+        content: "";
+        height: 100%;
+    }
+}
+
+.modal-dialog.modal-center {
+    display: inline-block;
+    text-align: left;
+    vertical-align: middle;
+}
+
+/* https://www.w3schools.com/howto/howto_js_rangeslider.asp */
+
+.navbar {
+    margin-bottom: 20px;
+}
+
+.form-signin {
+    max-width: 400px;
+    padding: 20px 20px 20px;
+    background-color: #fff;
+    border: 2px solid #e5e5e5;
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
+    border-radius: 5px;
+}
+
+.form-signin .form-signin-heading,
+.form-signin .checkbox {
+    margin-bottom: 5px;
+}
+
+.form-signin input[type="text"],
+.form-signin input[type="password"],
+.form-signin input[type="email"],
+.form-signin input[type="number"] {
+    font-size: 15px;
+    height: auto;
+    margin-bottom: 10px;
+    width: 300px;
+    padding: 7px 10px;
+}
+
+.fade {
+    opacity: 0;
+    -webkit-transition: opacity 0.1s linear;
+    -moz-transition: opacity 0.1s linear;
+    -ms-transition: opacity 0.1s linear;
+    -o-transition: opacity 0.1s linear;
+    transition: opacity 0.1s linear;
+}

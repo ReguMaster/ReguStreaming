@@ -1,0 +1,197 @@
+﻿<!--
+	ReguStreaming
+	Copyright 2018. ReguMaster all rights reserved.
+-->
+
+<!DOCTYPE html>
+
+<html lang="ko">
+
+    <head>
+        <script src="/javascripts/root.js"></script>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+        <meta property="og:locale" content="ko_KR">
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="레그 스트리밍 | 커뮤니케이션을 위한 최고의 방법">
+        <meta property="og:description" content="레그 스트리밍에서 커뮤니케이션을 위한 최고의 방법을 확인하세요, 여러 사람들과 같이 음악 또는 영상을 같이 듣고 실시간으로 커뮤니케이션 하세요.">
+        <meta property="og:url" content="https://regustreaming.oa.to/">
+
+        <title>레그 스트리밍</title>
+        <meta name="description" content="레그 스트리밍에서 커뮤니케이션을 위한 최고의 방법을 확인하세요, 여러 사람들과 같이 음악 또는 영상을 같이 듣고 실시간으로 커뮤니케이션 하세요." />
+        <meta name="keywords" content="스트리밍,레그,커뮤니케이션,채팅,소통,대화" />
+
+        <link rel="shortcut icon" href="/favicon.ico">
+        <link rel="icon" href="/favicon.ico">
+
+        <script src="//code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+        <script src="/javascripts/external/bootstrap-notify.min.js"></script>
+        <script src="https://code.jquery.com/ui/1.10.0/jquery-ui.js"></script>
+
+        <link rel="stylesheet" type="text/css" href="/stylesheets/base.css">
+        <link rel="stylesheet" type="text/css" href="/stylesheets/main.css">
+        <link rel="stylesheet" type="text/css" href="/stylesheets/animate.css">
+        <link rel="stylesheet" type="text/css" href="/stylesheets/hover.min.css">
+        <script src="/javascripts/util.js"></script>
+        <script src="/javascripts/base.js"></script>
+        <script src="/javascripts/main.js"></script>
+        <style type="text/css">
+        .tooltipUI {
+            background-color: rgba( 235, 235, 235, 0.95);
+        }
+
+        .ui-tooltip {
+            padding: 6px;
+            position: absolute;
+            z-index: 9999;
+            max-width: 600px;
+            -webkit-box-shadow: 0 0 5px #aaa;
+            box-shadow: 0 0 5px #aaa;
+            font-size: 13px;
+        }
+
+        body .ui-tooltip {
+            border-width: 2px;
+        }
+
+        </style>
+
+    </head>
+    <script type="text/javascript">
+    $( function( )
+    {
+        $( document ).tooltip(
+        {
+            tooltipClass: 'tooltipUI',
+            content: function( callback )
+            {
+                callback( $( this ).prop( 'title' ) );
+            }
+        } );
+    } );
+
+    reguStreaming.afterLoad = function( )
+    {
+        reguStreaming.discordRecommendModalContainerStatus( "<%=discordRecommend%>" === "1" );
+    }
+
+    </script>
+
+    <body>
+        <div class="background" id="background"></div>
+        <div class="backgroundCover" id="backgroundCover"></div>
+
+        <noscript>
+            <p style="color: white; position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; height: 100px; text-align: center; font-size: 15px;">
+                <span class="glyphicon glyphicon-exclamation-sign" style="font-size: 32px; display: block; margin-bottom: 16px;"></span> 이 사이트의 기능을 모두 활용하기 위해서는 자바스크립트를 활성화 시킬 필요가 있습니다.
+                <br />
+                <a class="aRegu" href="http://www.enable-javascript.com/ko/" target="_blank">브라우저에서 자바스크립트를 활성화하는 방법</a>을 참고 하세요.</p>
+        </noscript>
+
+        <div class="modal modal-center fade" data-backdrop="static" data-keyboard="false" id="dialogModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title"></h4>
+                        <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button> -->
+                    </div>
+
+                    <div class="modal-body">
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" id="dialogModalClose" data-dismiss="modal">닫기</button>
+                        <button type="button" class="btn btn-primary" id="dialogModalConfirm" data-dismiss="modal">확인</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="serviceStatusProblem" id="serviceStatusProblem" style="display: none;" onclick="reguStreaming.toggleServiceNotificationStatus( );">
+            <span class="glyphicon glyphicon-exclamation-sign" style="color: white; font-size: 15px; display: inline-block; margin-top: -3px;"></span>
+            <p class="serviceStatusProblemText">현재 서비스를 이용하실 수 없습니다, 자세한 내용은 공지사항을 확인해주세요.</p>
+        </div>
+
+        <div class="dialogModal" id="discordRecommendModal" style="display: none;">
+            <div class="dialogModal-header">
+                <p class="dialogModal-header-title">
+                    Discord 커뮤니티 안내
+                </p>
+            </div>
+
+            <p class="containerMiddleText" style="font-size: 17px; margin-top: 56px">레그 스트리밍 공식 Discord 서버에 접속하십시오.</p>
+            <p class="containerSmallText">
+                레그 스트리밍 서비스와 Discord 서비스는 서로 연동됩니다,
+                <br />원활한 서비스를 위해 접속하세요!
+            </p>
+
+            <center>
+                <iframe style="margin-top: 8px;" src="https://discordapp.com/widget?id=465562203286929408&theme=dark" width="420" height="300" allowtransparency="true" frameborder="0"></iframe>
+            </center>
+
+            <button type="button" class="btn btn-default discordRecommendModalClose" onclick="reguStreaming.discordRecommendModalContainerStatus( false );">닫기</button>
+        </div>
+
+        <div class="header" id="header">
+            <img src="images/logo.png" class="headerImage" alt="Logo" onclick="window.location = '/';" />
+            <img src="images/service/warning.png" alt="Service Status" id="serviceStatusIcon" style="display: none;" class="hvr-grow serviceStatusIcon" onclick="reguStreaming.toggleServiceNotificationStatus( );" />
+
+            <div class="serviceNotificationContainer" id="serviceNotificationContainer">
+                <!-- <div class="serviceNotificationContainerPinch" id="serviceNotificationContainerPinch"></div> -->
+                <!-- <div class="serviceNotificationItem">
+                    <p class="serviceNotificationItemTitle">마법공학 제작소 문제 발생</p>
+                    <p class="serviceNotificationItemMessage">현재 마법공학 알리스타 스킨을 제작할 수 없는 문제가 발생해 조속히 해결 중입니다. 불편을 드려 죄송합니다.</p>
+                </div>
+
+                <div class="serviceNotificationItem">
+                    <p class="serviceNotificationItemTitle">서버 문제 발생</p>
+                    <p class="serviceNotificationItemMessage">현재 지속적으로 서비스에 지연 문제가 발생해 조속히 해결 중입니다. 불편을 드려 죄송합니다.</p>
+                </div> -->
+            </div>
+
+            <div class="headerLoginInformationContainer" id="headerLoginInformationContainer">
+                <p class="headerLoginInformationContainerProfileName" id="headerLoginInformationContainerProfileName">불러오는 중 ...</p>
+                <p class="headerLoginInformationContainerProfileProvider" id="headerLoginInformationContainerProfileProvider">계정으로 로그인됨</p>
+                <img class="headerLoginInformationContainerProfileImage" id="headerLoginInformationContainerProfileImage" src="/images/avatar/guest_64.png" alt="Profile Image" />
+                <!-- <img class="headerLoginInformationContainerLogout" id="headerLoginInformationContainerSetting" src="/images/icon/logout_64.png" alt="Setting" title="사용자 계정을 설정합니다." onclick="reguStreaming.logout( );" /> -->
+                <img class="headerLoginInformationContainerLogout" id="headerLoginInformationContainerLogout" src="/images/icon/logout_64.png" alt="Logout" title="레그 스트리밍에서 로그아웃합니다." onclick="reguStreaming.logout( );" />
+            </div>
+
+            <div id="loginWithContainer">
+                <img class="loginWithSNSButton" src="/images/snslogin/steam.png" title="스팀 계정을 사용해서 로그인합니다." alt="Steam Login" onclick="reguStreaming.login( 'steam' );" />
+                <img class="loginWithSNSButton" src="/images/snslogin/twitter.png" title="트위터 계정을 사용해서 로그인합니다." alt="Twitter Login" onclick="reguStreaming.login( 'twitter' );" />
+                <img class="loginWithSNSButton" src="/images/snslogin/naver.png" title="네이버 계정을 사용해서 로그인합니다." alt="Naver Login" onclick="reguStreaming.login( 'naver' );" />
+                <img class="loginWithSNSButton" src="/images/snslogin/google.png" title="구글 계정을 사용해서 로그인합니다." alt="Google Login" onclick="reguStreaming.login( 'google' );" />
+                <img class="loginWithSNSButton" src="/images/snslogin/kakao.png" title="카카오 계정을 사용해서 로그인합니다." alt="Kakao Login" onclick="reguStreaming.login( 'kakao' );" />
+                <button type="button" class="btn btn-default" id="loginWithGuestButton" title="손님 계정으로 로그인합니다." onclick="reguStreaming.login( 'guest' );">손님 계정 로그인</button>
+                <p id="loginWithGuestText">또는</p>
+            </div>
+        </div>
+
+        <div class="roomListContainer" id="roomListContainer">
+            <div class="roomList" id="roomList">
+            </div>
+            <div class="roomListContainerLoginRequired" id="roomListContainerLoginRequired">
+                <img src="/images/icon/empty.png" alt="Empty" class="roomListContainerLoginRequiredIcon" />
+                <p class="roomListContainerLoginRequiredText">레그 스트리밍에 접속하시려면 로그인이 필요합니다.</p>
+            </div>
+        </div>
+
+        <div class="footer" id="footer">
+            <img src="/images/icon/discord_64.png" alt="Discord" class="footerCommunityDiscord" title="레그 스트리밍의 공식 디스코드에 접속합니다." onclick="window.open( 'https://discord.gg/sFxRZBC', '_blank' );" />
+            <!-- <img src="/images/icon/github_64.png" alt="Github" class="footerCommunityGithub" title="레그 스트리밍의 공식 Github에 접속합니다." onclick="" /> -->
+            <p class="footerTitle">Copyright 2018. <a href="https://steamcommunity.com/profiles/76561198011675377/" target="_blank" class="aRegu">ReguMaster</a> all rights reserved.</p>
+        </div>
+    </body>
+
+</html>

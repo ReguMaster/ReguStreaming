@@ -1,0 +1,140 @@
+﻿<!--
+	ReguStreaming
+	Copyright 2018. ReguMaster all rights reserved.
+-->
+
+<!DOCTYPE html>
+
+<html lang="ko">
+
+    <head>
+        <script src="/javascripts/root.js"></script>
+        <meta charset="utf-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+
+        <meta property="og:locale" content="ko_KR">
+        <meta property="og:type" content="website">
+        <meta property="og:title" content="레그 스트리밍 | 커뮤니케이션을 위한 최고의 방법">
+        <meta property="og:description" content="커뮤니케이션을 위한 최고의 방법">
+        <meta property="og:url" content="https://regustreaming.oa.to/">
+
+        <title>레그 스트리밍 | 로그인</title>
+        <meta name="description" content="레그 스트리밍에서 커뮤니케이션을 위한 최고의 방법을 확인하세요, 여러 사람들과 같이 음악 또는 영상을 같이 듣고 실시간으로 커뮤니케이션 하세요." />
+        <meta name="keywords" content="스트리밍,레그,커뮤니케이션,채팅,소통,대화" />
+
+        <link rel="shortcut icon" href="/favicon.ico">
+        <link rel="icon" href="/favicon.ico">
+
+        <script src="//code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+
+
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+        <!-- <script src="//code.jquery.com/jquery-1.11.0.min.js"></script> -->
+        <!-- <script src="/javascripts/external/jquery-1.12.4.min.js"></script> -->
+        <!-- <script src="/javascripts/external/jquery-3.3.1.min.js"></script> -->
+
+
+        <script src="/javascripts/external/bootstrap-notify.min.js"></script>
+
+        <!-- <link rel="stylesheet" href="//code.jquery.com/ui/1.12.1/themes/base/jquery-ui.css">
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.js"></script> -->
+
+        <!-- <link rel="stylesheet" href="/javascripts/external/jquery-ui.min.css">
+        <link rel="stylesheet" href="/javascripts/external/jquery-ui.theme.min.css">
+        <script src="/javascripts/external/jquery-ui.min.js"></script> -->
+
+        <script src="https://code.jquery.com/ui/1.10.0/jquery-ui.js"></script>
+
+        <!-- <script src="/javascripts/external/tooltipsy.min.js"></script> -->
+
+
+
+        <link rel="stylesheet" type="text/css" href="/stylesheets/main.css">
+        <link rel="stylesheet" type="text/css" href="/stylesheets/login.css">
+        <link rel="stylesheet" type="text/css" href="/stylesheets/animate.css">
+        <link rel="stylesheet" type="text/css" href="/stylesheets/hover.min.css">
+        <script src="/javascripts/util.js"></script>
+        <style type="text/css">
+        .tooltipUI {
+            background-color: rgba( 235, 235, 235, 0.95);
+        }
+
+        .ui-tooltip {
+            padding: 6px;
+            position: absolute;
+            z-index: 9999;
+            max-width: 600px;
+            -webkit-box-shadow: 0 0 5px #aaa;
+            box-shadow: 0 0 5px #aaa;
+            font-size: 13px;
+        }
+
+        body .ui-tooltip {
+            border-width: 2px;
+        }
+
+        </style>
+    </head>
+    <script type="text/javascript">
+    $( function( )
+    {
+        $( document ).tooltip(
+        {
+            tooltipClass: "tooltipUI",
+            content: function( callback )
+            {
+                callback( $( this ).prop( "title" ) );
+            }
+        } );
+    } );
+
+    </script>
+
+    <body>
+        <div id="backgroundCover"></div>
+        <div id="cover"></div>
+
+        <div class="modal modal-center fade" data-backdrop="static" data-keyboard="false" id="dialogModal" tabindex="-1" role="dialog">
+            <div class="modal-dialog modal-center" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h4 class="modal-title"></h4>
+                        <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button> -->
+                    </div>
+
+                    <div class="modal-body">
+
+                    </div>
+
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-default" id="dialogModalClose" data-dismiss="modal">닫기</button>
+                        <button type="button" class="btn btn-primary" id="dialogModalConfirm" data-dismiss="modal">확인</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="header" id="header">
+            <img src="images/logo.png" class="headerImage" alt="Logo" onclick="window.location = '/';" />
+
+            <div id="loginWithContainer">
+                <img id="loginWithSteamButton" src="https://steamcommunity-a.akamaihd.net/public/images/signinthroughsteam/sits_landing.png" title="스팀 계정을 사용해서 로그인합니다." alt="Steam Login" onclick="reguStreaming.login( 'steam' );" />
+                <!-- <br /> -->
+                <img id="loginWithNaverButton" src="/images/loginWithNaver.png" title="네이버 계정을 사용해서 로그인합니다." alt="Naver Login" onclick="reguStreaming.login( 'naver' );" />
+                <img id="loginWithKakaoButton" src="/images/loginWithKakao.png" title="카카오 계정을 사용해서 로그인합니다." alt="Kakao Login" onclick="reguStreaming.login( 'kakao' );" />
+                <button type="button" class="btn btn-default" id="loginWithGuestButton" title="손님 계정으로 로그인합니다." onclick="reguStreaming.login( 'guest' );">손님 계정 로그인</button>
+                <p id="loginWithGuestText">또는</p>
+            </div>
+        </div>
+
+        <div class="loginContainer" id="loginContainer">
+
+        </div>
+    </body>
+
+</html>

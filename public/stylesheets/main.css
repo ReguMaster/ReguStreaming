@@ -1,1027 +1,516 @@
-@import url(//fonts.googleapis.com/earlyaccess/jejugothic.css);
-@import url(http://fonts.googleapis.com/earlyaccess/nanumpenscript.css);
-
-.aRegu:link {
-	color: rgb( 255, 150, 150 )
-}
-
-.aRegu:visited {
-	color: rgb( 255, 150, 150 )
-}
-
-.aRegu:hover {
-	color: rgb( 255, 255, 150 )
-}
-
-.aRegu:active {
-	color: rgb( 255, 150, 150 )
-}
-
-#cover {
-	width:100%;
-	height:100%;
-	
-	background-color: rgba( 30, 30, 30, 0.3 );
-	
-}
-
-#backgroundCover {
-	width: 100%;
-	height: 100%;
-	
-	/* opacity: 0; */
-	/* background-image: url( /images/02.png ); */
-	background-position: center;
-	background-repeat: no-repeat;
-    background-size: cover;
-	
-	position: absolute;
-	
-	animation: backgroundCoverIntro 1s;
-	
-	/* object-fit: fit; */
-	
-	z-index: -2;
-}
-
-#backgroundBufferCover {
-	width: 100%;
-	height: 100%;
-	
-	/* opacity: 0; */
-	/* background-image: url( /images/01.png ); */
-	background-position: center;
-	background-repeat: no-repeat;
-    background-size: cover;
-	
-	position: absolute;
-	
-	z-index: -2;
-	
-	animation: backgroundCoverIntro 1s;
-	/* animation: scale 10s;  */
-}
-
-@keyframes agreeContainerFadeIn {
-	0% { transform: scale( 1.2 ); }
-    100% { transform: scale( 1 ); }
-}
-
-@keyframes agreeContainerFadeOut {
-	0% { transform: scale( 1 ); }
-    100% { transform: scale( 1.2 ); }
-}
-
-@keyframes backgroundCoverIntro {
-	0% { transform: scale( 1.1 ); }
-    100% { transform: scale( 1 ); }
-}
-
-@keyframes mainTitleIntro {
-	from {
-		margin-left: -200px;
-		opacity: 0;
-	}
-	to {
-		margin-left: 35px;
-		opacity: 1;
-	}
-}
-
-@keyframes footerTitleIntro {
-	from {
-		margin-right: -200px;
-		opacity: 0;
-	}
-	to {
-		margin-right: 0px;
-		opacity: 1;
-	}
-}
-
-@keyframes footerTitleFadeOut {
-	from {
-		margin-right: 0px;
-		opacity: 1;
-	}
-	to {
-		margin-right: -200px;
-		opacity: 0;
-	}
-}
-
-
-
-@keyframes shake {
-    0% { transform: translate(1px, 1px); }
-    10% { transform: translate(-1px, -2px); }
-    20% { transform: translate(-3px, 0px); }
-    30% { transform: translate(3px, 2px); }
-    40% { transform: translate(1px, -1px); }
-    50% { transform: translate(-1px, 2px); }
-    60% { transform: translate(-3px, 1px); }
-    70% { transform: translate(3px, 1px); }
-    80% { transform: translate(-1px, -1px); }
-    90% { transform: translate(1px, 2px); }
-    100% { transform: translate(1px, -2px); }
-}
-
-@keyframes scale {
-      0% {
-            transform: scale(1.02); 
-            animation-timing-function: ease-out;
-      }
-      23% {
-            transform: scale(1);
-            animation-timing-function: ease-in;
-      }
-      50% {
-            transform: scale(1.02);
-            animation-timing-function: ease-in;
-      }
-      76% {
-            transform: scale(1);
-            animation-timing-function: ease-in;
-      }
-      100% { transform: scale(1.02); }
-}
-
-#header {
-	padding: 25px;
-	width:100%;
-	height: auto;
-	display:block;
-	position:absolute;
-	z-index: 1;
-	
-}
-
-#agreeContainer {
-	padding: 50px;
-	width:45%;
-	height: 60%;
-	background-color: rgba( 30, 30, 30, 0.25 );
-	display: block;
-	position: absolute;
-	top:0;
-	bottom:0;
-	right:0;
-	left:0; 
-	margin: auto;
-	z-index: 1;
-	opacity: 0;
-	border-radius: 60px;
-	animation: agreeContainerFadeIn 1s;
-	animation-timing-function: cubic-bezier(0.64, 0.57, 0.67, 1.53);
-}
-
-#agreeContainerTitle {
-	margin: 15px;
-	text-align: center;
-	font-size: 17px;
-	position: relative;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
-}
-
-#welcomeClientCount {
-	margin: 15px;
-	text-align: center;
-	font-size: 13px;
-	position: relative;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 200, 200, 200 );
-}
-
-#agreeConnectButton {
-	float: right;
-	padding: 13px;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	margin: 15px;
-	position: relative;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-}
-
-#nickNameTextField {
-	padding: 13px;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	margin: 15px;
-	position: relative;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-}
-
-html {
-    scrollbar-arrow-color:#333333;
-    scrollbar-base-color:#fff;
-    scrollbar-3dlight-color:#fff;
-    scrollbar-darkshadow-color:#fff;
-    scrollbar-face-color:#333333;
-    scrollbar-highlight-color:#fff;
-    scrollbar-shadow-color:#fff;
-    scrollbar-track-color:#fff;
-}
-
-::-webkit-scrollbar {
-    width: 4px;
-    height: 0px;
-    border: 0;
-}
-
-::-webkit-scrollbar-track {
-    background: rgba( 0, 0, 0, 0 );
-    -webkit-border-radius: 0px;
-    border-radius: 0px;
-}
-
-::-webkit-scrollbar-thumb {
-    height: 2px;
-    width: 50px;
-    background: rgb( 235, 235, 235 );
-    -webkit-border-radius: 0px;
-    border-radius: 0px;
-}
-
-#chatTextFieldContainer {
-	width: 350px;
-	float: right;
-	height: 100%;
-	position: relative;
-	display: block;
-	display: none;
-	background-color: rgba( 200, 200, 200, 0.6 );
-	border-left: 1px solid rgba( 100, 100, 100, 0.3 );
-	z-index: 1;
-}
-
-.chatBoxOutter {
-	display: block;
-	position: absolute;
-	bottom: 46px;
-	position: fixed;
-	overflow-y: auto;
-	overflow-x: hidden;
-	
-	/* position: expression("absolute"); */
-	width: 100%; /*수정바람*/
-	height: 85%;
-	
-	/* opacity: 0.7; /* Set transparency (for mouse-over effects on hover) */
-    /* -webkit-transition: .2s; /* 0.2 seconds transition on hover */
-    /* transition: opacity .2s; */
-}
-
 /*
-#chatContainerTitleBase
-{
-	width: 100%;
-	height: 42px;
-	position: absolute;
-	background-color: rgb( 200, 200, 200 );
-	z-index: 0;
-	
-    box-shadow: 0 0 16px #C8C8C8;
-}
-
-#chatContainerTitle
-{
-	margin: 12px;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-	
-	
-}
-#chatContainerTitleBase
-{
-	width: 100%;
-	height: 42px;
-	position: absolute;
-	background-color: rgb( 200, 200, 200 );
-	z-index: 0;
-	
-    box-shadow: 0 0 16px #C8C8C8;
-}
-
-#chatContainerTitle
-{
-	margin: 12px;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-}
-
+	ReguStreaming
+	Copyright 2018. ReguMaster all rights reserved.
 */
 
-.containerTitle {
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: black;
+.header {}
+
+.discordRecommendModal {
+    width: 450px;
+    height: 500px;
+    position: absolute;
+    top: 0;
+    left: 0;
+    bottom: 0;
+    right: 0;
+    z-index: 1;
+    margin: auto;
+
+    background-color: rgba( 235, 235, 235, 1);
+    display: block;
+    border-radius: 10px;
 }
 
-#queueContainer {
-	width: -webkit-calc(100% - 350px);
-    width:    -moz-calc(100% - 350px);
-    width:         calc(100% - 350px);
-	height: 130px;
-	margin-right: 300px;
-	background-color: rgba( 200, 200, 200, 0.6 );
-	border-top: 1px solid rgba( 100, 100, 100, 0.5 );
-	display: block;
-	display: none;
-	position: absolute;
-	bottom: 0;
-	z-index: 1;
+.discordRecommendModalTitleBar {
+    top: 0;
+    margin: 0;
+    display: block;
+    width: 100%;
+    height: 42px;
+    position: absolute;
+    background-color: rgba( 73, 161, 255, 1);
 }
 
-#queueContainerTitleBar {
-	width: 42px;
-	height: 100%;
-	position: absolute;
-	background-color: rgba( 255, 255, 255, 0.8 );
-	z-index: 0;
-	
-    box-shadow: 0 0 16px #C8C8C8;
+.discordRecommendModalTitleText {
+    margin: 12px;
+    font-size: 15px;
+    color: white;
+    text-shadow: 0px 0px 12px rgba( 100, 100, 100, 0.7);
 }
 
-#queueContainerTitle {
-	margin-left: 9px;
-	margin-top: 32px;
-	writing-mode: tb-rl;
+.discordRecommendModalClose {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
 }
 
-/* .chatBox { */
-	/* bottom: 0px; */
-	/* max-height: 100%; */
-	/* position: absolute; */
-	/* overflow: auto; */
-	/* width: 346px; */
-/* } */
-
-#musicVideo {
-	z-index: -1;
-	position: absolute;
-	top: 0;
-	left: 0;
-	display: inline;
-	object-fit: fill;
-	width: -webkit-calc(100% - 350px);
-    width:    -moz-calc(100% - 350px);
-    width:         calc(100% - 350px);
-	
-	height: -webkit-calc(100% - 130px);
-    height:    -moz-calc(100% - 130px);
-    height:         calc(100% - 130px);
+.serviceStatusProblem {
+    width: 100%;
+    height: 32px;
+    background-color: rgb( 255, 58, 58);
+    position: fixed;
+    top: 0;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    display: flex;
 }
 
-#queueContainerVideoList {
-	left: 42px;
-	bottom: 0px;
-	position: relative;
-	max-width: -webkit-calc(100% - 42px);
-    max-width:    -moz-calc(100% - 42px);
-    max-width:         calc(100% - 42px);
-	
-	width: -webkit-calc(100% - 42px);
-    width:    -moz-calc(100% - 42px);
-    width:         calc(100% - 42px);
-	height: 100%;
-	display: block;
-	/* display: table-cell; */
-	/* white-space:nowrap; */
-    overflow-x: scroll;
-	overflow-y: scroll;
-	/* cursor: pointer; */
+.serviceStatusProblemText {
+    font-size: 13px;
+    margin: 0;
+    margin-left: 8px;
+    color: white;
+    display: inline-block;
 }
 
-.queueContainerVideoList.horizontal {
+.headerImage {
+    position: fixed;
+    top: 64px;
+    left: 64px;
+    cursor: pointer;
+}
+
+@keyframes serviceStatusIconInfoAnimate {
+    0% {
+        transform: scale( 1);
+    }
+
+    50% {
+        box-shadow: 0px 0px 16px rgb( 56, 110, 156);
+        transform: scale( 1.1);
+    }
+
+    100% {
+        transform: scale( 1);
+    }
+}
+
+@keyframes serviceStatusIconWarningAnimate {
+    0% {
+        transform: scale( 1);
+    }
+
+    50% {
+        box-shadow: 0px 0px 16px rgb( 255, 141, 58);
+        transform: scale( 1.1);
+    }
+
+    100% {
+        transform: scale( 1);
+    }
+}
+
+@keyframes serviceStatusIconDangerAnimate {
+    0% {
+        transform: scale( 1);
+    }
+
+    50% {
+        box-shadow: 0px 0px 16px rgb( 202, 64, 61);
+        transform: scale( 1.1);
+    }
+
+    100% {
+        transform: scale( 1);
+    }
+}
+
+.serviceStatusIcon {
+    position: fixed;
+    width: 32px;
+    height: 32px;
+    top: 68px;
+    left: 290px;
+    cursor: pointer;
+    border-radius: 50%;
+    /* animation-iteration-count: infinite;
+    animation-direction: alternate;
+    animation: serviceStatusIconAnimate 1s infinite; */
+}
+
+.serviceNotificationContainer {
+    position: fixed;
+    width: 350px;
+    top: 116px;
+    left: 290px;
+    border-radius: 12px;
+    background-color: rgba( 235, 235, 235, 1);
+    z-index: 10;
+    display: none;
+}
+
+@keyframes serviceNotificationContainerBounceInDown {
+    from,
+    60%,
+    75%,
+    90%,
+    to {
+        -webkit-animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+        animation-timing-function: cubic-bezier(0.215, 0.61, 0.355, 1);
+    }
+
+    0% {
+        opacity: 0;
+        -webkit-transform: translate3d(0, 5px, 0);
+        transform: translate3d(0, 5px, 0);
+    }
+
+    60% {
+        opacity: 1;
+        -webkit-transform: translate3d(0, 20px, 0);
+        transform: translate3d(0, 20px, 0);
+    }
+
+    75% {
+        -webkit-transform: translate3d(0, -10px, 0);
+        transform: translate3d(0, -10px, 0);
+    }
+
+    90% {
+        -webkit-transform: translate3d(0, 5px, 0);
+        transform: translate3d(0, 5px, 0);
+    }
+
+    to {
+        -webkit-transform: translate3d(0, 0, 0);
+        transform: translate3d(0, 0, 0);
+    }
+}
+
+@keyframes serviceNotificationContainerBounceOutUp {
+    20% {
+        -webkit-transform: translate3d(0, -10px, 0);
+        transform: translate3d(0, -10px, 0);
+    }
+
+    40%,
+    45% {
+        opacity: 1;
+        -webkit-transform: translate3d(0, 20px, 0);
+        transform: translate3d(0, 20px, 0);
+    }
+
+    to {
+        opacity: 0;
+        -webkit-transform: translate3d(0, -35px, 0);
+        transform: translate3d(0, -35px, 0);
+    }
+}
+
+.serviceNotificationContainerPinch {
+    position: fixed;
+    top: 108px;
+    left: 276px;
+    background-image: url("/images/service/pinch.png");
+    background-repeat: no-repeat;
+    background-position: left top;
+}
+
+.serviceNotificationItem {
+    width: 100%;
+    height: auto;
+    padding: 0;
+    margin: 0;
+}
+
+.serviceNotificationItemTitle {
+    font-size: 15px;
+    color: rgb( 255, 255, 255);
+    padding: 8px;
+    padding-left: 12px;
+    margin: 0;
+    background-color: rgba( 255, 141, 58);
+
+    /* border-top-left-radius: 12px;
+    border-top-right-radius: 12px; */
+}
+
+.serviceNotificationItemMessage {
+    font-size: 13px;
+    color: rgb( 50, 50, 50);
+    padding: 12px;
+    margin: 0;
+}
+
+.footer {}
+
+.footerTitle {
+    position: absolute;
+    font-size: 13px;
+    left: 0;
+    right: 0;
+    bottom: 12px;
+    text-align: center;
+    color: rgb( 235, 235, 235);
+}
+
+.footerCommunityDiscord {
+    width: 36px;
+    height: 36px;
+    left: 12px;
+    bottom: 12px;
+    position: fixed;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.footerCommunityGithub {
+    width: 36px;
+    height: 36px;
+    left: 12px;
+    bottom: 12px;
+    position: fixed;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.roomListContainerLoginRequired {
     width: 100%;
     height: 100%;
-    overflow: auto;
+    position: absolute;
+    top: 0;
+    left: 0;
+    display: block;
+    display: none;
 }
 
-.queueContainerVideoChild {
-	float: left;
-	margin: 0;
-	padding: 0;
-	margin-left: 4px;
-	/* box-shadow: 0 0 18px rgb( 255, 255, 255 ); */
-	/* max-width: -webkit-calc(100% - 42px); */
-    /* max-width:    -moz-calc(100% - 42px); */
-    /* max-width:         calc(100% - 42px); */
-	width: 230px;
-	height: 125px;
-	display: inline-block;
+.roomListContainerLoginRequiredText {
+    font-size: 17px;
+    color: white;
+    top: 16px;
+    bottom: 0;
+    position: absolute;
+    margin: auto;
+    text-align: center;
+    text-shadow: 0px 0px 12px rgba( 0, 0, 0, 1);
+    width: 100%;
+    height: 24px;
 }
 
-.queueContainerVideoChildIndex {
-	width: 100%;
-	position: relative;
-	padding: 4px;
-	padding-left: 8px;
-	font-size: 13px;
-	margin-bottom: 0px;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: black;
-	background-color: rgba( 153, 204, 255, 0.8 );
-	box-shadow: 0 0 16px rgb( 153, 204, 255 );
+.roomListContainerLoginRequiredIcon {
+    top: 0;
+    bottom: 82px;
+    left: 0;
+    right: 0;
+    position: absolute;
+    margin: auto;
 }
 
-#queueContainerVideoChildIndexRecentVideo {
-	background-color: #CCE5FF;
-	box-shadow: 0 0 12px #CCE5FF;
+#loginWithContainer {
+    display: block;
+    display: none;
+    margin: 0;
+    position: fixed;
+    top: 64px;
+    right: 64px;
 }
 
-#queueContainerVideoChildIndexNextVideo {
-	background-color: rgba( 255, 255, 255, 0.9 );
-	box-shadow: 0 0 12px rgba( 255, 255, 255, 0.9 );
+#loginWithTitle {
+    font-size: 17px;
+    color: white;
+    text-align: center;
+    margin: 32px;
 }
 
-.queueContainerVideoChildTitle {
-	width: 100%;
-	height: 100%;
-	padding: 6px;
-	margin: 0;
-	/* line-height: 100px; */
-	font-weight: bold;
-	position: absolute;
-	text-shadow: 0px 0px 6px rgba( 20, 20, 20, 1 );
-	text-align: center;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
-	z-index: 2;
-	word-wrap: break-word;
+.loginWithSNSButton {
+    width: 42px;
+    height: 42px;
+    position: relative;
+    margin: 0 auto;
+    cursor: pointer;
+    margin-left: 16px;
 }
 
-.queueContainerVideoChildAuthor {
-	width: 100%;
-	height: 15px;
-	padding: 6px;
-	/* line-height: 100px; */
-	position: absolute;
-	top: 70px;
-	text-shadow: 0px 0px 6px rgba( 20, 20, 20, 1 );
-	text-align: center;
-	font-size: 13px;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
-	z-index: 2;
-	word-wrap: break-word;
+#loginWithGuestText {
+    position: relative;
+    margin: 16px;
+    margin-top: 12px;
+    float: right;
+    font-size: 15px;
+    color: white;
 }
 
-.queueContainerVideoChildLength {
-	height: 100%;
-	padding: 6px;
-	float: right;
-	display: inline;
-	top: -27px;
-	position: relative;
-	/* text-shadow: 0px 0px 6px rgba( 50, 50, 50, 0.5 ); */
-	font-size: 13px;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 50, 50, 50 );
-	z-index: 2;
-	word-wrap: break-word;
+#loginWithGuestButton {
+    float: right;
+    margin-top: 5px;
+    font-size: 13px;
+    padding: 6px;
 }
 
-.queueContainerVideoChildThumbnail {
-	width: 100%;
-	height: 100px;
-	object-fit: cover;
-	background-repeat: no-repeat;
-	background-position: center center;
-	position: relative;
-	/* background-image: url( /images/nanachi.png ); */
+#logoutButton {
+    display: block;
+    display: none;
+    float: right;
+    margin-right: 6px;
 }
 
-.queueContainerVideoChildThumbnailCover {
-	width: 100%;
-	height: 100%;
-	position: absolute;
-	background-color: rgba( 10, 10, 10, 0.5 );
-	z-index: 1;
+.headerLoginInformationContainer {
+    display: inline-block;
+    display: none;
+    padding: 0;
+    position: fixed;
+    top: 64px;
+    right: 64px;
 }
 
-#queueContainerVideoChildThumbnail {
-	
+.headerLoginInformationContainerProfileImage {
+    margin-left: 6px;
+    border-radius: 50%;
+    width: 46px;
+    height: 46px;
 }
 
-#voteContainer {
-	width: 35%;
-	height: 390px;
-	background-color: rgba( 30, 30, 30, 0.7 );
-	display: block;
-	position: absolute;
-	top:0;
-	bottom:0;
-	right:0;
-	left:0; 
-	margin: auto;
-	z-index: 2;
-	border-radius: 10px;
+.headerLoginInformationContainerProfileName {
+    color: white;
+    font-size: 20px;
+    display: inline-block;
+    margin: 0;
+    top: 2px;
+    right: 6px;
+    position: relative;
 }
 
-#voteContainerTitle {
-	top:0;
-	display: block;
-	width: 100%;
-	height: 42px;
-	position: absolute;
-	background-color: rgb( 200, 200, 200 );
-	z-index: 0;
-	
-    box-shadow: 0 0 16px #C8C8C8;
+.headerLoginInformationContainerProfileProvider {
+    color: white;
+    font-size: 11px;
+    display: inline-block;
+    margin: 0;
+    top: 2px;
+    right: 6px;
+    position: relative;
+    margin-left: 6px;
 }
 
-#voteContainerTitleText {
-	margin: 12px;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
+.headerLoginInformationContainerLogout {
+    width: 16px;
+    height: 16px;
+    display: inline-block;
+    cursor: pointer;
+    margin: 12px;
 }
 
-.containerMiddleText {
-	margin: 15px;
-	font-size: 20px;
-	position: relative;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
+.loginInformationContainer {
+    display: inline-block;
+    padding: 0;
 }
 
-.containerSmallText {
-	margin: 15px;
-	font-size: 15px;
-	position: relative;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
+#loginInformationContainerProfileImage {
+    margin-left: 6px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
 }
 
-/* https://stackoverflow.com/questions/1882429/how-can-i-append-content-to-the-bottom-of-a-fixed-height-div-and-have-it-overflo */
-.chatBox {
-	bottom: 0px;
-	max-height: 100%;
-	position: absolute;
-	overflow: auto;
-	width: 346px;
+#loginInformationContainerProfileName {
+    color: white;
+    font-size: 15px;
+    display: inline-block;
+    margin-left: 6px;
 }
 
-/* Mouse-over effects */
-.chatBox:hover {
-    /* opacity: 1; /* Fully shown on mouse-over */
+.roomListContainer {
+    /* position: fixed; */
+    width: 800px;
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    -webkit-transform: translate(-50%, -50%);
+    -moz-transform: translate(-50%, -50%);
+    -o-transform: translate(-50%, -50%);
+    -ms-transform: translate(-50%, -50%);
 }
 
-.chatMessageContainer {
-	height:32px;
-	width: -webkit-calc(100% - 8px);
-    width:    -moz-calc(100% - 8px);
-    width:         calc(100% - 8px);
-	padding-left: 6px;
-	padding-right: 6px;
-	padding-bottom: 6px;
-	overflow-y: hidden;
-	overflow-x: hidden;
-	overflow: hidden;
-	height: auto;
-	margin: 4px;
-	background-color: rgba( 50, 50, 50, 0.55 );
-	box-shadow: 0 0 12px rgba( 50, 50, 50, 0.55 );
-}
+.roomList {}
 
-.chatProfileIcon {
-	display: inline;
-	margin: 6px;
-	margin-right: 2px;
-	border-radius: 32px;
-}
-
-.chatMessage {
-	display: inline;
-	margin-left: 10px;
-	font-size: 13px;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
-}
-
-#volumeControllerButton {
-	height: auto;
-	position: absolute;
-	bottom: 0;
-	margin: 10px;
-	display: block;
-	z-index: 1;
-}
-
-.reguTextField:focus { 
-    outline: none;
-    border-color: #9ecaed;
-    box-shadow: 0 0 10px #9ecaed;
-}
-
-.reguTextField::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-    font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 30, 30, 30 );
-    opacity: 1;
-}
-
-.reguTextField:-ms-input-placeholder { /* Internet Explorer 10-11 */
-    color: red;
-}
-
-.reguTextField::-ms-input-placeholder { /* Microsoft Edge */
-    color: red;
-}
-
-.reguTextField::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
-    font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 30, 30, 30 );
-    opacity: 1;
-}
-
-#chatTextField {
-	width: 330px;
-	background-color : rgba( 235, 235, 235, 1 );
-	color: black;
-	margin: 10px;
-	position: absolute;
-	bottom: 0px;
-	padding: 5px;
-	
-	font-size: 13px;
-	font-family: 'Jeju Gothic', sans-serif;
-}
-
-#voteURLTextField {
-	width: -webkit-calc(100% - 40px);
-    width:    -moz-calc(100% - 40px);
-    width:         calc(100% - 40px);
-	
-	background-color : rgba( 235, 235, 235, 1 );
-	color: black;
-	margin-left: 20px;
-	position: absolute;
-	top: 280px;
-	padding: 10px;
-	
-	font-size: 13px;
-	font-family: 'Jeju Gothic', sans-serif;
-}
-
-#musicInfoContainer {
-	width:100%;
-	height:100%;
-	display:block;
-	position:absolute;
-	margin: auto;
-}
-
-#mainTitle
-{
-	margin-left: 15px;
-	font-size: 35px;
-	font-family: 'Nanum Pen Script', sans-serif;
-	color: rgb( 235, 235, 235 );
-	
-	
-}
-
-#leftHeader {
-	animation: mainTitleIntro 1s;
-	animation-fill-mode: forwards;
-	animation-timing-function: cubic-bezier(0.64, 0.57, 0.67, 1.53);
-}
-
-#footer
-{
-	
-}
-
-#footerTitle
-{
-	z-index: 1;
-	top: 95%;
-	right: 3%;
-	position: fixed;
-	font-size: 20px;
-	font-family: 'Nanum Pen Script', sans-serif;
-	color: rgb( 235, 235, 235 );
-	
-	animation: footerTitleIntro 1s;
-	animation-fill-mode: forwards;
-	animation-timing-function: cubic-bezier(0.64, 0.57, 0.67, 1.53);
-}
-
-#clientsDesc
-{
-	margin-top: 12px;
-	font-size: 13px;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 50, 50, 50 );
-	text-align: right;
-	width: 100%;
-	height: 32px;
-	position: absolute;
-	/* float: left; */
-	/* display: none; */
-	display: inline;
-	opacity: 0;
-	padding-right: 14px;
-	top: 0;
-}
-
-#voteCreateButton
-{
-	top: 54px;
-	right: 12px;
-	height: 32px;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-	position: absolute;
-	display: inline;
-	
-	
-}
-
-.reguTextField {
-    border: 2px solid rgba( 0, 0, 0, 0 );
-    border-radius: 7px;
-}
-
-.reguTextField:focus { 
-    outline: none;
-    border-color: #9ecaed;
-    box-shadow: 0 0 10px #9ecaed;
-}
-
-#voteRunButton
-{
-	width: auto;
-	height: 32px;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-	display: inline;
-	
-	float: right;
-	padding: 16px;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	margin-right: 30px;
-	position: absolute;
-	margin-left: 20px;
-	font-size: 15px;
-	top: 340px;
-	
-	animation: bounceIn 1s;
-}
-
-#voteCancelButton
-{
-	/* top: 0; */
-	width: 64px;
-	height: 32px;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-	display: inline;
-	
-	bottom: 0;
-	float: right;
-	padding: 16px;
-	padding-top: 5px;
-	padding-bottom: 5px;
-	margin-right: 30px;
-	position: absolute;
-	margin-left: 20px;
-	font-size: 15px;
-	
-	top: 340px;
-	right: 0;
-	margin-right: 20px;
-}
-
-#chatContainerTitleBar
-{
-	width: 100%;
-	height: 42px;
-	position: absolute;
-	background-color: rgba( 255, 255, 255, 0.8 );
-	z-index: 0;
-	
-    box-shadow: 0 0 16px #C8C8C8;
-}
-
-#chatContainerTitle
-{
-	margin: 12px;
-	font-size: 15px;
-	font-family: 'Jeju Gothic', sans-serif;
-}
-
-body {
-	/* overflow-y: hidden ! important; */
-	/* overflow-x: hidden ! important; */
-	/* min-width: 1167px; */
-}
-
-#blurBackground {
-	display: block;
-	position: absolute;
-	/* background: linear-gradient(to right, rgba( 100, 255, 255, 0.2 ), rgba( 100, 255, 255, 0 )); */
-	top: 20%;
-	right: 0;
-	left: -10px;
-	
-	width: 80%;
-	height: 150px;
-	
-	z-index: 1;
-	filter: blur(10px);
-}
-
-#mainTextContainer {
-	/* padding: 50px; */
-	width: 50%;
-	height: 150px;
-	padding: 20px;
-	
-	display: block;
-	position: fixed;
-	top: 10px;
-	
-	right: 25%;
-	
-	/* left: 70%; */
-	/* left: 64px;  */
-	/* margin: auto; */
-	z-index: 1;
+.roomChild {
+    width: 100%;
+    height: 72px;
+    border-radius: 16px;
+    margin-bottom: 12px;
+    background-color: rgba( 200, 200, 200, 0.2);
+    cursor: pointer;
 }
 
 
-#musicPlayingTitle {
-	font-size: 17px;
-	display: block;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 255, 255, 255 );
-	margin-bottom: 6px;
-	text-align: right;
-	margin-right: 36px;
+.roomChildTitle {
+    height: auto;
+    /* padding: 12px; */
+    font-size: 17px;
+    top: 5px;
+    margin: 0;
+    margin-left: 24px;
+    margin-top: 12px;
+    width: auto;
+    color: white;
+    text-shadow: 0px 0px 16px rgb(32, 255, 181);
+    display: inline-block;
 }
 
-#musicTitle
-{
-	width: 100%;
-	font-size: 25px;
-	display: block;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 255, 255, 255 );
-	opacity: 0;
-	padding-right: 36px;
-	text-align: right;
-	text-shadow: 0px 2px 12px rgba( 255, 100, 100, 1 );
+.roomChildTitleSmall {
+    height: auto;
+    padding: 12px;
+    font-size: 12px;
+
+    color: white;
+    display: inline-block;
+
+    margin-left: -10px;
+    padding-left: 0px;
+    padding-top: 21px;
 }
 
-#musicArtist
-{
-	font-size: 13px;
-	margin-left: 10px;
-	display: inline;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
-	text-shadow: 0px 2px 12px rgba( 255, 255, 255, 1 );
-	opacity: 0;
-	margin-right: 36px;
+.roomChildDesc {
+    padding: 0;
+    font-size: 13px;
+    color: white;
+    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 1);
+    margin-top: 8px;
+    margin-left: 24px;
+    position: absolute;
+    height: auto;
 }
 
-#musicPosition
-{
-	font-size: 13px;
-	display: block;
-	margin-right: 36px;
-	font-family: 'Jeju Gothic', sans-serif;
-	color: rgb( 235, 235, 235 );
-	text-shadow: 0px 2px 12px rgba( 255, 255, 255, 1 );
-	opacity: 0;
-	text-align: right;
+.roomChildCurrentPlaying {
+    padding: 0;
+    font-size: 11px;
+    color: white;
+    top: 0;
+    left: 35%;
+    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 1);
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
+    margin-top: 28px;
+    margin-left: 24px;
+    max-width: 55%;
+    position: absolute;
+    height: auto;
+
+    /* http://juve.tistory.com/119 */
+    padding-left: 4em;
+    text-indent: -4em;
 }
 
-#musicVolumeIcon
-{
-	position: absolute;
-	right: 10%;
+.roomChildCount {
+    padding: 0;
+
+    font-size: 15px;
+    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 0.5);
+
+    color: rgb( 119, 206, 249);
+
+    float: right;
+    margin: 0 auto;
+    margin-top: 28px;
+    margin-right: 20px;
 }
 
-#musicVolumeControl
-{
-	width: 100px;
-	height: 12px;
-	position: absolute;
-	right: 10px;
-	bottom: 12px;
-	margin: 8px;
-	display: block;
-	z-index: 1;
-}
-
-#musicVolumeControlIcon
-{
-	width: 32px;
-	height: 32px;
-	position: absolute;
-	right: 113px;
-	bottom: 6px;
-	margin: 4px;
-	display: block;
-	z-index: 1;
-}
-
-.imageSendIcon
-{
-	width: 32px;
-	height: 32px;
-	position: absolute;
-	right: 143px;
-	bottom: 6px;
-	margin: 4px;
-	display: block;
-	z-index: 1;
-	cursor: pointer;
-}
-
-/* https://www.w3schools.com/howto/howto_js_rangeslider.asp */
-.musicVolumeControlContainer {
-    width: 30%; /* Width of the outside container */
-}
-
-/* The slider itself */
-.musicVolumeControl {
-    -webkit-appearance: none;  /* Override default CSS styles */
-    appearance: none;
-    width: 100%; /* Full-width */
-    height: 5px;
-    border-radius: 5px;
-	background: rgba( 100, 100, 100, 0.5 );
-    outline: none; /* Remove outline */
-   /* opacity: 0.5;  Set transparency (for mouse-over effects on hover) */
-    /*-webkit-transition: .2s; /* 0.2 seconds transition on hover */
-    /*transition: opacity .2s;*/
-}
-
-/* Mouse-over effects */
-.musicVolumeControl:hover {
-    /*opacity: 1; /* Fully shown on mouse-over */
-}
-
-/* The slider handle (use -webkit- (Chrome, Opera, Safari, Edge) and -moz- (Firefox) to override default look) */ 
-.musicVolumeControl::-webkit-slider-thumb {
-    -webkit-appearance: none; /* Override default look */
-    appearance: none;
-    width: 20px; /* Set a specific slider handle width */
-    height: 20px; /* Slider handle height */
-	border-radius: 10px;
-	background: rgb( 255, 255, 255 );
-    cursor: pointer; /* Cursor on hover */
-}
-
-.musicVolumeControl::-moz-range-thumb {
-    width: 20px; /* Set a specific slider handle width */
-	height: 20px; /* Slider handle height */
-	border-radius: 10px;
-	background: rgb( 255, 255, 255 );
-    cursor: pointer; /* Cursor on hover */
-}
-
-.navbar {
-	margin-bottom: 20px;
-}
-
-.form-signin {
-	max-width: 400px;
-	padding: 20px 20px 20px;
-	background-color: #fff;
-	border: 2px solid #e5e5e5;
-	-webkit-border-radius: 5px;
-	-moz-border-radius: 5px;
-	border-radius: 5px;
-}
-
-.form-signin .form-signin-heading,
-.form-signin .checkbox {
-	margin-bottom: 5px;
-}
-
-.form-signin input[type="text"],
-.form-signin input[type="password"], .form-signin input[type="email"], .form-signin input[type="number"] {
-	font-size: 15px;
-	height: auto;
-	margin-bottom: 10px;
-	width: 300px;
-	padding: 7px 10px;
-}
-
-.fade {
-	opacity: 0;
-	-webkit-transition: opacity 0.1s linear;
-	-moz-transition: opacity 0.1s linear;
-	-ms-transition: opacity 0.1s linear;
-	-o-transition: opacity 0.1s linear;
-	transition: opacity 0.1s linear;
+#roomChildConnectButton {
+    height: auto;
+    width: 100px;
+    padding: 8px;
+    font-size: 15px;
+    float: right;
+    margin: 16px;
+    margin-right: 16px;
 }

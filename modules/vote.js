@@ -5,83 +5,290 @@
 
 'use strict';
 
-const VoteManager = { };
-const path = require( "path" );
-const consoleColor = require( "colors" );
-const Main = require( "../app.js" );
-const Logger = require( "./logger.js" );
-const horizon = require( "horizon-youtube-mp3" );
+const VoteManager = {};
+const Server = require( "../server" );
+const Logger = require( "./logger" );
+const reguUtil = require( "../util" );
+const QueueManager = require( "./queue" );
+// const ClientManager = require( "../client" );
+const ChatManager = require( "./chat" );
+const hook = require( "../hook" );
 
-VoteManager.test = 110;
+VoteManager._voteList = [ ];
+VoteManager.voteFlag = {
+    reject: 0,
+    accept: 1
+}
+VoteManager.config = {
+    TIME: 15
+}
 
-VoteManager.ioEventConnection = function( socket, client )
+VoteManager.register = function( client )
 {
-	var rand = Math.floor( Math.random()*1000); // 수정필요
-	
-	// data = { url }
-	
-	// musicDir: "sounds/21.mp3",
-		// musicName: "｢Outbreak (feat. MYLK)｣",
-		// musicArtist: "Feint",
-		// musicCover: "images/21.png"
-	socket.on( "voteCreate", function( data )
-	{
-		console.log( "vote created!");
-		VoteManager.ConvertToMp3( data.url, rand, function( err, result)
-		{
-			console.log(err, result);
-			
-			horizon.getInfo( data.url, function(err, e){
-				console.log("getinfo Success");
-				
-				MusicProvider.currentMusic = {
-					musicDir: "sounds/youtube_" + rand + ".mp3",
-					musicName: e.videoName,
-					musicArtist: "unknown",
-					musicCover: null,
-					musicVideo: e.videoFile
-				};
-				MusicProvider.MusicPlay();
-			} );
-			
-			
-			
-		} );
-		
-	} );
+    var roomID = client.room;
+
+    if ( !QueueManager.isPlaying( roomID ) )
+    {
+        return {
+            success: false,
+            reason: "영상 재생 중이 아닙니다."
+        };
+    }
+
+    // if ( ClientManager.getCount( roomID ) <= 1 )
+    // {
+    //     return {
+    //         success: false,
+    //         reason: "투표를 진행하기 위한 충분한 인원이 없습니다."
+    //     };
+    // }
+
+    if ( this.isRunningVote( roomID ) )
+    {
+        return {
+            success: false,
+            reason: "현재 투표가 이미 진행중입니다."
+        };
+    }
+
+    this._voteList[ roomID ] = {
+        startUser: client,
+        startUserName: client.name,
+        votedUser:
+        {},
+        startTime: Date.now( ),
+        interval: null
+    };
+
+    // 투표한 사람은 항상 찬성함
+    this._voteList[ roomID ].votedUser[ client.userID ] = this.voteFlag.accept;
+
+    this._voteList[ roomID ].interval = setInterval( function( )
+    {
+        if ( !VoteManager._voteList[ roomID ] )
+        {
+            console.log( "noo" );
+            return;
+        }
+
+        var data = VoteManager._voteList[ roomID ];
+
+        if ( Date.now( ) - data.startTime >= VoteManager.config.TIME * 1000 )
+        {
+            console.log( "fin" );
+
+            VoteManager.finished( roomID, data );
+        }
+    }, 1000 );
+
+    console.log( "vote register " );
+    console.log( this._voteList );
+
+    var voteData = this._voteList[ client.room ];
+
+    Server.sendMessage( roomID, "regu.voteEvent",
+    {
+        type: "register",
+        startUserName: voteData.startUserName,
+        endTime: VoteManager.config.TIME
+    }, client );
+
+    ChatManager.saySystem( roomID, `영상 건너뛰기 투표가 시작되었습니다. (${ client.name })`, "glyphicon glyphicon-random" );
+
+    Logger.write( Logger.LogType.Event, `[Vote] Vote registered. -> ${ client.information( ) }` );
+
+    return {
+        accept: true
+    };
 }
 
-VoteManager.ConvertToMp3 = function( url, rand, successConvert )
+VoteManager.remove = function( roomID )
 {
-	
-	
-	
-	var response;
-	horizon.downloadToLocal( url,
-	downPath,
-	"youtube_"+rand+".mp3",
-	null,
-	null,
-	successConvert,
-	onConvertVideoProgress );
+    var voteData = this._voteList[ roomID ];
+
+    Server.sendMessage( roomID, "regu.voteEvent",
+    {
+        type: "finish"
+    } );
+
+    clearInterval( voteData.interval );
+
+    this._voteList[ roomID ] = {};
 }
 
-// function onConvertVideoComplete(err, result)
-// {
-	// console.log(err, result);
-// }
-
-function onConvertVideoProgress(percent, timemark, targetSize) {
-  console.log('Progress:', percent, 'Timemark:', timemark, 'Target Size:', targetSize);
-  // Will return...
-  // Progress: 90.45518257038955 Timemark: 00:02:20.04 Target Size: 2189
-  // Progress: 93.73001672942894 Timemark: 00:02:25.11 Target Size: 2268
-  // Progress: 100.0083970106642 Timemark: 00:02:34.83 Target Size: 2420
-}
-
-VoteManager.isBanned = function( )
+VoteManager.finished = function( roomID, voteData )
 {
-	
+    var votedUser = voteData.votedUser;
+    var keys = Object.keys( votedUser );
+    var length = keys.length;
+    var count = 0;
+
+    for ( var i = 0; i < length; i++ )
+    {
+        if ( votedUser[ keys[ i ] ] === this.voteFlag.accept )
+            count++;
+    }
+
+    console.log( count, ( count / Server.getRoomClientCount( roomID ) ), Server.getRoomClientCount( roomID ) );
+
+    var isAccept = ( count / Server.getRoomClientCount( roomID ) ) >= 0.65;
+
+    if ( isAccept )
+    {
+        ChatManager.saySystem( roomID, `영상 건너뛰기 투표가 <font style="color: rgb( 50, 200, 50 );">가결</font>되었습니다. (${ voteData.startUserName })`, "glyphicon glyphicon-ok" );
+        QueueManager.skip( roomID );
+    }
+    else
+    {
+        ChatManager.saySystem( roomID, `영상 건너뛰기 투표가 <font style="color: rgb( 200, 50, 50 );">부결</font>되었습니다. (${ voteData.startUserName })`, "glyphicon glyphicon-remove" );
+    }
+
+    // 투표진행중 나가면 이거 어캐댐?
+    Logger.write( Logger.LogType.Event, `[Vote] Vote finished. -> ${ voteData.startUser.information( ) } -> ${ isAccept }` );
+
+    VoteManager.remove( roomID );
 }
+
+hook.register( "PostPlayQueue", function( roomID, queueData )
+{
+    if ( VoteManager.isRunningVote( roomID ) )
+    {
+        VoteManager.remove( roomID );
+        ChatManager.saySystem( roomID, `다음 영상이 재생되므로 영상 건너뛰기 투표가 취소되었습니다.`, "glyphicon glyphicon-exclamation-sign" );
+
+        Logger.write( Logger.LogType.Event, `[Vote] Vote canceled. -> (#NextVideoPlay)` );
+    }
+} );
+
+VoteManager.stackFlag = function( client, flag )
+{
+    if ( !this.isRunningVote( client.room ) )
+    {
+        return {
+            success: false,
+            reason: "현재 투표가 진행중이지 않습니다."
+        };
+    }
+
+    if ( flag !== this.voteFlag.reject && flag !== this.voteFlag.accept )
+    {
+        return {
+            success: false,
+            reason: "찬성과 반대만 할 수 있습니다."
+        };
+    }
+
+    var voteData = this._voteList[ client.room ];
+
+    if ( voteData.startUser === client )
+    {
+        return {
+            success: false,
+            reason: "이 투표를 시작하셨으므로 투표할 수 없습니다."
+        };
+    }
+
+    var votedUser = voteData.votedUser;
+
+    if ( votedUser[ client.userID ] && ( votedUser[ client.userID ] === this.voteFlag.reject || votedUser[ client.userID ] === this.voteFlag.accept ) )
+    {
+        return {
+            success: false,
+            reason: "이미 투표하셨습니다."
+        };
+    }
+
+    voteData.votedUser[ client.userID ] = flag;
+
+    Logger.write( Logger.LogType.Event, `[Vote] Vote flag request. -> ${ client.information( ) } -> ${ flag }` );
+
+    return {
+        success: true
+    };
+}
+
+VoteManager.sendData = function( client )
+{
+    // if ( this.isRunningVote( client.room ) )
+    // {
+    //     var voteData = this.getRoomVote( client.room );
+
+    //     client.emit( "regu." );
+    // }
+}
+
+VoteManager.getRoomVote = function( roomID )
+{
+    return VoteManager._voteList[ roomID ];
+}
+
+VoteManager.isRunningVote = function( roomID )
+{
+    return !reguUtil.isEmpty( VoteManager._voteList[ roomID ] );
+}
+
+hook.register( "OnCreateOfficialRoom", function( roomList )
+{
+    roomList.forEach( ( room ) => VoteManager._voteList[ room.roomID ] = {} );
+} );
+
+hook.register( "PostClientConnected", function( client, socket )
+{
+    socket.on( "regu.voteRegister", function( data )
+    {
+        var result = VoteManager.register( client );
+
+        if ( result.accept )
+        {
+            socket.emit( "regu.voteRegisterReceive",
+            {
+                success: true
+            } );
+        }
+        else
+        {
+            socket.emit( "regu.voteRegisterReceive",
+            {
+                success: false,
+                reason: result.reason
+            } );
+
+            Logger.write( Logger.LogType.Warning, `[Vote] Vote register request rejected! -> (#${ result.reason }) ${ client.information( ) }` );
+        }
+    } );
+
+    socket.on( "regu.voteStackFlag", function( data )
+    {
+        if ( !reguUtil.isValidSocketData( data,
+            {
+                flag: "number"
+            } ) )
+        {
+            Logger.write( Logger.LogType.Important, `[Vote] Vote flag request rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            return;
+        }
+
+        var result = VoteManager.stackFlag( client, data.flag );
+
+        if ( !result.success )
+        {
+            socket.emit( "regu.voteStackFlagReceive",
+            {
+                success: false,
+                reason: result.reason
+            } );
+
+            Logger.write( Logger.LogType.Warning, `[Vote] Vote flag request rejected! -> (#${ result.reason }) ${ client.information( ) }` );
+        }
+        else
+        {
+            socket.emit( "regu.voteStackFlagReceive",
+            {
+                success: true,
+                flag: data.flag
+            } );
+        }
+    } );
+} );
 
 module.exports = VoteManager;
