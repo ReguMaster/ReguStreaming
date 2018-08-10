@@ -546,7 +546,7 @@ reguStreaming.AjaxLoginStatus = function( )
                         provider = "트위터";
                         break;
                     case "instagram":
-                        provider = "인스타그램"; // 속에서..
+                        provider = "인스타그램"; // 속엔... 문제야 문제.... 온 세상 속..ㅇ..
                         break;
                     case "facebook":
                         provider = "페이스북";
