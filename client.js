@@ -12,7 +12,6 @@ const ClientManager = {};
 // const reguUtil = require( "./util" );
 const BanManager = require( "./modules/ban" );
 const Logger = require( "./modules/logger" );
-// const RoomManager = require( "./modules/room" );
 const hook = require( "./hook" );
 // const FileStorage = require( "./filestorage" );
 // const Tracker = require( "./modules/tracker" );

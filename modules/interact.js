@@ -12,7 +12,6 @@ const BanManager = require( "./ban" );
 const App = require( "../app" );
 const hook = require( "../hook" );
 const QueueManager = require( "./queue" ); // 수정바람
-const RoomManager = require( "./room" ); // 수정바람
 const ChatManager = require( "./chat" ); // 수정바람
 // const ClientManager = require( "../client" );
 const Logger = require( "./logger" );

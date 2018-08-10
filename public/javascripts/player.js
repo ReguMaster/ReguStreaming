@@ -78,14 +78,14 @@ reguStreaming.canUpload = function( fileData, callback )
                 if ( width <= 2048 && height <= 2048 )
                     callback( true );
                 else
-                    callback( false, "2048x2048 크기를 초과하는 이미지는 업로드할 수 없습니다." ); // 맞춤법 검사 바람
+                    callback( false, "파일을 업로드 할 수 없습니다, 2048x2048 크기를 초과하는 이미지는 업로드할 수 없습니다." ); // 맞춤법 검사 바람
             }
         }
         else
-            callback( false, "gif, png, jpg 형식의 이미지만 업로드할 수 있습니다." );
+            callback( false, "파일을 업로드 할 수 없습니다, gif, png, jpg 형식의 이미지만 업로드할 수 있습니다." );
     }
     else
-        callback( false, "파일 데이터가 올바르지 않습니다." );
+        callback( false, "파일을 업로드 할 수 없습니다, 파일 데이터가 올바르지 않습니다." );
 }
 
 reguStreaming.imageUploadButtonClicked = function( )
@@ -336,20 +336,20 @@ $( window )
 
                         var raw = e.target.result;
 
-                        console.log( raw );
+                        // console.log( raw );
 
-                        // https://developer.mozilla.org/en/JavaScript_typed_arrays
-                        var rawBytes = new Uint8Array( raw );
-                        var hex = "";
-                        for ( var cycle = 0; cycle < raw.byteLength; cycle++ )
-                        {
-                            hex += rawBytes[ cycle ].toString( 16 ) + " ";
-                            // TODO: more elegance
-                            if ( !( ( cycle + 1 ) % 8 ) )
-                                hex += "\n";
-                        }
+                        // // https://developer.mozilla.org/en/JavaScript_typed_arrays
+                        // var rawBytes = new Uint8Array( raw );
+                        // var hex = "";
+                        // for ( var cycle = 0; cycle < raw.byteLength; cycle++ )
+                        // {
+                        //     hex += rawBytes[ cycle ].toString( 16 ) + " ";
+                        //     // TODO: more elegance
+                        //     if ( !( ( cycle + 1 ) % 8 ) )
+                        //         hex += "\n";
+                        // }
 
-                        socket.emit( "regu.uploadFile",
+                        socket.emit( "RS.uploadFile",
                         {
                             name: fileData.name,
                             size: fileData.size,
@@ -515,12 +515,34 @@ $( window )
         socket.emit( "RS.join" );
     } );
 
-socket.on( "regu.uploadFileReceive", function( data )
+socket.on( "RS.uploadFileReceive", function( data )
 {
     if ( !data.exists && reguStreaming.fileUploadData != null )
         siofu.submitFiles( reguStreaming.fileUploadData );
     else
         reguStreaming.fileUploadData = null;
+} );
+
+socket.on( "RS.uploadFileError", function( data )
+{
+    var reason;
+
+    switch ( data )
+    {
+        case 0:
+            reason = "파일을 업로드 할 수 없습니다, gif, png, jpg 형식의 이미지만 업로드할 수 있습니다.";
+            break;
+        case 1:
+            reason = "파일을 업로드 할 수 없습니다, 데이터베이스 오류가 발생했습니다.";
+            break;
+        case 2:
+            reason = "해당 파일을 서버에서 처리 중 오류가 발생했습니다, 나중에 다시 시도해주세요.";
+            break;
+        default:
+            reason = "정의되지 않은 오류가 발생했습니다.";
+    }
+
+    util.notification( util.notificationType.warning, "업로드 오류", reason, 4000 );
 } );
 
 function runChatCommand( message )

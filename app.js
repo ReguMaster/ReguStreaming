@@ -7,6 +7,8 @@
 
 const Main = {};
 
+global.test = "1234";
+
 require( "./util" ); // 기존 util 모듈 override
 const util = require( "util" );
 const uniqid = require( "uniqid" );

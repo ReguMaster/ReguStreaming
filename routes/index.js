@@ -15,7 +15,6 @@ const util = require( "util" );
 const uniqid = require( "uniqid" );
 // const ClientManager = require( "../client" );
 const QueueManager = require( "../modules/queue" );
-// const RoomManager = require( "../modules/room" );
 const ServiceManager = require( "../modules/service" );
 const hook = require( "../hook" );
 const reguUtil = require( "../util" );
