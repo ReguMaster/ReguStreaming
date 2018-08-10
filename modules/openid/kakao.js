@@ -9,9 +9,12 @@ const Logger = require( "../logger" );
 require( "passport-openid" );
 
 const util = require( "util" );
+const hook = require( "../../hook" );
 const passport = require( "passport" );
 const KakaoStrategy = require( "passport-kakao" )
     .Strategy;
+const apiConfig = require( "../../const/config" )
+    .Kakao;
 
 passport.serializeUser( function( user, done )
 {
@@ -25,21 +28,21 @@ passport.deserializeUser( function( obj, done )
 
 passport.use( new KakaoStrategy(
     {
-        clientID: "26d70e4f43a369f7ff280336c7355b45",
-        clientSecret: "apKyOsPBfRhFXfCMo9PG6ELy0PREkXBW", // clientSecret을 사용하지 않는다면 넘기지 말거나 빈 스트링을 넘길 것
-        callbackURL: "https://regustreaming.oa.to/login/kakao/return"
+        clientID: apiConfig.clientID,
+        clientSecret: apiConfig.clientSecret, // clientSecret을 사용하지 않는다면 넘기지 말거나 빈 스트링을 넘길 것
+        callbackURL: apiConfig.callbackURL
     },
     function( accessToken, refreshToken, profile, done )
     {
-        var isAllowedAccount = hook.run( "CanLoginAccount", profile.id, profile );
+        // var isAllowedAccount = hook.run( "CanLoginAccount", profile.id, profile );
 
-        if ( isAllowedAccount && isAllowedAccount.isBanned )
-        {
-            return done( null, false,
-            {
-                id: isAllowedAccount.id
-            } );
-        }
+        // if ( isAllowedAccount && isAllowedAccount.isBanned )
+        // {
+        //     return done( null, false,
+        //     {
+        //         id: isAllowedAccount.id
+        //     } );
+        // }
 
         process.nextTick( function( )
         {

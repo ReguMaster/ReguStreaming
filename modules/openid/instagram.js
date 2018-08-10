@@ -6,23 +6,23 @@
 
 'use strict';
 
-const Logger = require( "../logger" );
-require( "passport-openid" );
+// const Logger = require( "../logger" );
+// require( "passport-openid" );
 
-const util = require( "util" );
-const passport = require( "passport" );
-const InstagramStrategy = require( "passport-instagram" )
-    .Strategy
+// const util = require( "util" );
+// const passport = require( "passport" );
+// const InstagramStrategy = require( "passport-instagram" )
+//     .Strategy
 
-passport.serializeUser( function( user, done )
-{
-    done( null, user );
-} );
+// passport.serializeUser( function( user, done )
+// {
+//     done( null, user );
+// } );
 
-passport.deserializeUser( function( obj, done )
-{
-    done( null, obj );
-} );
+// passport.deserializeUser( function( obj, done )
+// {
+//     done( null, obj );
+// } );
 
 // Initialize Passport!  Also use passport.session() middleware, to support
 // persistent login sessions (recommended).

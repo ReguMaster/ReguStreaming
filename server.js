@@ -6,14 +6,14 @@
 'use struct'
 
 const App = require( "./app" );
-const reguUtil = require( "./util" );
+const util = require( "./util" );
 const hook = require( "./hook" );
 const Logger = require( "./modules/logger" );
 var Client = require( "./client" );
 
 const Tracker = require( "./modules/tracker" );
 const Discord = require( "discord.js" );
-const config = require( "./config" );
+const config = require( "./const/config" );
 
 const Server = {};
 
@@ -57,7 +57,7 @@ Server.emitDiscord = function( channelType, message )
 
 Server.getRoomDataForClient = function( )
 {
-    var roomData = reguUtil.deepCopy( this.ROOM );
+    var roomData = util.deepCopy( this.ROOM );
 
     var keys = Object.keys( roomData );
     var keysLength = keys.length;
@@ -69,7 +69,7 @@ Server.getRoomDataForClient = function( )
 
         roomData[ keys[ i ] ].count = this.getRoomClientCount( keys[ i ] );
 
-        if ( !reguUtil.isEmpty( roomData[ keys[ i ] ].currentPlayingQueue ) )
+        if ( !util.isEmpty( roomData[ keys[ i ] ].currentPlayingQueue ) )
             roomData[ keys[ i ] ].currentPlaying = roomData[ keys[ i ] ].currentPlayingQueue.mediaName;
 
         delete roomData[ keys[ i ] ].currentPlayingQueue;
@@ -113,7 +113,7 @@ hook.register( "Initialize", function( )
         video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
         video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
     } );
-    // Server.createRoom( true, "home", "벨 시에로 보육원", "안전하고 신성한 공간.", 15 );
+    Server.createRoom( true, "home", "벨 시에로 보육원", "안전하고 신성한 공간.", 15 );
     Server.createRoom( true, "everync", "나이트코어 어비스", "모든 영상이 나이트코어 스타일로 재생됩니다.", 50, null,
     {
         playbackRate: 1.15,
@@ -188,7 +188,7 @@ Server.DiscordClient.on( "message", function( message )
 //     }
 // } );
 
-Server.DiscordClient.login( config.DISCORD_API_KEY );
+// Server.DiscordClient.login( config.DISCORD_BOT_TOKEN );
 
 hook.register( "PostClientConnected", function( client, socket )
 {
@@ -212,16 +212,29 @@ hook.register( "PostClientConnected", function( client, socket )
     // }
 } );
 
-Server.getAllClient = function( )
+Server.getAllClient = function( roomID )
 {
-    var result = [ ];
-
-    this.CLIENT.forEach( ( clientList ) =>
+    if ( roomID )
     {
-        result = result.concat( clientList );
-    } );
+        if ( !this.ROOM[ roomID ] )
+        {
+            Logger.write( Logger.LogType.Error, `[Server] Failed to process Server.getAllClient -> roomID is not valid!` );
+            return;
+        }
 
-    return result;
+        return this.CLIENT[ roomID ];
+    }
+    else
+    {
+        var result = [ ];
+
+        util.forEach( this.CLIENT, ( client ) =>
+        {
+            result = result.concat( client );
+        } );
+
+        return result;
+    }
 }
 
 Server.isValidRoom = function( roomID )
@@ -240,7 +253,7 @@ Server.getClientBySessionID = function( sessionID )
 {
     var result;
 
-    this.CLIENT.forEach( ( clientList ) =>
+    util.forEach( this.CLIENT, ( clientList ) =>
     {
         clientList.some( ( client ) =>
         {
@@ -259,7 +272,7 @@ Server.getClientByUserID = function( userID )
 {
     var result;
 
-    this.CLIENT.forEach( ( clientList ) =>
+    util.forEach( this.CLIENT, ( clientList ) =>
     {
         clientList.some( ( client ) =>
         {
@@ -278,7 +291,7 @@ Server.getClientByIPAddress = function( ipAddress )
 {
     var result;
 
-    this.CLIENT.forEach( ( clientList ) =>
+    util.forEach( this.CLIENT, ( clientList ) =>
     {
         clientList.some( ( client ) =>
         {
@@ -297,7 +310,7 @@ Server.getClientByProperty = function( property, propertyValue )
 {
     var result;
 
-    this.CLIENT.forEach( ( clientList ) =>
+    util.forEach( this.CLIENT, ( clientList ) =>
     {
         clientList.some( ( client ) =>
         {
@@ -408,7 +421,7 @@ Server.getRoomClientCount = function( roomID )
 
 Server.isConnectable = function( roomID, sessionID, userID, ipAddress, countryCode )
 {
-    var onConnect = hook.run( "OnClientConnect", ipAddress, userID );
+    var onConnect = hook.run( "OnClientConnect", ipAddress, userID, roomID );
 
     if ( onConnect && onConnect.accept === false )
     {
@@ -577,14 +590,14 @@ Server.onDisconnect = function( client )
 
 Server.joinRoom = function( roomID, req, res, ipAddress )
 {
-    var onPreClientConnect = hook.run( "OnPreClientConnect", ipAddress );
+    var preClientConnect = hook.run( "PreClientConnect", ipAddress );
 
     req.session.touch( );
 
-    if ( onPreClientConnect && onPreClientConnect.accept === false )
+    if ( preClientConnect && preClientConnect.accept === false )
     {
-        res.redirect( "/?error=" + onPreClientConnect.reason );
-        Logger.write( Logger.LogType.Warning, `[Client] Client pre rejected! -> (#${ onPreClientConnect.reason }) ${ ipAddress }` );
+        res.redirect( "/?error=" + preClientConnect.reason );
+        Logger.write( Logger.LogType.Warning, `[Client] Client pre rejected! -> (#${ preClientConnect.reason }) ${ ipAddress }` );
         return;
     }
 
@@ -635,16 +648,16 @@ App.socketIO.on( "connect", function( socket )
         // } );
     } );
 
-    socket.on( "binaryData", function( data )
-    {
-        console.log( data );
+    // socket.on( "binaryData", function( data )
+    // {
+    //     console.log( data );
 
-        Server.sendMessage( client.room, "binaryDataReceive", data );
-    } );
+    //     Server.sendMessage( client.room, "binaryDataReceive", data );
+    // } );
 
     socket.on( "regu.requestUserInfo", function( data )
     {
-        if ( !reguUtil.isValidSocketData( data,
+        if ( !util.isValidSocketData( data,
             {
                 userID: "string"
             } ) )
@@ -668,7 +681,7 @@ App.socketIO.on( "connect", function( socket )
             {
                 success: true,
                 name: targetClient.name,
-                ipAddress: reguUtil.censorshipIP( targetClient.ipAddress ),
+                ipAddress: util.censorshipIP( targetClient.ipAddress ),
                 avatar: targetClient.getPassportField( "avatarFull", "/images/avatar/guest_184.png" ), // *TODO: 네이버 아이디 지원바람;
                 rank: targetClient.rank,
                 provider: targetClient.provider

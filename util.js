@@ -5,31 +5,61 @@
 
 'use strict';
 
-const util = {};
+const nodeUtil = require( "util" );
+
+let util = {};
 const crypto = require( "crypto" );
 const xml2js = require( "xml2js" );
 const os = require( "os" );
+const merge = require( "merge" );
 
-Object.prototype.forEach = function( interFunc )
+util.forEach = function( obj, inter )
 {
-    var key = Object.keys( this ),
+    if ( typeof obj !== "object" ) throw new Error( "obj is not Object type!" );
+    if ( typeof inter !== "function" ) throw new Error( "inter is not Function type!" );
+
+    var key = Object.keys( obj ),
         keyLength = key.length;
 
     for ( var i = 0; i < keyLength; i++ )
-        interFunc( this[ key[ i ] ], key[ i ] );
+        inter( obj[ key[ i ] ], key[ i ] );
 }
 
-Object.prototype.some = function( interFunc )
+util.some = function( obj, inter )
 {
-    var key = Object.keys( this ),
+    if ( typeof obj !== "object" ) throw new Error( "obj is not Object type!" );
+    if ( typeof inter !== "function" ) throw new Error( "inter is not Function type!" );
+
+    var key = Object.keys( obj ),
         keyLength = key.length,
         result;
 
     for ( var i = 0; i < keyLength; i++ )
-        if ( result = interFunc( this[ key[ i ] ], key[ i ] ) ) break;
+        if ( result = inter( obj[ key[ i ] ], key[ i ] ) ) break;
 
     return result;
 }
+
+// Object.prototype.forEach = function( interFunc )
+// {
+//     var key = Object.keys( this ),
+//         keyLength = key.length;
+
+//     for ( var i = 0; i < keyLength; i++ )
+//         interFunc( this[ key[ i ] ], key[ i ] );
+// }
+
+// Object.prototype.some = function( interFunc )
+// {
+//     var key = Object.keys( this ),
+//         keyLength = key.length,
+//         result;
+
+//     for ( var i = 0; i < keyLength; i++ )
+//         if ( result = interFunc( this[ key[ i ] ], key[ i ] ) ) break;
+
+//     return result;
+// }
 
 // same as http://wiki.garrysmod.com/page/table/concat
 Array.prototype.chain = function( startIndex, endIndex, concatenator = " " )
@@ -116,12 +146,14 @@ util.splitIP = function( ipAddress )
 
 util.censorshipIP = function( ipAddress )
 {
-    var ipArray = ipAddress.split( "." );
+    var ipArray = ipAddress.split( "." ),
+        length = ipArray.length;
 
-    // 반복문 사용으로 바꾸기..
-
-    ipArray[ ipArray.length - 2 ] = "***";
-    ipArray[ ipArray.length - 1 ] = "***";
+    for ( var i = 0; i < length; i++ )
+    {
+        if ( ( i + 1 ) % 2 === 0 )
+            ipArray[ i ] = "***";
+    }
 
     return ipArray.toString( );
 }
@@ -135,26 +167,23 @@ util.crypto = function( type, data )
 
 util.md5 = function( data )
 {
-    var generator = crypto.createHash( "md5" );
-    generator.update( data );
-
-    return generator.digest( "hex" );
+    return crypto.createHash( "md5" )
+        .update( data )
+        .digest( "hex" );
 }
 
 util.sha1 = function( data )
 {
-    var generator = crypto.createHash( "sha1" );
-    generator.update( data );
-
-    return generator.digest( "hex" );
+    return crypto.createHash( "sha1" )
+        .update( data )
+        .digest( "hex" );
 }
 
 util.sha256 = function( data )
 {
-    var generator = crypto.createHash( "sha256" );
-    generator.update( data );
-
-    return generator.digest( "hex" );
+    return crypto.createHash( "sha256" )
+        .update( data )
+        .digest( "hex" );
 }
 
 util.sha512 = function( data )
@@ -176,7 +205,7 @@ util.isEmpty = function( value )
 
 util.isValidSocketData = function( data, checkExpression )
 {
-    if ( util.isEmpty( data ) ) return false;
+    if ( this.isEmpty( data ) ) return false;
     if ( !checkExpression ) return false;
 
     if ( typeof checkExpression === "object" )
@@ -198,35 +227,39 @@ util.isValidSocketData = function( data, checkExpression )
     return true;
 }
 
-//https://stackoverflow.com/questions/40291987/javascript-deep-clone-object-with-circular-references
-util.deepCopy = function( obj, hash = new WeakMap( ) )
+util.deepCopy = function( obj )
 {
-    if ( Object( obj ) !== obj || obj instanceof Function ) return obj;
-    if ( hash.has( obj ) ) return hash.get( obj ); // Cyclic reference
-    try
-    { // Try to run constructor (without arguments, as we don't know them)
-        var result = new obj.constructor( );
-    }
-    catch ( e )
-    { // Constructor failed, create object without running the constructor
-        result = Object.create( Object.getPrototypeOf( obj ) );
-    }
-    // Optional: support for some standard constructors (extend as desired)
-    if ( obj instanceof Map )
-        Array.from( obj, ( [ key, val ] ) => result.set( util.deepCopy( key, hash ),
-            util.deepCopy( val, hash ) ) );
-    else if ( obj instanceof Set )
-        Array.from( obj, ( key ) => result.add( util.deepCopy( key, hash ) ) );
-    // Register in hash    
-    hash.set( obj, result );
-    // Clone and assign enumerable own properties recursively
-    return Object.assign( result, ...Object.keys( obj )
-        .map(
-            key => (
-            {
-                [ key ]: util.deepCopy( obj[ key ], hash )
-            } ) ) );
+    return merge( true, obj );
 }
+//https://stackoverflow.com/questions/40291987/javascript-deep-clone-object-with-circular-references
+// util.deepCopy = function( obj, hash = new WeakMap( ) )
+// {
+//     if ( Object( obj ) !== obj || obj instanceof Function ) return obj;
+//     if ( hash.has( obj ) ) return hash.get( obj ); // Cyclic reference
+//     try
+//     { // Try to run constructor (without arguments, as we don't know them)
+//         var result = new obj.constructor( );
+//     }
+//     catch ( e )
+//     { // Constructor failed, create object without running the constructor
+//         result = Object.create( Object.getPrototypeOf( obj ) );
+//     }
+//     // Optional: support for some standard constructors (extend as desired)
+//     if ( obj instanceof Map )
+//         Array.from( obj, ( [ key, val ] ) => result.set( util.deepCopy( key, hash ),
+//             util.deepCopy( val, hash ) ) );
+//     else if ( obj instanceof Set )
+//         Array.from( obj, ( key ) => result.add( util.deepCopy( key, hash ) ) );
+//     // Register in hash    
+//     hash.set( obj, result );
+//     // Clone and assign enumerable own properties recursively
+//     return Object.assign( result, ...Object.keys( obj )
+//         .map(
+//             key => (
+//             {
+//                 [ key ]: util.deepCopy( obj[ key ], hash )
+//             } ) ) );
+// }
 
 // util.deepCopy = function( obj )
 // {
@@ -265,5 +298,7 @@ console.reset = function( )
     }
     process.stdout.write( '\x1Bc' );
 }
+
+util = Object.assign( nodeUtil, util );
 
 module.exports = util;

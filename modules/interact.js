@@ -86,7 +86,7 @@ Interact.process = function( args )
 
                         console.log( "Kick all clients at " + args[ 1 ] );
 
-                        Server.CLIENT[ args[ 1 ] ]
+                        Server.getAllClient( args[ 1 ] )
                             .forEach( ( client ) => client.kick( reason ) );
                     }
                     else

@@ -10,9 +10,12 @@ const Logger = require( "../logger" );
 require( "passport-openid" );
 
 const util = require( "util" );
+const hook = require( "../../hook" );
 const passport = require( "passport" );
 const GoogleStrategy = require( "passport-google-oauth20" )
     .Strategy
+const apiConfig = require( "../../const/config" )
+    .Google;
 
 passport.serializeUser( function( user, done )
 {
@@ -29,9 +32,9 @@ passport.deserializeUser( function( obj, done )
 
 passport.use( new GoogleStrategy(
     {
-        clientID: "662427320441-bvoorak4gref67pb1tndloeilcojk95p.apps.googleusercontent.com",
-        clientSecret: "gYLSMRM9gBCDu9aDFsbxxFFP",
-        callbackURL: "https://regustreaming.oa.to/login/google/return"
+        clientID: apiConfig.clientID,
+        clientSecret: apiConfig.clientSecret,
+        callbackURL: apiConfig.callbackURL
     },
     function( accessToken, refreshToken, profile, done )
     {

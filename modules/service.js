@@ -19,6 +19,19 @@ const Logger = require( "../modules/logger" );
 ServiceManager.notification = [ ];
 ServiceManager.serviceStatus = 0;
 
+// guest 포함 불가
+ServiceManager.loginDisallowList = [
+    // "steam",
+    "naver",
+    "google",
+    "twitter",
+    "kakao"
+]
+
+ServiceManager.joinDisallowList = [
+    "home"
+];
+
 FileStorage.loadAsync( "serviceNotification", "json", [ ], ( data ) =>
 {
     ServiceManager.notification = data;
@@ -37,6 +50,15 @@ ServiceManager.notificationType = {
     warning: 1,
     danger: 2
 };
+
+ServiceManager.isLoginAllowed = function( provider )
+{
+    return this.loginDisallowList.indexOf( provider ) === -1;
+}
+
+ServiceManager.isQueueRegisterAllowed = function( roomID, provider ) {
+
+}
 
 ServiceManager.background = null;
 ServiceManager.refreshBackground = function( )
@@ -95,7 +117,8 @@ ServiceManager.getClientAjaxData = function( )
 {
     return {
         notification: this.notification,
-        serviceStatus: this.serviceStatus
+        serviceStatus: this.serviceStatus,
+        loginDisallowList: this.loginDisallowList
     }
 }
 
@@ -173,19 +196,18 @@ ServiceManager.done = function( )
     // msg.channel.bulkDelete( fetched );
 }
 
-ServiceManager.blockRoom = [
-    "home"
-];
+// ServiceManager.registerNotification( "TEST", ServiceManager.notificationType.danger, "Service Error", "We are aware of issues causing account transfers to intermittently fail, and are working on a fix." );
+// ServiceManager.registerNotification( "DANGER_TEST", ServiceManager.notificationType.danger, "Service Error", "We are aware of an issue with dash abilities and are currently working on a fix." );
 
-// ServiceManager.registerNotification( "TEST", ServiceManager.notificationType.info, "Service Error", "We are aware of issues causing account transfers to intermittently fail, and are working on a fix." );
-// ServiceManager.registerNotification( ServiceManager.notificationType.danger, "Service Error", "We are aware of an issue with dash abilities and are currently working on a fix." );
+// ServiceManager.registerNotification( "WARNING_TEST", ServiceManager.notificationType.warning, "Service Problem", "Some prepaid card and PIN codes will be unavailable to be redeemed temporarily. Please try again in a few hours." );
 
-ServiceManager.registerNotification( "SERVICE_UPDATE_KO", ServiceManager.notificationType.warning, "서비스 업데이트", "현재 서비스 업데이트 작업 중입니다, 일부 서비스를 이용하실 수 없으며 불편을 드려 죄송합니다." );
-ServiceManager.registerNotification( "SERVICE_UPDATE_EN", ServiceManager.notificationType.warning, "Service Update", "We are currently working on a service update, some services are not available and we apologize for any inconvenience." );
-
+// ServiceManager.registerNotification( "SERVICE_UPDATE_KO", ServiceManager.notificationType.warning, "서비스 업데이트", "현재 서비스 업데이트 작업 중입니다, 일부 서비스를 이용하실 수 없으며 불편을 드려 죄송합니다." );
+// ServiceManager.registerNotification( "SERVICE_UPDATE_EN", ServiceManager.notificationType.warning, "Service Update", "We are currently working on a service update, some services are not available and we apologize for any inconvenience." );
+ServiceManager.setServiceStatus( 1 );
 
 // ServiceManager.registerNotification( "WOW", ServiceManager.notificationType.warning, "채널 접속 차단", "현재 일부 채널에서 문제가 발생하여 채널 접속을 차단했습니다, 불편을 드려 죄송합니다." );
-// ServiceManager.registerNotification( ServiceManager.notificationType.danger, "채널 금지", "현재 일부 채널에서 서비스 지연 문제가 발생하여 일부 채널 접속을 차단했습니다, 불편을 드려 죄송합니다." );
+ServiceManager.registerNotification( "SNS_LOGIN_WARN", ServiceManager.notificationType.warning, "소셜 계정 로그인", "외부 서비스 접근에 문제가 발생하여 현재 스팀을 통한 로그인을 제외한 모든 소셜 계정 로그인이 불가능 합니다, 불편을 드려 죄송합니다." );
+// ServiceManager.registerNotification( "SNS_LOGIN_WARN_EN", ServiceManager.notificationType.warning, "Social Account Login", "We are sorry for having trouble using login with external service except Steam." );
 
 ServiceManager.refreshBackground( );
 
@@ -194,7 +216,7 @@ setInterval( function( )
     ServiceManager.refreshBackground( )
 }, 1000 * 60 );
 
-hook.register( "OnPreClientConnect", function( ipAddress )
+hook.register( "PreClientConnect", function( ipAddress )
 {
     if ( ServiceManager.serviceStatus === 1 && ipAddress !== App.config.host )
     {
@@ -205,8 +227,16 @@ hook.register( "OnPreClientConnect", function( ipAddress )
     }
 } );
 
-hook.register( "OnClientConnect", function( ipAddress, userID )
+hook.register( "OnClientConnect", function( ipAddress, userID, roomID )
 {
+    if ( ServiceManager.joinDisallowList.indexOf( roomID ) !== -1 )
+    {
+        return {
+            accept: false,
+            reason: "죄송합니다, 현재는 이 채널을 이용하실 수 없습니다, 자세한 내용은 공지사항을 확인해주세요."
+        }
+    }
+
     if ( ServiceManager.serviceStatus === 1 && ipAddress !== App.config.host )
     {
         return {

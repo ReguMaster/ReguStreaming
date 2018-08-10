@@ -10,9 +10,12 @@ const Logger = require( "../logger" );
 require( "passport-openid" );
 
 const util = require( "util" );
+const hook = require( "../../hook" );
 const passport = require( "passport" );
 const TwitterStrategy = require( "passport-twitter" )
     .Strategy
+const apiConfig = require( "../../const/config" )
+    .Twitter;
 
 passport.serializeUser( function( user, done )
 {
@@ -29,21 +32,21 @@ passport.deserializeUser( function( obj, done )
 
 passport.use( new TwitterStrategy(
     {
-        consumerKey: "crknlPeQsCGRDY3WCFtuf3ckA",
-        consumerSecret: "sMMsbv1261PZoMsr0yXesfXqohvBeiamjmDRVMYZH7ZD7vnhGp",
-        callbackURL: "https://regustreaming.oa.to/login/twitter/return"
+        consumerKey: apiConfig.consumerKey,
+        consumerSecret: apiConfig.consumerSecret,
+        callbackURL: apiConfig.callbackURL
     },
     function( accessToken, refreshToken, profile, done )
     {
-        var isAllowedAccount = hook.run( "CanLoginAccount", profile.id, profile );
+        // var isAllowedAccount = hook.run( "CanLoginAccount", profile.id, profile );
 
-        if ( isAllowedAccount && isAllowedAccount.isBanned )
-        {
-            return done( null, false,
-            {
-                id: isAllowedAccount.id
-            } );
-        }
+        // if ( isAllowedAccount && isAllowedAccount.isBanned )
+        // {
+        //     return done( null, false,
+        //     {
+        //         id: isAllowedAccount.id
+        //     } );
+        // }
 
         process.nextTick( function( )
         {

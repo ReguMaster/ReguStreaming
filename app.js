@@ -7,12 +7,14 @@
 
 const Main = {};
 
+require( "./util" ); // 기존 util 모듈 override
+const util = require( "util" );
 const uniqid = require( "uniqid" );
 const path = require( "path" );
 const fileStream = require( "fs" );
 const passport = require( "passport" );
-const reguUtil = require( "./util" );
 const Logger = require( "./modules/logger" );
+const DNS = require( "./modules/dns" );
 const express = require( "express" );
 const session = require( "express-session" );
 const redisClient = require( "redis" )
@@ -54,7 +56,7 @@ const sessionMiddleware = session(
 } );
 
 Main.config = {};
-Main.config.host = reguUtil.getLocalIP( )
+Main.config.host = util.getLocalIP( )
     .ipAddress;
 Main.config.devMode = process.argv[ 2 ] === "-dev";
 Main.config.enableAutoQueue = false;
@@ -86,8 +88,36 @@ process.on( "exit", function( code )
 
 process.on( "uncaughtException", function( err )
 {
-    Logger.write( Logger.LogType.Error, `[SERVER] Unhandled exception!\n${ err.stack }` );
+    Logger.write( Logger.LogType.Error, `[SERVER] Unhandled Exception: \n${ err.stack }` );
 } );
+
+const onErrorAtWebServer = function( err )
+{
+    if ( err.code === "EADDRNOTAVAIL" )
+    {
+        Logger.write( Logger.LogType.Warning, `[SERVER] WARNING: DNS host mismatch. requesting refresh ... (code:${ err.code })` );
+        DNS.refresh( );
+        // *TODO: dns 리프레쉬 이후 다시 listen 함수 호출하는 코드 작성
+    }
+    else
+        Logger.write( Logger.LogType.Error, `[SERVER] Unhandled WebServer Error: \n${ err.stack }` );
+}
+
+expressWebServer.on( "error", onErrorAtWebServer );
+expressWebServerSSL.on( "error", onErrorAtWebServer );
+
+Main.Listen = function( )
+{
+    expressWebServer.listen( 80, "regustreaming.oa.to", function( )
+    {
+        Logger.write( Logger.LogType.Info, `[HTTP] Listening at ${ Main.config.host }:80` );
+    } );
+
+    expressWebServerSSL.listen( 443, "regustreaming.oa.to", function( )
+    {
+        Logger.write( Logger.LogType.Info, `[HTTPS] Listening at ${ Main.config.host }:443` );
+    } );
+}
 
 Main.InitializeServer = function( )
 {
@@ -133,15 +163,7 @@ Main.InitializeServer = function( )
     app.engine( "html", require( "ejs" )
         .renderFile );
 
-    expressWebServer.listen( 80, "regustreaming.oa.to", function( )
-    {
-        Logger.write( Logger.LogType.Info, `[HTTP] Listening at ${ Main.config.host }:80` );
-    } );
-
-    expressWebServerSSL.listen( 443, "regustreaming.oa.to", function( )
-    {
-        Logger.write( Logger.LogType.Info, `[HTTPS] Listening at ${ Main.config.host }:443` );
-    } );
+    this.Listen( );
 }
 
 Main.InitializeServer( );

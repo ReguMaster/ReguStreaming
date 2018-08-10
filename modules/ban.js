@@ -144,7 +144,7 @@ BanManager.getData = function( identifier )
         } ) : banData;
 }
 
-hook.register( "OnClientConnect", function( ipAddress, userID )
+hook.register( "OnClientConnect", function( ipAddress, userID, roomID )
 {
     var banInformation = BanManager.getData( [ userID, ipAddress ] );
 

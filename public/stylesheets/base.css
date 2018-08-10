@@ -72,6 +72,11 @@ body {
     overflow-x: hidden !important;
 }
 
+p {
+    color: white;
+    font-size: 15px;
+}
+
 .containerMiddleText {
     margin: 15px;
     margin-bottom: 6px;

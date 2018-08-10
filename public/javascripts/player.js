@@ -399,18 +399,12 @@ $( window )
                         .val( "" );
 
                     if ( chatMessage.length <= 0 || chatMessage.length > 200 )
-                    {
-                        util.notification( util.notificationType.warning, "채팅 불가 :", "채팅 메세지는 1자 이상 200자 이하 되어야 합니다.", 2000 );
-                        return false;
-                    }
+                        return util.notification( util.notificationType.warning, "채팅 불가", "채팅 메세지는 1자 이상 200자 이하 되어야 합니다.", 2000 );
 
-                    reguStreaming.checkXSS( chatMessage, function( detected )
+                    reguStreaming.checkXSS( chatMessage, function( xssDetected )
                     {
-                        if ( detected )
-                        {
-                            util.notification( util.notificationType.warning, "채팅 불가 :", "채팅 메세지에 입력할 수 없는 문장입니다.", 2000 );
-                            return false;
-                        }
+                        if ( xssDetected )
+                            return util.notification( util.notificationType.warning, "채팅 불가", "채팅 메세지에 입력할 수 없는 문장입니다.", 2000 );
 
                         if ( runChatCommand( chatMessage ) )
                             return false;
@@ -422,7 +416,7 @@ $( window )
 
                         currentChatMessageInputHistoryIndex = chatMessageInputHistory.length - 1;
 
-                        socket.emit( "regu.chat", chatMessage );
+                        socket.emit( "RS.chat", chatMessage );
 
                         return false;
                     } );
@@ -652,20 +646,6 @@ const queueEventString = '<div class="queueItem" id="queueItem_{0}"> \
 let queueCount = 0;
 let queueListClient = [ ];
 
-// QueueManager.statusCode = {
-//     success: 0,
-//     delayError: 1,
-//     roomConfigDisallowError: 2,
-//     urlError: 3,
-//     startTimeError: 4,
-//     serverError: 5,
-//     liveStreamError: 6,
-//     notValidError: 7,
-//     startPositionOverThanLengthError: 8,
-//     startPositionTooShortThanLengthError: 9,
-//     failedToGetInformationError: 10,
-//     unknownError: 11
-// };
 socket.on( "regu.queueRegisterReceive", function( data )
 {
     if ( data.code === 0 )
@@ -715,6 +695,9 @@ socket.on( "regu.queueRegisterReceive", function( data )
                 break;
             case 11:
                 reason = "영상 추가를 할 수 없습니다, 알 수 없는 오류가 발생했습니다.";
+                break;
+            case 50:
+                reason = "영상 추가를 할 수 없습니다, 현재 서비스가 불가능합니다, 공지사항을 확인하세요.";
                 break;
             default:
                 reason = "영상 추가를 할 수 없습니다, 알 수 없는 오류가 발생했습니다.";
@@ -945,7 +928,7 @@ reguStreaming.chatFormatBase = {
 reguStreaming.currentChatMessageCount = 0;
 reguStreaming.linkRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig; // http://talkerscode.com/webtricks/convert-url-text-into-clickable-html-links-using-javascript.php
 
-socket.on( "regu.chat", function( data )
+socket.on( "RS.chat", function( data )
 {
     var currentChatCount = reguStreaming.currentChatMessageCount;
     var currentTime = new Date( );
@@ -1128,6 +1111,33 @@ socket.on( "regu.chat", function( data )
     }
 
     reguStreaming.currentChatMessageCount++;
+} );
+
+// ChatManager.statusCode = {
+//     success: 0,
+//     lengthError: 1,
+//     xssError: 2,
+//     isGuestError: 3
+// }
+socket.on( "RS.chatResult", function( data )
+{
+    var reason;
+    switch ( data )
+    {
+        case 1:
+            reason = "채팅 메세지는 1자 이상 200자 이하 되어야 합니다.";
+            break;
+        case 2:
+            reason = "채팅 메세지에 입력할 수 없는 문장이 있습니다.";
+            break;
+        case 3:
+            reason = "손님 계정으로는 채팅을 입력하실 수 없습니다.";
+            break;
+        default:
+            reason = "정의되지 않은 오류가 발생했습니다.";
+    }
+
+    util.notification( util.notificationType.warning, "채팅 불가", reason, 2000 );
 } );
 
 reguStreaming.confirmChatLink = function( self )

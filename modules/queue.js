@@ -12,15 +12,14 @@ const YoutubeConverter = require( "horizon-youtube-mp3" );
 const URL = require( "url" );
 const querystring = require( "querystring" );
 const fileStream = require( "fs" );
-const util = require( "util" );
-const reguUtil = require( "../util" );
+const util = require( "../util" );
 const Logger = require( "./logger" );
 const ChatManager = require( "./chat" );
 const hook = require( "../hook" );
 const superagent = require( "superagent" );
 const cheerio = require( "cheerio" );
 const getDuration = require( "get-video-duration" );
-// const ClientManager = require( "../client" );
+const ServiceManager = require( "./service" );
 // const datastream = require( "../datastream" );
 const decodeHTML = require( "decode-html" );
 
@@ -259,6 +258,11 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
                         }
                         else if ( typeof checkResult === "string" )
                         {
+                            if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                                return {
+                                    code: this.statusCode.serviceBlockedError
+                                };
+
                             return {
                                 code: this.statusCode.success,
                                 type: checkerData.type,
@@ -268,6 +272,11 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
                         }
                         else if ( typeof checkResult === "boolean" )
                         {
+                            if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                                return {
+                                    code: this.statusCode.serviceBlockedError
+                                };
+
                             return {
                                 code: this.statusCode.success,
                                 type: checkerData.type,
@@ -416,53 +425,51 @@ QueueManager.getYoutubeCaption = function( languageCode, vssId, captionList, cal
                 .then(
                     function( res )
                     {
-                        if ( res.statusCode === 200 )
+                        if ( res.status !== 200 )
+                            throw new Error( "HTTP error code : " + res.statusCode );
+
+                        util.parseXML( res.text, function( err, result )
                         {
-                            reguUtil.parseXML( res.text, function( err, result )
+                            if ( err )
+                                throw new Error( "XML parse error : " + err );
+
+                            if ( result.transcript && result.transcript.text )
                             {
-                                if ( err )
-                                    throw new Error( "XML parse error : " + err );
+                                // 2018-07-19 2:35:44 (!    ERROR    !) : [Queue] Failed to process QueueManager.getYoutubeCaption -> (TypeError: Cannot read property 'replace' of undefined
+                                // at decodeHTMLEntities (D:\NodeJS\ReguStreaming\regustreaming\node_modules\decode-html\index.js:15:14)
+                                // at D:\NodeJS\ReguStreaming\regustreaming\modules\queue.js:394:50
+                                // at Array.map (native)
+                                // at D:\NodeJS\ReguStreaming\regustreaming\modules\queue.js:391:76
+                                // at D:\NodeJS\ReguStreaming\regustreaming\util.js:44:9
+                                // at Parser.<anonymous> (D:\NodeJS\ReguStreaming\regustreaming\node_modules\xml2js\lib\parser.js:303:18)
+                                // at emitOne (events.js:96:13)
+                                // at Parser.emit (events.js:188:7)
+                                // at Object.onclosetag (D:\NodeJS\ReguStreaming\regustreaming\node_modules\xml2js\lib\parser.js:261:26)
+                                // at emit (D:\NodeJS\ReguStreaming\regustreaming\node_modules\sax\lib\sax.js:624:35)
+                                // at emitNode (D:\NodeJS\ReguStreaming\regustreaming\node_modules\sax\lib\sax.js:629:5))
 
-                                if ( result.transcript && result.transcript.text )
+                                var newResult = result.transcript.text.map( function( source )
                                 {
-                                    // 2018-07-19 2:35:44 (!    ERROR    !) : [Queue] Failed to process QueueManager.getYoutubeCaption -> (TypeError: Cannot read property 'replace' of undefined
-                                    // at decodeHTMLEntities (D:\NodeJS\ReguStreaming\regustreaming\node_modules\decode-html\index.js:15:14)
-                                    // at D:\NodeJS\ReguStreaming\regustreaming\modules\queue.js:394:50
-                                    // at Array.map (native)
-                                    // at D:\NodeJS\ReguStreaming\regustreaming\modules\queue.js:391:76
-                                    // at D:\NodeJS\ReguStreaming\regustreaming\util.js:44:9
-                                    // at Parser.<anonymous> (D:\NodeJS\ReguStreaming\regustreaming\node_modules\xml2js\lib\parser.js:303:18)
-                                    // at emitOne (events.js:96:13)
-                                    // at Parser.emit (events.js:188:7)
-                                    // at Object.onclosetag (D:\NodeJS\ReguStreaming\regustreaming\node_modules\xml2js\lib\parser.js:261:26)
-                                    // at emit (D:\NodeJS\ReguStreaming\regustreaming\node_modules\sax\lib\sax.js:624:35)
-                                    // at emitNode (D:\NodeJS\ReguStreaming\regustreaming\node_modules\sax\lib\sax.js:629:5))
-
-                                    var newResult = result.transcript.text.map( function( source )
+                                    if ( source && source.attr )
                                     {
-                                        if ( source && source.attr )
-                                        {
-                                            return {
-                                                val: source.val ? decodeHTML( source.val ) : "",
-                                                attr:
-                                                {
-                                                    start: Number( source.attr.start ),
-                                                    dur: Number( source.attr.dur )
-                                                }
+                                        return {
+                                            val: source.val ? decodeHTML( source.val ) : "",
+                                            attr:
+                                            {
+                                                start: Number( source.attr.start ),
+                                                dur: Number( source.attr.dur )
                                             }
                                         }
-                                        else
-                                            return source;
-                                    } );
+                                    }
+                                    else
+                                        return source;
+                                } );
 
-                                    callback( true, newResult );
-                                }
-                                else
-                                    throw new Error( "Unknown javascript object : " + result );
-                            } );
-                        }
-                        else
-                            throw new Error( "HTTP error code : " + res.statusCode );
+                                callback( true, newResult );
+                            }
+                            else
+                                throw new Error( "Unknown javascript object : " + result );
+                        } );
                     } )
                 .catch( function( err )
                 {
@@ -508,7 +515,7 @@ QueueManager.userVote = function( client, type )
 {
     var playingData = QueueManager.getPlayingData( client.room );
 
-    if ( reguUtil.isEmpty( playingData ) )
+    if ( util.isEmpty( playingData ) )
     {
         return {
             success: false,
@@ -568,7 +575,7 @@ QueueManager._onRegister = function( client, code, url, err, isError )
         if ( isError )
             Logger.write( Logger.LogType.Error, `[Queue] ERROR: Failed to register Queue. (url:${ url }, error:${ err.stack })\n${ ( client ? client.information( ) : "SERVER" ) }` );
         else
-            Logger.write( Logger.LogType.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ ( keys[ code ] || "unknownError" ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
+            Logger.write( Logger.LogType.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ ( keys[ code ] || "unknown" ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
     }
 }
 
@@ -586,7 +593,8 @@ QueueManager.statusCode = {
     startPositionOverThanLengthError: 8,
     startPositionTooShortThanLengthError: 9,
     failedToGetInformationError: 10,
-    unknownError: 11
+    unknownError: 11,
+    serviceBlockedError: 50
 };
 QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, startPosition, callback )
 {
@@ -646,8 +654,8 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
         //     return;
         // }
 
-        // var videoLengthTime = reguUtil.calcTime( videoLengthSec );
-        // var maxAllowLengthTime = reguUtil.calcTime( QueueManager.config.MAX_DURATION );
+        // var videoLengthTime = util.calcTime( videoLengthSec );
+        // var maxAllowLengthTime = util.calcTime( QueueManager.config.MAX_DURATION );
 
         if ( startPosition > videoLengthSec )
             return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
@@ -705,7 +713,7 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
                 return;
             }
 
-            var newData = reguUtil.deepCopy( queueData );
+            var newData = util.deepCopy( queueData );
             newData.type = "register";
 
             // if ( client ) // client가 있을경우.
@@ -881,7 +889,7 @@ QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, sta
                         //     videoConverted: queueData.videoConverted
                         // } );
 
-                        var newData = reguUtil.deepCopy( queueData );
+                        var newData = util.deepCopy( queueData );
                         newData.type = "register";
 
                         // if ( client ) // client가 있을경우.
@@ -1032,7 +1040,7 @@ QueueManager._processRegisterKakaoTV = function( client, roomID, url, videoID, s
                         //     videoConverted: queueData.videoConverted
                         // } );
 
-                        var newData = reguUtil.deepCopy( queueData );
+                        var newData = util.deepCopy( queueData );
                         newData.type = "register";
 
                         // if ( client ) // client가 있을경우.
@@ -1546,17 +1554,17 @@ hook.register( "OnCreateOfficialRoom", function( )
 {
     hook.register( "TickTok", function( )
     {
-        Server.ROOM.forEach( ( room ) =>
+        util.forEach( Server.ROOM, ( room ) =>
         {
             var roomID = room.roomID;
             var currentQueueData = room.currentPlayingQueue;
 
-            if ( !QueueManager.isEmpty( roomID ) && reguUtil.isEmpty( currentQueueData ) )
+            if ( !QueueManager.isEmpty( roomID ) && util.isEmpty( currentQueueData ) )
             {
                 QueueManager.play( roomID );
                 return;
             }
-            else if ( QueueManager.isEmpty( roomID ) && reguUtil.isEmpty( currentQueueData ) )
+            else if ( QueueManager.isEmpty( roomID ) && util.isEmpty( currentQueueData ) )
                 return
 
             if ( currentQueueData.mediaDuration <= room.currentPlayingPos - 3 ) // 3초 딜레이
@@ -1589,7 +1597,7 @@ hook.register( "OnCreateOfficialRoom", function( )
 
     if ( !App.config.enableAutoQueue ) return;
 
-    Server.ROOM.forEach( ( room ) =>
+    util.forEach( Server.ROOM, ( room ) =>
     {
         var roomID = room.roomID;
 
@@ -1729,7 +1737,7 @@ QueueManager.isPlaying = function( roomID )
 {
     if ( !Server.ROOM[ roomID ] ) return false;
 
-    return Server.ROOM[ roomID ].currentPlayingQueue != null && !reguUtil.isEmpty( Server.ROOM[ roomID ].currentPlayingQueue );
+    return Server.ROOM[ roomID ].currentPlayingQueue != null && !util.isEmpty( Server.ROOM[ roomID ].currentPlayingQueue );
 }
 
 hook.register( "PostClientConnected", function( client, socket )
@@ -1740,7 +1748,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
     socket.on( "regu.mediaUserVote", function( data )
     {
-        if ( !reguUtil.isValidSocketData( data,
+        if ( !util.isValidSocketData( data,
             {
                 type: "number"
             } ) )
@@ -1774,7 +1782,7 @@ hook.register( "PostClientConnected", function( client, socket )
     {
         var playingData = QueueManager.getPlayingData( roomID );
 
-        if ( reguUtil.isEmpty( playingData ) )
+        if ( util.isEmpty( playingData ) )
         {
             socket.emit( "RS.mediaPlay",
             {
@@ -1783,7 +1791,7 @@ hook.register( "PostClientConnected", function( client, socket )
         }
         else
         {
-            var newData = reguUtil.deepCopy( playingData );
+            var newData = util.deepCopy( playingData );
             newData.mediaPosition = Server.ROOM[ roomID ].currentPlayingPos;
             // 자막 잇을경우 요청 없을경우 요청 안하기 바꾸기
             // newData.extra = {
@@ -1800,7 +1808,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
     socket.on( "regu.queueRegister", function( data )
     {
-        if ( !reguUtil.isValidSocketData( data,
+        if ( !util.isValidSocketData( data,
             {
                 url: "string",
                 start: "number"
@@ -1814,8 +1822,6 @@ hook.register( "PostClientConnected", function( client, socket )
 
         var isAllowRegister = QueueManager.isAllowRegister( client, roomID, data );
 
-        console.log( isAllowRegister );
-
         if ( isAllowRegister.code !== QueueManager.statusCode.success )
         {
             socket.emit( "regu.queueRegisterReceive", isAllowRegister );
@@ -1823,8 +1829,6 @@ hook.register( "PostClientConnected", function( client, socket )
             Logger.write( Logger.LogType.Warning, `[Queue] Queue request rejected. (url:${ data.url }, code:${ isAllowRegister.code }) ${ client.information( ) }` );
             return;
         }
-
-
 
         QueueManager.register( isAllowRegister.type, client, client.room, isAllowRegister.newURL, isAllowRegister.videoID, data.start );
     } );

@@ -12,6 +12,8 @@ const util = require( "util" );
 const passport = require( "passport" );
 const NaverStrategy = require( "passport-naver" )
     .Strategy;
+const apiConfig = require( "../../const/config" )
+    .Naver;
 
 passport.serializeUser( function( user, done )
 {
@@ -25,21 +27,21 @@ passport.deserializeUser( function( obj, done )
 
 passport.use( new NaverStrategy(
     {
-        clientID: "Qv8zgVwxiralK6Sz25U6",
-        clientSecret: "9cMS_fqbEF",
-        callbackURL: "https://regustreaming.oa.to/login/naver/return"
+        clientID: apiConfig.clientID,
+        clientSecret: apiConfig.clientSecret,
+        callbackURL: apiConfig.callbackURL
     },
     function( accessToken, refreshToken, profile, done )
     {
-        var isAllowedAccount = hook.run( "CanLoginAccount", profile.id, profile );
+        // var isAllowedAccount = hook.run( "CanLoginAccount", profile.id, profile );
 
-        if ( isAllowedAccount && isAllowedAccount.isBanned )
-        {
-            return done( null, false,
-            {
-                id: isAllowedAccount.id
-            } );
-        }
+        // if ( isAllowedAccount && isAllowedAccount.isBanned )
+        // {
+        //     return done( null, false,
+        //     {
+        //         id: isAllowedAccount.id
+        //     } );
+        // }
 
         process.nextTick( function( )
         {

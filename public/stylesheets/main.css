@@ -3,8 +3,6 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
-.header {}
-
 .discordRecommendModal {
     width: 450px;
     height: 500px;
@@ -44,34 +42,14 @@
     right: 15px;
 }
 
-.serviceStatusProblem {
-    width: 100%;
-    height: 32px;
-    background-color: rgb( 255, 58, 58);
-    position: fixed;
-    top: 0;
-    cursor: pointer;
-    align-items: center;
-    justify-content: center;
-    display: flex;
-}
-
-.serviceStatusProblemText {
-    font-size: 13px;
-    margin: 0;
-    margin-left: 8px;
-    color: white;
-    display: inline-block;
-}
-
-.headerImage {
+.header-logo {
     position: fixed;
     top: 64px;
     left: 64px;
     cursor: pointer;
 }
 
-@keyframes serviceStatusIconInfoAnimate {
+@keyframes headerServiceStatusInfo {
     0% {
         transform: scale( 1);
     }
@@ -86,7 +64,7 @@
     }
 }
 
-@keyframes serviceStatusIconWarningAnimate {
+@keyframes headerServiceStatusWarning {
     0% {
         transform: scale( 1);
     }
@@ -101,7 +79,7 @@
     }
 }
 
-@keyframes serviceStatusIconDangerAnimate {
+@keyframes headerServiceStatusDanger {
     0% {
         transform: scale( 1);
     }
@@ -116,7 +94,7 @@
     }
 }
 
-.serviceStatusIcon {
+.header-serviceStatus {
     position: fixed;
     width: 32px;
     height: 32px;
@@ -129,18 +107,38 @@
     animation: serviceStatusIconAnimate 1s infinite; */
 }
 
-.serviceNotificationContainer {
+.header-serviceNotification {
     position: fixed;
     width: 350px;
     top: 116px;
     left: 290px;
     border-radius: 12px;
-    background-color: rgba( 235, 235, 235, 1);
+    background-color: rgba( 235, 235, 255, 1);
     z-index: 10;
     display: none;
 }
 
-@keyframes serviceNotificationContainerBounceInDown {
+.header-serviceStatusFloating {
+    width: 100%;
+    height: 32px;
+    background-color: rgb( 255, 58, 58);
+    position: fixed;
+    top: 0;
+    cursor: pointer;
+    align-items: center;
+    justify-content: center;
+    display: flex;
+}
+
+.header-serviceStatusFloating-message {
+    font-size: 13px;
+    margin: 0;
+    margin-left: 8px;
+    color: white;
+    display: inline-block;
+}
+
+@keyframes serviceNotificationFadeIn {
     from,
     60%,
     75%,
@@ -178,7 +176,7 @@
     }
 }
 
-@keyframes serviceNotificationContainerBounceOutUp {
+@keyframes serviceNotificationFadeOut {
     20% {
         -webkit-transform: translate3d(0, -10px, 0);
         transform: translate3d(0, -10px, 0);
@@ -198,25 +196,15 @@
     }
 }
 
-.serviceNotificationContainerPinch {
-    position: fixed;
-    top: 108px;
-    left: 276px;
-    background-image: url("/images/service/pinch.png");
-    background-repeat: no-repeat;
-    background-position: left top;
-}
-
-.serviceNotificationItem {
+.header-serviceNotification-item {
     width: 100%;
     height: auto;
     padding: 0;
     margin: 0;
 }
 
-.serviceNotificationItemTitle {
-    font-size: 15px;
-    color: rgb( 255, 255, 255);
+.header-serviceNotification-item-title {
+    font-size: 13px;
     padding: 8px;
     padding-left: 12px;
     margin: 0;
@@ -226,9 +214,9 @@
     border-top-right-radius: 12px; */
 }
 
-.serviceNotificationItemMessage {
+.header-serviceNotification-item-message {
     font-size: 13px;
-    color: rgb( 50, 50, 50);
+    color: rgb( 25, 25, 25);
     padding: 12px;
     margin: 0;
 }
@@ -265,7 +253,7 @@
     z-index: 1;
 }
 
-.roomListContainerLoginRequired {
+.roomListContainer-loginRequired {
     width: 100%;
     height: 100%;
     position: absolute;
@@ -275,7 +263,16 @@
     display: none;
 }
 
-.roomListContainerLoginRequiredText {
+.roomListContainer-loginRequired-icon {
+    top: 0;
+    bottom: 82px;
+    left: 0;
+    right: 0;
+    position: absolute;
+    margin: auto;
+}
+
+.roomListContainer-loginRequired-text {
     font-size: 17px;
     color: white;
     top: 16px;
@@ -288,32 +285,17 @@
     height: 24px;
 }
 
-.roomListContainerLoginRequiredIcon {
-    top: 0;
-    bottom: 82px;
-    left: 0;
-    right: 0;
-    position: absolute;
-    margin: auto;
-}
-
-#loginWithContainer {
+.header-login {
     display: block;
     display: none;
     margin: 0;
     position: fixed;
+    opacity: 0;
     top: 64px;
     right: 64px;
 }
 
-#loginWithTitle {
-    font-size: 17px;
-    color: white;
-    text-align: center;
-    margin: 32px;
-}
-
-.loginWithSNSButton {
+.header-login-button {
     width: 42px;
     height: 42px;
     position: relative;
@@ -322,17 +304,50 @@
     margin-left: 16px;
 }
 
-#loginWithGuestText {
-    position: relative;
+.header-login-guestText {
     margin: 16px;
     margin-top: 12px;
     float: right;
-    font-size: 15px;
-    color: white;
 }
 
-#loginWithGuestButton {
+.google,
+.kakao,
+.naver,
+.steam,
+.twitter {
+    display: inline-block;
+    background: url("/images/snslogin.png") no-repeat;
+    width: 42px;
+    height: 42px;
+    margin-left: 8px;
+}
+
+.google {
+    background-position: -1px -0px;
+}
+
+.kakao {
+    background-position: -44px -0px;
+}
+
+.naver {
+    background-position: -1px -43px;
+}
+
+.steam {
+    background-position: -44px -43px;
+}
+
+.twitter {
+    background-position: -1px -86px;
+}
+
+.guest {
+    width: auto;
+    height: auto;
+
     float: right;
+    margin: auto;
     margin-top: 5px;
     font-size: 13px;
     padding: 6px;
@@ -345,25 +360,18 @@
     margin-right: 6px;
 }
 
-.headerLoginInformationContainer {
+.header-loginInformation {
     display: inline-block;
     display: none;
     padding: 0;
     position: fixed;
     top: 64px;
     right: 64px;
+    opacity: 0;
 }
 
-.headerLoginInformationContainerProfileImage {
-    margin-left: 6px;
-    border-radius: 50%;
-    width: 46px;
-    height: 46px;
-}
-
-.headerLoginInformationContainerProfileName {
-    color: white;
-    font-size: 20px;
+.header-loginInformation-profileName {
+    font-size: 17px;
     display: inline-block;
     margin: 0;
     top: 2px;
@@ -371,8 +379,14 @@
     position: relative;
 }
 
-.headerLoginInformationContainerProfileProvider {
-    color: white;
+.header-loginInformation-profileImage {
+    margin-left: 6px;
+    border-radius: 50%;
+    width: 32px;
+    height: 32px;
+}
+
+.header-loginInformation-profileProvider {
     font-size: 11px;
     display: inline-block;
     margin: 0;
@@ -382,31 +396,12 @@
     margin-left: 6px;
 }
 
-.headerLoginInformationContainerLogout {
+.header-loginInformation-logout {
     width: 16px;
     height: 16px;
     display: inline-block;
     cursor: pointer;
     margin: 12px;
-}
-
-.loginInformationContainer {
-    display: inline-block;
-    padding: 0;
-}
-
-#loginInformationContainerProfileImage {
-    margin-left: 6px;
-    border-radius: 50%;
-    width: 32px;
-    height: 32px;
-}
-
-#loginInformationContainerProfileName {
-    color: white;
-    font-size: 15px;
-    display: inline-block;
-    margin-left: 6px;
 }
 
 .roomListContainer {

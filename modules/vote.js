@@ -8,7 +8,7 @@
 const VoteManager = {};
 const Server = require( "../server" );
 const Logger = require( "./logger" );
-const reguUtil = require( "../util" );
+const util = require( "../util" );
 const QueueManager = require( "./queue" );
 // const ClientManager = require( "../client" );
 const ChatManager = require( "./chat" );
@@ -224,12 +224,12 @@ VoteManager.getRoomVote = function( roomID )
 
 VoteManager.isRunningVote = function( roomID )
 {
-    return !reguUtil.isEmpty( VoteManager._voteList[ roomID ] );
+    return !util.isEmpty( VoteManager._voteList[ roomID ] );
 }
 
 hook.register( "OnCreateOfficialRoom", function( roomList )
 {
-    roomList.forEach( ( room ) => VoteManager._voteList[ room.roomID ] = {} );
+    util.forEach( roomList, ( room ) => VoteManager._voteList[ room.roomID ] = {} );
 } );
 
 hook.register( "PostClientConnected", function( client, socket )
@@ -259,7 +259,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
     socket.on( "regu.voteStackFlag", function( data )
     {
-        if ( !reguUtil.isValidSocketData( data,
+        if ( !util.isValidSocketData( data,
             {
                 flag: "number"
             } ) )

@@ -25,6 +25,7 @@
     "get-video-info": "^1.0.0",
     "horizon-youtube-mp3": "^1.9.0",
     "http-errors": "~1.6.2",
+    "merge": "^1.2.0",
     "microphone-stream": "^4.1.3",
     "moment": "^2.22.2",
     "morgan": "~1.9.0",
@@ -64,9 +65,11 @@
       "start.bat",
       "package.json",
       "public",
-      "res",
-      "files",
-      "logs"
+      "background",
+      "userfiles",
+      "views",
+      "const",
+      "fileStorage"
     ]
   }
 }

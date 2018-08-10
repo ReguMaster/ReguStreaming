@@ -5,21 +5,22 @@
 
 reguStreaming.controlInitialized = false;
 let controls = {
-    roomList: null,
     roomListContainer: null,
+    roomListContainerList: null,
     roomListContainerLoginRequired: null,
 
-    loginWithContainer: null,
+    headerLogin: null,
+    headerLoginGuestText: null,
 
-    headerLoginInformationContainer: null,
-    headerLoginInformationContainerProfileImage: null,
-    headerLoginInformationContainerProfileName: null,
-    headerLoginInformationContainerProfileProvider: null,
-    logoutButton: null,
+    headerLoginInformation: null,
+    headerLoginInformationProfileName: null,
+    headerLoginInformationProfileImage: null,
+    headerLoginInformationProfileProvider: null,
+    headerLoginInformationLogout: null,
 
-    serviceNotificationContainer: null,
-    serviceStatusIcon: null,
-    serviceStatusProblem: null,
+    headerServiceNotification: null,
+    headerServiceStatus: null,
+    headerServiceStatusFloating: null,
     discordRecommendModal: null
 };
 
@@ -67,18 +68,48 @@ reguStreaming.processMainQueryString = function( )
     {
         util.showModal( "채널 오류", "올바르지 않은 채널입니다.", "닫기", null, null, null, true );
         util.removeAllQueryParameters( );
+
+        return;
+    }
+
+    if ( queryList.hasOwnProperty( "loginNotAllowed" ) )
+    {
+        util.showModal( "로그인 불가", "현재 이 서비스를 통한 로그인이 사용 가능하지 않습니다.", "닫기", null, null, null, true );
+        util.removeAllQueryParameters( );
+
+        return;
+    }
+
+    if ( queryList.hasOwnProperty( "loginFailed" ) )
+    {
+        util.showModal( "로그인 오류", "로그인에 실패했습니다, 나중에 다시 시도하세요.", "닫기", null, null, null, true );
+        util.removeAllQueryParameters( );
+
+        return;
+    }
+
+    if ( queryList.hasOwnProperty( "loginFailedService" ) )
+    {
+        util.showModal( "로그인 오류", "서비스 오류로 인해 로그인에 실패했습니다, 나중에 다시 시도하세요.", "닫기", null, null, null, true );
+        util.removeAllQueryParameters( );
+
+        return;
     }
 
     if ( queryList.hasOwnProperty( "error" ) )
     {
         util.showModal( "접속 불가", decodeURIComponent( queryList[ "error" ] ), "닫기", null, null, null, true );
         util.removeAllQueryParameters( );
+
+        return;
     }
 
     if ( queryList.hasOwnProperty( "permissionError" ) )
     {
         util.showModal( "접근 거부", "접근 권한이 없습니다.", "닫기", null, null, null, true );
         util.removeAllQueryParameters( );
+
+        return;
     }
 }
 
@@ -133,17 +164,17 @@ window.onload = function( )
             opacity: "1"
         }, 1000 );
 
-    controls.serviceStatusIcon.on( "click", function( e )
+    controls.headerServiceStatus.on( "click", function( e )
     {
         e.stopPropagation( );
     } );
 
-    controls.serviceNotificationContainer.on( "click", function( e )
+    controls.headerServiceNotification.on( "click", function( e )
     {
         e.stopPropagation( );
     } );
 
-    controls.serviceStatusProblem.on( "click", function( e )
+    controls.headerServiceStatusFloating.on( "click", function( e )
     {
         e.stopPropagation( );
     } );
@@ -195,7 +226,7 @@ reguStreaming.initializeRoom = function( rooms )
             var keys = Object.keys( rooms );
             var keysLength = keys.length;
 
-            controls.roomList.empty( );
+            controls.roomListContainerList.empty( );
 
             for ( var i = 0; i < keysLength; i++ )
             {
@@ -211,7 +242,7 @@ reguStreaming.initializeRoom = function( rooms )
                         roomData.count,
                         roomData.maxConnectable
                     ) )
-                    .appendTo( controls.roomList )
+                    .appendTo( controls.roomListContainerList )
 
                 newObj.css( "opacity", "0" );
 
@@ -237,8 +268,8 @@ reguStreaming.initializeRoom = function( rooms )
                         } );
                 }
 
-                controls.roomList.css( "filter", "" );
-                controls.roomList.css( "-webkit-filter", "" );
+                controls.roomListContainerList.css( "filter", "" );
+                controls.roomListContainerList.css( "-webkit-filter", "" );
             }
             else
             {
@@ -252,8 +283,8 @@ reguStreaming.initializeRoom = function( rooms )
                         }, 1000 );
                 }
 
-                controls.roomList.css( "filter", "blur( 2px )" );
-                controls.roomList.css( "-webkit-filter", "blur( 2px )" );
+                controls.roomListContainerList.css( "filter", "blur( 2px )" );
+                controls.roomListContainerList.css( "-webkit-filter", "blur( 2px )" );
             }
 
             clearInterval( waitInitialize );
@@ -274,17 +305,55 @@ reguStreaming.AjaxServiceStatus = function( )
 
             if ( data.serviceStatus === 1 )
             {
-                if ( !controls.serviceStatusProblem.is( ":visible" ) )
+                if ( !controls.headerServiceStatusFloating.is( ":visible" ) )
                 {
-                    controls.serviceStatusProblem.show( );
-                    util.startCSSAnimation( "slideInDown 0.5s", controls.serviceStatusProblem );
+                    controls.headerServiceStatusFloating.show( );
+                    util.startCSSAnimation( "slideInDown 0.5s", controls.headerServiceStatusFloating );
                 }
             }
             else
-            if ( controls.serviceStatusProblem.is( ":visible" ) )
-                controls.serviceStatusProblem.hide( );
+            {
+                if ( controls.headerServiceStatusFloating.is( ":visible" ) )
+                    controls.headerServiceStatusFloating.hide( );
+            }
 
-            controls.serviceNotificationContainer.empty( );
+            var showingCount = 0;
+
+            $( ".header-login-button" )
+                .each( function( index, self )
+                {
+                    self = $( self );
+
+                    var provider = self.attr( "data-provider" );
+
+                    if ( provider && data.loginDisallowList.indexOf( provider ) === -1 )
+                    {
+                        if ( !self.is( ":visible" ) )
+                            self.show( );
+
+                        self.on( "click", function( )
+                        {
+                            reguStreaming.login( provider );
+                        } );
+
+                        showingCount++;
+                    }
+                    else
+                        self.hide( );
+                } );
+
+            if ( showingCount <= 1 )
+            {
+                if ( controls.headerLoginGuestText.is( ":visible" ) )
+                    controls.headerLoginGuestText.hide( );
+            }
+            else
+            {
+                if ( !controls.headerLoginGuestText.is( ":visible" ) )
+                    controls.headerLoginGuestText.show( );
+            }
+
+            controls.headerServiceNotification.empty( );
 
             if ( data.notification.length !== 0 )
                 reguStreaming.buildServiceNotification( data.notification );
@@ -292,9 +361,9 @@ reguStreaming.AjaxServiceStatus = function( )
     } );
 }
 
-const serviceNotificationChildHTML = '<div class="serviceNotificationItem" id="serviceNotificationItem_{0}" );"> \
-				<p class="serviceNotificationItemTitle">{1}</p> \
-                <p class="serviceNotificationItemMessage">{2}</p> \
+const serviceNotificationChildHTML = '<div class="header-serviceNotification-item" id="serviceNotificationItem_{0}" );"> \
+				<p class="header-serviceNotification-item-title">{1}</p> \
+                <p class="header-serviceNotification-item-message">{2}</p> \
             </div>';
 
 reguStreaming.buildServiceNotification = function( data )
@@ -310,26 +379,30 @@ reguStreaming.buildServiceNotification = function( data )
                 data[ i ].title,
                 data[ i ].message
             ) )
-            .appendTo( controls.serviceNotificationContainer );
+            .appendTo( controls.headerServiceNotification );
 
         if ( data[ i ].type > typeHighest )
             typeHighest = data[ i ].type;
 
+        var color;
+
         switch ( data[ i ].type )
         {
             case 0:
-                newObj.find( ".serviceNotificationItemTitle" )
-                    .css( "background-color", "rgb( 56, 110, 156 )" );
+                color = "rgb( 56, 110, 156 )";
                 break;
             case 1:
-                newObj.find( ".serviceNotificationItemTitle" )
-                    .css( "background-color", "rgb( 255, 141, 58 )" );
+                color = "rgb( 255, 141, 58 )";
                 break;
             case 2:
-                newObj.find( ".serviceNotificationItemTitle" )
-                    .css( "background-color", "rgb( 202, 64, 61 )" );
+                color = "rgb( 202, 64, 61 )";
                 break;
+            default:
+                color = "rgb( 56, 110, 156 )";
         }
+
+        newObj.find( ".header-serviceNotification-item-title" )
+            .css( "background-color", color );
     }
 
     // ServiceManager.notificationType = {
@@ -341,20 +414,20 @@ reguStreaming.buildServiceNotification = function( data )
     switch ( typeHighest )
     {
         case 0:
-            controls.serviceStatusIcon.attr( "src", "images/service/info.png" );
-            controls.serviceStatusIcon.css( "animation", "serviceStatusIconInfoAnimate 1s infinite" );
+            controls.headerServiceStatus.attr( "src", "images/service/info.png" );
+            controls.headerServiceStatus.css( "animation", "headerServiceStatusInfo 1s infinite" );
             break;
         case 1:
-            controls.serviceStatusIcon.attr( "src", "images/service/warning.png" );
-            controls.serviceStatusIcon.css( "animation", "serviceStatusIconWarningAnimate 1s infinite" );
+            controls.headerServiceStatus.attr( "src", "images/service/warning.png" );
+            controls.headerServiceStatus.css( "animation", "headerServiceStatusWarning 1s infinite" );
             break;
         case 2:
-            controls.serviceStatusIcon.attr( "src", "images/service/danger.png" );
-            controls.serviceStatusIcon.css( "animation", "serviceStatusIconDangerAnimate 1s infinite" );
+            controls.headerServiceStatus.attr( "src", "images/service/danger.png" );
+            controls.headerServiceStatus.css( "animation", "headerServiceStatusDanger 1s infinite" );
             break;
     }
 
-    controls.serviceStatusIcon.show( )
+    controls.headerServiceStatus.show( )
         .css( "opacity", "0" )
         .animate(
         {
@@ -364,15 +437,15 @@ reguStreaming.buildServiceNotification = function( data )
 
 reguStreaming.toggleServiceNotificationStatus = function( )
 {
-    var e = controls.serviceNotificationContainer;
+    var e = controls.headerServiceNotification;
 
     if ( !e.is( ":visible" ) )
     {
         e.show( );
-        util.startCSSAnimation( "serviceNotificationContainerBounceInDown 0.5s", e );
+        util.startCSSAnimation( "serviceNotificationFadeIn 0.5s", e );
 
-        if ( controls.serviceStatusIcon.css( "animation" ) !== "" )
-            controls.serviceStatusIcon.css( "animation", "" );
+        if ( controls.headerServiceStatus.css( "animation" ) !== "" )
+            controls.headerServiceStatus.css( "animation", "" );
 
         $( "body" )
             .one( "click", function( )
@@ -383,7 +456,7 @@ reguStreaming.toggleServiceNotificationStatus = function( )
     }
     else
     {
-        util.startCSSAnimation( "serviceNotificationContainerBounceOutUp 0.5s", e, function( )
+        util.startCSSAnimation( "serviceNotificationFadeOut 0.5s", e, function( )
         {
             e.hide( );
         } );
@@ -417,8 +490,8 @@ reguStreaming.AjaxLoginStatus = function( )
                         } );
                 }
 
-                controls.roomList.css( "filter", "" );
-                controls.roomList.css( "-webkit-filter", "" );
+                controls.roomListContainerList.css( "filter", "" );
+                controls.roomListContainerList.css( "-webkit-filter", "" );
             }
             else
             {
@@ -432,29 +505,26 @@ reguStreaming.AjaxLoginStatus = function( )
                         }, 1000 );
                 }
 
-                controls.roomList.css( "filter", "blur( 2px )" );
-                controls.roomList.css( "-webkit-filter", "blur( 2px )" );
+                controls.roomListContainerList.css( "filter", "blur( 2px )" );
+                controls.roomListContainerList.css( "-webkit-filter", "blur( 2px )" );
             }
 
             if ( data.isAuthenticated )
             {
-                if ( controls.loginWithContainer.is( ":visible" ) )
-                    controls.loginWithContainer.hide( );
+                if ( controls.headerLogin.is( ":visible" ) )
+                    controls.headerLogin.hide( );
 
-                if ( !controls.headerLoginInformationContainer.is( ":visible" ) )
-                {
-                    controls.headerLoginInformationContainer.show( );
-                }
-                // controls.headerLoginInformationContainer.css( "opacity", "0" )
-                //     .animate(
-                //     {
-                //         opacity: "1"
-                //     }, 1000 );
+                if ( !controls.headerLoginInformation.is( ":visible" ) )
+                    controls.headerLoginInformation.show( )
+                    .animate(
+                    {
+                        opacity: "1"
+                    }, 500 );
 
-                controls.logoutButton.show( );
+                controls.headerLoginInformationLogout.show( );
 
-                controls.headerLoginInformationContainerProfileImage.attr( "src", data.avatar );
-                controls.headerLoginInformationContainerProfileName.text( data.name );
+                controls.headerLoginInformationProfileImage.attr( "src", data.avatar );
+                controls.headerLoginInformationProfileName.text( data.name );
 
                 var provider = "";
 
@@ -476,7 +546,7 @@ reguStreaming.AjaxLoginStatus = function( )
                         provider = "트위터";
                         break;
                     case "instagram":
-                        provider = "인스타그램";
+                        provider = "인스타그램"; // 속에서..
                         break;
                     case "facebook":
                         provider = "페이스북";
@@ -486,39 +556,35 @@ reguStreaming.AjaxLoginStatus = function( )
                         break;
                 }
 
-                controls.headerLoginInformationContainerProfileProvider.text( provider + " 계정" );
+                controls.headerLoginInformationProfileProvider.text( provider + " 계정" );
             }
             else
             {
-                if ( !controls.loginWithContainer.is( ":visible" ) )
-                    controls.loginWithContainer.show( );
-
-                if ( controls.headerLoginInformationContainer.is( ":visible" ) )
+                if ( !controls.headerLogin.is( ":visible" ) )
                 {
-                    controls.headerLoginInformationContainer.hide( );
-                    // controls.headerLoginInformationContainer.css( "opacity", "1" )
-                    //     .animate(
-                    //     {
-                    //         opacity: "0"
-                    //     }, 1000, function( )
-                    //     {
-                    //         $( this )
-                    //             .hide( );
-                    //     } );
+                    controls.headerLogin
+                        .show( )
+                        .animate(
+                        {
+                            opacity: "1"
+                        }, 500 );
                 }
 
-                controls.logoutButton.hide( );
+                if ( controls.headerLoginInformation.is( ":visible" ) )
+                    controls.headerLoginInformation.hide( );
+
+                controls.headerLoginInformationLogout.hide( );
             }
 
             reguStreaming.initializeRoom( data.room );
         },
         error: function( err )
         {
-            if ( controls.loginWithContainer.is( ":visible" ) )
-                controls.loginWithContainer.hide( );
+            if ( controls.headerLogin.is( ":visible" ) )
+                controls.headerLogin.hide( );
 
-            controls.headerLoginInformationContainer.hide( );
-            controls.logoutButton.hide( );
+            controls.headerLoginInformation.hide( );
+            controls.headerLoginInformationLogout.hide( );
         }
     } );
 }
@@ -557,17 +623,6 @@ reguStreaming.login = function( type )
         {
             window.location = "/login/" + type;
         } );
-
-        return;
-    }
-    else if ( type === "naver" )
-    {
-        util.notification( util.notificationType.warning,
-            "로그인 불가 :",
-            "현재 네이버 계정을 통한 로그인은 지원하지 않습니다.",
-            2000,
-            true
-        );
 
         return;
     }

@@ -117,11 +117,6 @@
             </div>
         </div>
 
-        <div class="serviceStatusProblem" id="serviceStatusProblem" style="display: none;" onclick="reguStreaming.toggleServiceNotificationStatus( );">
-            <span class="glyphicon glyphicon-exclamation-sign" style="color: white; font-size: 15px; display: inline-block; margin-top: -3px;"></span>
-            <p class="serviceStatusProblemText">현재 서비스를 이용하실 수 없습니다, 자세한 내용은 공지사항을 확인해주세요.</p>
-        </div>
-
         <div class="dialogModal" id="discordRecommendModal" style="display: none;">
             <div class="dialogModal-header">
                 <p class="dialogModal-header-title">
@@ -129,7 +124,7 @@
                 </p>
             </div>
 
-            <p class="containerMiddleText" style="font-size: 17px; margin-top: 56px">레그 스트리밍 공식 Discord 서버에 접속하십시오.</p>
+            <p class="containerMiddleText">레그 스트리밍 공식 Discord 서버에 접속하십시오.</p>
             <p class="containerSmallText">
                 레그 스트리밍 서비스와 Discord 서비스는 서로 연동됩니다,
                 <br />원활한 서비스를 위해 접속하세요!
@@ -143,54 +138,46 @@
         </div>
 
         <div class="header" id="header">
-            <img src="images/logo.png" class="headerImage" alt="Logo" onclick="window.location = '/';" />
-            <img src="images/service/warning.png" alt="Service Status" id="serviceStatusIcon" style="display: none;" class="hvr-grow serviceStatusIcon" onclick="reguStreaming.toggleServiceNotificationStatus( );" />
-
-            <div class="serviceNotificationContainer" id="serviceNotificationContainer">
-                <!-- <div class="serviceNotificationContainerPinch" id="serviceNotificationContainerPinch"></div> -->
-                <!-- <div class="serviceNotificationItem">
-                    <p class="serviceNotificationItemTitle">마법공학 제작소 문제 발생</p>
-                    <p class="serviceNotificationItemMessage">현재 마법공학 알리스타 스킨을 제작할 수 없는 문제가 발생해 조속히 해결 중입니다. 불편을 드려 죄송합니다.</p>
-                </div>
-
-                <div class="serviceNotificationItem">
-                    <p class="serviceNotificationItemTitle">서버 문제 발생</p>
-                    <p class="serviceNotificationItemMessage">현재 지속적으로 서비스에 지연 문제가 발생해 조속히 해결 중입니다. 불편을 드려 죄송합니다.</p>
-                </div> -->
+            <div class="header-serviceStatusFloating" id="headerServiceStatusFloating" style="display: none;" onclick="reguStreaming.toggleServiceNotificationStatus( );">
+                <span class="glyphicon glyphicon-exclamation-sign" style="color: white; font-size: 15px; display: inline-block; margin-top: -3px;"></span>
+                <p class="header-serviceStatusFloating-message">현재 서비스를 이용하실 수 없습니다, 자세한 내용은 공지사항을 확인해주세요.</p>
             </div>
 
-            <div class="headerLoginInformationContainer" id="headerLoginInformationContainer">
-                <p class="headerLoginInformationContainerProfileName" id="headerLoginInformationContainerProfileName">불러오는 중 ...</p>
-                <p class="headerLoginInformationContainerProfileProvider" id="headerLoginInformationContainerProfileProvider">계정으로 로그인됨</p>
-                <img class="headerLoginInformationContainerProfileImage" id="headerLoginInformationContainerProfileImage" src="/images/avatar/guest_64.png" alt="Profile Image" />
-                <!-- <img class="headerLoginInformationContainerLogout" id="headerLoginInformationContainerSetting" src="/images/icon/logout_64.png" alt="Setting" title="사용자 계정을 설정합니다." onclick="reguStreaming.logout( );" /> -->
-                <img class="headerLoginInformationContainerLogout" id="headerLoginInformationContainerLogout" src="/images/icon/logout_64.png" alt="Logout" title="레그 스트리밍에서 로그아웃합니다." onclick="reguStreaming.logout( );" />
+            <img src="images/logo.png" class="header-logo" alt="Logo" onclick="window.location = '/';" />
+            <img src="images/service/warning.png" alt="Service Status" id="headerServiceStatus" style="display: none;" class="hvr-grow header-serviceStatus" onclick="reguStreaming.toggleServiceNotificationStatus( );" />
+
+            <div class="header-serviceNotification" id="headerServiceNotification"></div>
+
+            <div class="header-loginInformation" id="headerLoginInformation">
+                <p class="header-loginInformation-profileName" id="headerLoginInformationProfileName">불러오는 중 ...</p>
+                <p class="header-loginInformation-profileProvider" id="headerLoginInformationProfileProvider">계정으로 로그인됨</p>
+                <img class="header-loginInformation-profileImage" id="headerLoginInformationProfileImage" src="/images/avatar/guest_64.png" alt="Profile Image" />
+                <img class="header-loginInformation-logout" id="headerLoginInformationLogout" src="/images/icon/logout_64.png" alt="Logout" title="레그 스트리밍에서 로그아웃합니다." onclick="reguStreaming.logout( );" />
             </div>
 
-            <div id="loginWithContainer">
-                <img class="loginWithSNSButton" src="/images/snslogin/steam.png" title="스팀 계정을 사용해서 로그인합니다." alt="Steam Login" onclick="reguStreaming.login( 'steam' );" />
-                <img class="loginWithSNSButton" src="/images/snslogin/twitter.png" title="트위터 계정을 사용해서 로그인합니다." alt="Twitter Login" onclick="reguStreaming.login( 'twitter' );" />
-                <img class="loginWithSNSButton" src="/images/snslogin/naver.png" title="네이버 계정을 사용해서 로그인합니다." alt="Naver Login" onclick="reguStreaming.login( 'naver' );" />
-                <img class="loginWithSNSButton" src="/images/snslogin/google.png" title="구글 계정을 사용해서 로그인합니다." alt="Google Login" onclick="reguStreaming.login( 'google' );" />
-                <img class="loginWithSNSButton" src="/images/snslogin/kakao.png" title="카카오 계정을 사용해서 로그인합니다." alt="Kakao Login" onclick="reguStreaming.login( 'kakao' );" />
-                <button type="button" class="btn btn-default" id="loginWithGuestButton" title="손님 계정으로 로그인합니다." onclick="reguStreaming.login( 'guest' );">손님 계정 로그인</button>
-                <p id="loginWithGuestText">또는</p>
+            <div class="header-login" id="headerLogin">
+                <div class="header-login-button steam" title="스팀 계정을 사용해서 로그인합니다." data-provider="steam"></div>
+                <div class="header-login-button twitter" title="트위터 계정을 사용해서 로그인합니다." data-provider="twitter"></div>
+                <div class="header-login-button naver" title="네이버 계정을 사용해서 로그인합니다." data-provider="naver"></div>
+                <div class="header-login-button google" title="구글 계정을 사용해서 로그인합니다." data-provider="google"></div>
+                <div class="header-login-button kakao" title="카카오 계정을 사용해서 로그인합니다." data-provider="kakao"></div>
+                <button type="button" class="btn btn-default header-login-button guest" title="손님 계정으로 로그인합니다." data-provider="guest">손님 계정 로그인</button>
+                <p class="header-login-guestText" id="headerLoginGuestText">또는</p>
             </div>
         </div>
 
         <div class="roomListContainer" id="roomListContainer">
-            <div class="roomList" id="roomList">
-            </div>
-            <div class="roomListContainerLoginRequired" id="roomListContainerLoginRequired">
-                <img src="/images/icon/empty.png" alt="Empty" class="roomListContainerLoginRequiredIcon" />
-                <p class="roomListContainerLoginRequiredText">레그 스트리밍에 접속하시려면 로그인이 필요합니다.</p>
+            <div class="roomListContainer-list" id="roomListContainerList"></div>
+            <div class="roomListContainer-loginRequired" id="roomListContainerLoginRequired">
+                <img src="/images/icon/empty.png" alt="Empty" class="roomListContainer-loginRequired-icon" />
+                <p class="roomListContainer-loginRequired-text">레그 스트리밍에 접속하시려면 로그인이 필요합니다.</p>
             </div>
         </div>
 
         <div class="footer" id="footer">
             <img src="/images/icon/discord_64.png" alt="Discord" class="footerCommunityDiscord" title="레그 스트리밍의 공식 디스코드에 접속합니다." onclick="window.open( 'https://discord.gg/sFxRZBC', '_blank' );" />
             <!-- <img src="/images/icon/github_64.png" alt="Github" class="footerCommunityGithub" title="레그 스트리밍의 공식 Github에 접속합니다." onclick="" /> -->
-            <p class="footerTitle">Copyright 2018. <a href="https://steamcommunity.com/profiles/76561198011675377/" target="_blank" class="aRegu">ReguMaster</a> all rights reserved.</p>
+            <p class="footerTitle">Copyright 2018. <a href="https://steamcommunity.com/profiles/76561198011675377/" target="_blank" class="aRegu">ReguMaster</a> Studio all rights reserved.</p>
         </div>
     </body>
 

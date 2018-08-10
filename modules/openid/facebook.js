@@ -10,9 +10,12 @@ const Logger = require( "../logger" );
 require( "passport-openid" );
 
 const util = require( "util" );
+const hook = require( "../../hook" );
 const passport = require( "passport" );
 const FacebookStrategy = require( "passport-facebook" )
     .Strategy
+const apiConfig = require( "../../const/config" )
+    .Facebook;
 
 passport.serializeUser( function( user, done )
 {
@@ -29,9 +32,9 @@ passport.deserializeUser( function( obj, done )
 
 passport.use( new FacebookStrategy(
     {
-        clientID: "259393978199882",
-        clientSecret: "3f677b06d9db0c6b044961d85c644f7e",
-        callbackURL: "https://regustreaming.oa.to/login/facebook/return"
+        clientID: apiConfig.clientID,
+        clientSecret: apiConfig.clientSecret,
+        callbackURL: apiConfig.callbackURL
     },
     function( accessToken, refreshToken, profile, done )
     {

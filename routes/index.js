@@ -253,6 +253,11 @@ router.get( "/login", function( req, res )
     res.redirect( "/" );
 } );
 
+router.get( "/test", function( req, res )
+{
+    res.render( "test" );
+} );
+
 router.get( "/logout", function( req, res )
 {
     if ( req.isAuthenticated( ) )
@@ -453,98 +458,91 @@ router.get( "/login/guest", function( req, res )
     }
 } );
 
-router.get( "/login/steam", passport.authenticate( "steam" ), function( req, res )
+router.get( "/login/steam", function( req, res )
 {
-    console.log( "lol" );
+    if ( !ServiceManager.isLoginAllowed( "steam" ) )
+    {
+        res.redirect( "/?loginNotAllowed" );
+        return;
+    }
+
+    res.redirect( "/login/steam/return" );
+} );
+
+router.get( "/login/naver", function( req, res )
+{
+    if ( !ServiceManager.isLoginAllowed( "naver" ) )
+    {
+        res.redirect( "/?loginNotAllowed" );
+        return;
+    }
+
+    res.redirect( "/login/naver/return" );
+} );
+
+router.get( "/login/kakao", function( req, res )
+{
+    if ( !ServiceManager.isLoginAllowed( "kakao" ) )
+    {
+        res.redirect( "/?loginNotAllowed" );
+        return;
+    }
+
+    // res.redirect( "/login/kakao/return" );
+
     res.redirect( "/" );
 } );
 
-router.get( "/login/naver", passport.authenticate( "naver",
+// router.get( "/login/facebook", passport.authenticate( "facebook",
+// {
+//     failureRedirect: "/?error=loginFailed"
+// } ), function( req, res )
+// {
+//     res.redirect( "/" );
+// } );
+
+router.get( "/login/google", function( req, res )
 {
-    failureRedirect: "/?error=loginFailed"
-} ), function( req, res )
-{
-    res.redirect( "/" );
+    if ( !ServiceManager.isLoginAllowed( "google" ) )
+    {
+        res.redirect( "/?loginNotAllowed" );
+        return;
+    }
+
+    res.redirect( "/login/google/return" );
 } );
 
-router.get( "/login/kakao", passport.authenticate( "kakao",
+router.get( "/login/twitter", function( req, res )
 {
-    failureRedirect: "/?error=loginFailed"
-} ), function( req, res )
-{
-    res.redirect( "/" );
-} );
+    if ( !ServiceManager.isLoginAllowed( "twitter" ) )
+    {
+        res.redirect( "/?loginNotAllowed" );
+        return;
+    }
 
-router.get( "/login/facebook", passport.authenticate( "facebook",
-{
-    failureRedirect: "/?error=loginFailed"
-} ), function( req, res )
-{
-    res.redirect( "/" );
-} );
-
-router.get( "/login/google", passport.authenticate( "google",
-{
-    scope: [ "profile" ],
-    prompt: "select_account", // https://github.com/jaredhanson/passport-google-oauth2/issues/18
-    failureRedirect: "/?error=loginFailed"
-} ), function( req, res )
-{
-    res.redirect( "/" );
-} );
-
-router.get( "/login/twitter", passport.authenticate( "twitter",
-{
-    failureRedirect: "/?error=loginFailed"
-} ), function( req, res )
-{
-    res.redirect( "/" );
+    res.redirect( "/login/twitter/return" );
 } );
 
 router.get( "/login/naver/return",
-    // Issue #37 - Workaround for Express router module stripping the full url, causing assertion to fail 
     function( req, res, next )
     {
-        req.url = req.originalUrl;
-        next( );
-    },
-    passport.authenticate( "naver",
-    {
-        failureRedirect: "/?error=loginFailed"
-    } ),
-    function( req, res )
-    {
-        res.redirect( "/" );
-    } );
+        if ( !ServiceManager.isLoginAllowed( "naver" ) )
+        {
+            res.redirect( "/?loginNotAllowed" );
+            return;
+        }
 
-router.get( "/login/kakao/return",
-    // Issue #37 - Workaround for Express router module stripping the full url, causing assertion to fail 
-    function( req, res, next )
-    {
-        req.url = req.originalUrl;
-        next( );
-    },
-    passport.authenticate( "kakao",
-    {
-        failureRedirect: "/?error=loginFailed"
-    } ),
-    function( req, res )
-    {
-        res.redirect( "/" );
-    } );
-
-router.get( "/login/steam/return",
-    function( req, res, next )
-    {
-        passport.authenticate( "steam", function( err, user, info )
+        passport.authenticate( "naver", function( err, user, info )
         {
             if ( err )
-                return next( err )
+            {
+                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                return res.redirect( "/?loginFailedService" );
+            }
 
             if ( !user )
             {
-                res.redirect( "/?banned&id=" + info.id );
-                return;
+                return res.redirect( "/?banned&id=" + info.id );
             }
 
             req.login( user, function( err )
@@ -557,52 +555,152 @@ router.get( "/login/steam/return",
         } )( req, res, next );
     } );
 
-router.get( "/login/facebook/return",
-    // Issue #37 - Workaround for Express router module stripping the full url, causing assertion to fail 
+router.get( "/login/kakao/return",
     function( req, res, next )
     {
-        req.url = req.originalUrl;
-        next( );
-    },
-    passport.authenticate( "facebook",
-    {
-        failureRedirect: "/?error=loginFailed"
-    } ),
-    function( req, res )
-    {
-        res.redirect( "/" );
+        if ( !ServiceManager.isLoginAllowed( "kakao" ) )
+        {
+            res.redirect( "/?loginNotAllowed" );
+            return;
+        }
+
+        passport.authenticate( "kakao", function( err, user, info )
+        {
+            if ( err )
+            {
+                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                return res.redirect( "/?loginFailedService" );
+            }
+
+            if ( !user )
+            {
+                return res.redirect( "/?banned&id=" + info.id );
+            }
+
+            req.login( user, function( err )
+            {
+                if ( err )
+                    return next( err );
+
+                res.redirect( "/" );
+            } );
+        } )( req, res, next );
     } );
 
-router.get( "/login/google/return",
-    // Issue #37 - Workaround for Express router module stripping the full url, causing assertion to fail 
+router.get( "/login/steam/return",
     function( req, res, next )
     {
-        req.url = req.originalUrl;
-        next( );
-    },
-    passport.authenticate( "google",
+        if ( !ServiceManager.isLoginAllowed( "steam" ) )
+        {
+            res.redirect( "/?loginNotAllowed" );
+            return;
+        }
+
+        passport.authenticate( "steam", function( err, user, info )
+        {
+            if ( err )
+            {
+                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                return res.redirect( "/?loginFailedService" );
+            }
+
+            if ( !user )
+            {
+                return res.redirect( "/?banned&id=" + info.id );
+            }
+
+            req.login( user, function( err )
+            {
+                if ( err )
+                    return next( err );
+
+                res.redirect( "/" );
+            } );
+        } )( req, res, next );
+    } );
+
+// router.get( "/login/facebook/return",
+//     // Issue #37 - Workaround for Express router module stripping the full url, causing assertion to fail 
+//     function( req, res, next )
+//     {
+//         req.url = req.originalUrl;
+//         next( );
+//     },
+//     passport.authenticate( "facebook",
+//     {
+//         failureRedirect: "/?error=loginFailed"
+//     } ),
+//     function( req, res )
+//     {
+//         res.redirect( "/" );
+//     } );
+
+router.get( "/login/google/return",
+    function( req, res, next )
     {
-        failureRedirect: "/?error=loginFailed"
-    } ),
-    function( req, res )
-    {
-        res.redirect( "/" );
+        if ( !ServiceManager.isLoginAllowed( "google" ) )
+        {
+            res.redirect( "/?loginNotAllowed" );
+            return;
+        }
+
+        passport.authenticate( "google",
+        {
+            scope: [ "profile" ],
+            prompt: "select_account" // https://github.com/jaredhanson/passport-google-oauth2/issues/18
+        }, function( err, user, info )
+        {
+            if ( err )
+            {
+                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                return res.redirect( "/?loginFailedService" );
+            }
+
+            if ( !user )
+            {
+                return res.redirect( "/?banned&id=" + info.id );
+            }
+
+            req.login( user, function( err )
+            {
+                if ( err )
+                    return next( err );
+
+                res.redirect( "/" );
+            } );
+        } )( req, res, next );
     } );
 
 router.get( "/login/twitter/return",
-    // Issue #37 - Workaround for Express router module stripping the full url, causing assertion to fail 
     function( req, res, next )
     {
-        req.url = req.originalUrl;
-        next( );
-    },
-    passport.authenticate( "twitter",
-    {
-        failureRedirect: "/?error=loginFailed"
-    } ),
-    function( req, res )
-    {
-        res.redirect( "/" );
+        if ( !ServiceManager.isLoginAllowed( "twitter" ) )
+        {
+            res.redirect( "/?loginNotAllowed" );
+            return;
+        }
+
+        passport.authenticate( "twitter", function( err, user, info )
+        {
+            if ( err )
+            {
+                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                return res.redirect( "/?loginFailedService" );
+            }
+
+            if ( !user )
+            {
+                return res.redirect( "/?banned&id=" + info.id );
+            }
+
+            req.login( user, function( err )
+            {
+                if ( err )
+                    return next( err );
+
+                res.redirect( "/" );
+            } );
+        } )( req, res, next );
     } );
 
 require( "../modules/openid/steam" );

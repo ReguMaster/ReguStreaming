@@ -11,13 +11,8 @@ const Server = require( "../server" );
 const reguUtil = require( "../util" );
 const Logger = require( "./logger" );
 const hook = require( "../hook" );
-// let datastream = require( "../datastream" );
 
-const xss = require( "xss" ); // https://www.npmjs.com/package/xss
-
-ChatManager.config = {};
-ChatManager.config.allowChatRegexExpression = /^[가-힣ㄱ-ㅎㅏ-ㅣ\x20|a-z|A-Z|0-9|!~?"'@#$%^&=*/()-_ ;|+.\*]+$/;
-ChatManager.config.xssRegexExpression = /\<|\>|\"|\'|\%|\;|\(|\)|\&|\+|\-/g;
+const filterXSS = require( "xss" ); // https://www.npmjs.com/package/xss
 
 ChatManager.color = {
     normal: 0,
@@ -25,18 +20,12 @@ ChatManager.color = {
     green: 2,
     blue: 3
 }
-
-ChatManager.checkXSS = function( chatMessage, callback )
-{
-    // var filtered = xssF.filter( chatMessage ); // this sucks
-
-    // callback( filtered !== chatMessage, filtered );
-
-    // return ChatManager.config.xssRegexExpression.test( chatMessage );
-
-    var filtered = xss( chatMessage );
-
-    callback( filtered !== chatMessage );
+ChatManager.statusCode = {
+    success: 0,
+    lengthError: 1,
+    xssError: 2,
+    isGuestError: 3,
+    dataError: 4
 }
 
 ChatManager.saySystem = function( roomID, message, icon, noDiscord )
@@ -74,14 +63,13 @@ ChatManager.saySystem = function( roomID, message, icon, noDiscord )
 // 이미지에 관리자 스타일 적용안댐
 ChatManager.emitImage = function( client, fileID )
 {
-    Server.sendMessage( client.roomID, "regu.chat",
+    Server.sendMessage( client.roomID, "RS.chat",
     {
+        type: "img",
         profileImage: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ), // 최적화 필요함.
         name: client.name,
         userID: client.userID,
-        type: "img",
-        fileID: fileID,
-        isAdmin: client.ipAddress === "1.224.53.166" // wow doge
+        fileID: fileID
     } );
 
     Logger.write( Logger.LogType.Info, `[Chat] ${ client.information( ) } : <IMAGE> ${ fileID }` );
@@ -96,79 +84,59 @@ ChatManager.sayGlobal = function( message )
     } );
 }
 
-ChatManager.canChat = function( client, chatMessage )
+ChatManager.preChat = function( client, chatMessage )
 {
-    if ( chatMessage.length <= 0 || chatMessage.length > 200 )
-        return false;
+    // var PreChat = hook.run( "PreChat", client, chatMessage );
 
-    return true;
+    if ( client.provider === "guest" )
+        return this.statusCode.isGuestError;
+
+    if ( chatMessage.length <= 0 || chatMessage.length > 200 )
+        return this.statusCode.lengthError;
+
+    if ( filterXSS( chatMessage ) !== chatMessage )
+        return this.statusCode.xssError;
+
+    return this.statusCode.success;
 }
 
 hook.register( "PostClientConnected", function( client, socket )
 {
-    // ClientManager.sendMessageToAll( client.room, "regu.chat",
-    // {
-    //     profileImage: client.getPassportField( "avatar", "/images/icon/user_64.png" ),
-    //     name: client.name,
-    //     userID: client.userID,
-    //     message: "test message",
-    //     isAdmin: client.ipAddress === "1.224.53.166"
-    // } );
-
-    socket.on( "regu.chat", function( data )
+    socket.on( "RS.chat", function( data )
     {
         if ( !reguUtil.isValidSocketData( data, "string" ) )
         {
-            Logger.write( Logger.LogType.Important, `[Chat] Chat rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            Logger.write( Logger.LogType.Important, `[Chat] Chat rejected. (code:dataError) ${ client.information( ) }` );
             return;
         }
 
         var chatMessage = data.trim( );
+        var preChat = ChatManager.preChat( client, chatMessage );
 
-        if ( !ChatManager.canChat( client, chatMessage ) )
+        if ( preChat !== ChatManager.statusCode.success )
         {
-            socket.emit( "regu.notification",
-            {
-                type: 1,
-                title: "채팅 불가 :",
-                time: 2000,
-                message: "채팅 메세지는 1자 이상 200자 이하 되어야 합니다."
-            } );
+            socket.emit( "RS.chatResult", preChat );
 
-            Logger.write( Logger.LogType.Warning, `[Chat] Chat rejected. (#NotAllowed) -> ${ client.information( ) } : ${ chatMessage }` );
+            if ( preChat !== ChatManager.statusCode.xssError )
+                Logger.write( Logger.LogType.Warning, `[Chat] Chat rejected. (code:${ ( Object.keys( ChatManager.statusCode )[ preChat ] || "unknown" ) }) -> ${ client.information( ) } : ${ chatMessage }` );
+            else
+                Logger.write( Logger.LogType.Important, `[Chat] WARNING! : XSS attack detected! -> ${ client.information( ) } : ${ chatMessage }` );
 
             return;
         }
 
-        ChatManager.checkXSS( chatMessage, function( detected )
+        Server.sendMessage( client.room, "RS.chat",
         {
-            if ( detected )
-            {
-                socket.emit( "regu.notification",
-                {
-                    type: 1,
-                    title: "채팅 불가 :",
-                    time: 2000,
-                    message: "채팅 메세지에 입력할 수 없는 문장입니다."
-                } );
-
-                Logger.write( Logger.LogType.Important, `[Chat] WARNING! : XSS attack detected! -> ${ client.information( ) } : ${ chatMessage }` );
-                return;
-            }
-
-            Server.sendMessage( client.room, "regu.chat",
-            {
-                profileImage: client.getPassportField( "avatar", "/images/icon/user_64.png" ),
-                name: client.name,
-                userID: client.userID,
-                rank: client.rank,
-                message: chatMessage
-            } );
-
-            Server.emitDiscord( client.room, client.name + " : " + chatMessage );
-
-            Logger.write( Logger.LogType.Info, `[Chat] ${ client.information( ) } : ${ chatMessage }` );
+            profileImage: client.getPassportField( "avatar", "/images/icon/user_64.png" ),
+            name: client.name,
+            userID: client.userID,
+            rank: client.rank,
+            message: chatMessage
         } );
+
+        Server.emitDiscord( client.room, client.name + " : " + chatMessage );
+
+        Logger.write( Logger.LogType.Info, `[Chat] ${ client.information( ) } : ${ chatMessage }` );
     } );
 } );
 

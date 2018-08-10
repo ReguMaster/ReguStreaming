@@ -9,7 +9,7 @@ const Tracker = {};
 const hook = require( "../hook" );
 const Database = require( "./db" );
 const superagent = require( "superagent" );
-const config = require( "../config" );
+const config = require( "../const/config" );
 
 Tracker._whoisAPIKey = config.WHOIS_API_KEY;
 

@@ -13,6 +13,8 @@ const hook = require( "../../hook" );
 const passport = require( "passport" );
 const SteamStrategy = require( "passport-steam" )
     .Strategy;
+const apiConfig = require( "../../const/config" )
+    .Steam;
 
 passport.serializeUser( function( user, done )
 {
@@ -53,9 +55,9 @@ passport.deserializeUser( function( obj, done )
 
 passport.use( new SteamStrategy(
     {
-        returnURL: "https://regustreaming.oa.to/login/steam/return",
-        realm: "https://regustreaming.oa.to/",
-        apiKey: "6FD21C3629A18581B780F424C782DDE6"
+        returnURL: apiConfig.returnURL,
+        realm: apiConfig.realm,
+        apiKey: apiConfig.apiKey
     },
     function( identifier, profile, done )
     {
