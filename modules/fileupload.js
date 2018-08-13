@@ -12,21 +12,47 @@ const ChatManager = require( "./chat" );
 const hook = require( "../hook" );
 const util = require( "../util" );
 const readChunk = require( "read-chunk" );
+const superagent = require( "superagent" );
 const fileType = require( "file-type" );
 const SocketIOFileUpload = require( "socketio-file-upload" );
+const apiConfig = require( "../const/config" )
+    .Kakao;
 
 FileUploadHandler.FileNameFormat = "uf_%s";
 FileUploadHandler.FileDirectory = "./userfiles";
 FileUploadHandler.allowFileList = [
     "png",
     "gif",
-    "jpg",
-    "jpeg"
+    "jpg"
+    // "jpeg" // *TODO: 서버 문제가 해결될 때 까지 jpeg 포맷 금지
 ];
 FileUploadHandler.statusCode = {
     typeNotAllowedError: 0,
     databaseError: 1,
     serverError: 2
+}
+
+FileUploadHandler.checkAdultImage = function( client, fileLocation, callback )
+{
+    superagent.post( "https://kapi.kakao.com/v1/vision/adult/detect" )
+        .type( "multipart/form-data" )
+        .attach( "file", fileLocation )
+        .set( "Authorization", "KakaoAK " + apiConfig.clientID )
+        .then( function( res )
+        {
+            if ( res.status !== 200 )
+                return;
+
+            var jsonObj = JSON.parse( res.text );
+
+            callback( jsonObj.result.adult >= 0.8 );
+        } )
+        .catch( function( err )
+        {
+            Logger.write( Logger.LogType.Error, `[FileUpload] Failed to process FileUploadHandler.checkAdultImage (error:${ err.stack }) ${ client.information( ) }` );
+
+            callback( false );
+        } );
 }
 
 hook.register( "PostClientConnected", function( client, socket )
@@ -39,7 +65,7 @@ hook.register( "PostClientConnected", function( client, socket )
         callback( true );
     };
 
-    uploader.on( "start", function( data )
+    uploader.on( "start", ( data ) =>
     {
         // 경우에따라 파일 내용으로 수정해야함.
         var extension = path.extname( data.file.name );
@@ -50,12 +76,10 @@ hook.register( "PostClientConnected", function( client, socket )
         data.file.name = fileName;
     } );
 
-    uploader.on( "saved", function( event )
+    uploader.on( "saved", ( event ) =>
     {
         // *TODO: 서버사이드 파일 거부 추가바람 (by 사이즈)
         var id = util.sha1( event.file.name );
-
-        // console.log( event );
 
         readChunk( event.file.pathName, 0, 4100 )
             .then( function( buffer )
@@ -72,21 +96,32 @@ hook.register( "PostClientConnected", function( client, socket )
 
                 // 파일 확장자와 매직넘버 불일치, 사용자가 임의로 확장자를 바꿈 -> 보안 로그는 남기되 업로드는 허가
                 if ( event.file.type !== magicNumberFileType.ext )
-                {
                     Logger.write( Logger.LogType.Important, `[FileUpload] WARNING: File extension and magic number mismatch! (id:${ id }, extension:${ event.file.type }, magicNumber:${ magicNumberFileType.ext }) ${ client.information( ) }` );
-                }
 
-                Database.queryWithEscape( `INSERT IGNORE INTO userfile ( _id, _file, _originalFileName, _type ) VALUES ( ?, ?, ?, ? )`, [ id, event.file.name, event.file.originalName, event.file.type ], function( result )
+                var onCheck = function( isAdult )
                 {
-                    if ( result && result.affectedRows === 1 )
+                    Database.queryWithEscape( `INSERT IGNORE INTO userfile ( _id, _file, _originalFileName, _type, _adult ) VALUES ( ?, ?, ?, ?, ? )`, [ id, event.file.name, event.file.originalName, event.file.type, isAdult ? "1" : "0" ], function( result )
                     {
-                        ChatManager.emitImage( client, id );
-                        Logger.write( Logger.LogType.Event, `[FileUpload] File uploaded. ${ client.information() } -> ${ event.file.name }:${ id }` );
-                    }
-                }, function( err )
+                        if ( result && result.affectedRows === 1 )
+                        {
+                            ChatManager.emitImage( client, id, isAdult );
+                            Logger.write( Logger.LogType.Event, `[FileUpload] File uploaded. ${ client.information() } -> ${ event.file.name }:${ id }` );
+                        }
+                    }, function( err )
+                    {
+                        socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.databaseError );
+                    } );
+                };
+
+                if ( event.file.type != "gif" )
                 {
-                    socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.databaseError );
-                } );
+                    FileUploadHandler.checkAdultImage( client, event.file.pathName, function( isAdult )
+                    {
+                        onCheck( isAdult );
+                    } );
+                }
+                else
+                    onCheck( false );
             } )
             .catch( function( err )
             {
@@ -97,12 +132,9 @@ hook.register( "PostClientConnected", function( client, socket )
 
     uploader.on( "error", ( event ) =>
     {
-        socket.emit( "notification",
-        {
-            message: "죄송합니다, 파일 업로드에 실패했습니다. " + event.error.message
-        } );
+        socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.serverError );
 
-        Logger.write( Logger.LogType.Error, `[FileUpload] Failed to upload file. ${ client.information( ) }\n${ event.error.message }` );
+        Logger.write( Logger.LogType.Error, `[FileUpload] Failed to upload file. (error:${ event.error.message }) ${ client.information( ) }` );
     } );
 
     socket.on( "RS.uploadFile", ( data ) =>
@@ -120,7 +152,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
         var fileName = util.sha256( path.basename( data.name ) + "_" + data.size );
 
-        Database.queryWithEscape( `SELECT _id from userfile WHERE _file = ?`, [ fileName ], function( result )
+        Database.queryWithEscape( `SELECT _id, _adult from userfile WHERE _file = ?`, [ fileName ], function( result )
         {
             if ( result && result.length === 1 )
             {
@@ -129,7 +161,7 @@ hook.register( "PostClientConnected", function( client, socket )
                     exists: true
                 } );
 
-                ChatManager.emitImage( client, result[ 0 ]._id );
+                ChatManager.emitImage( client, result[ 0 ]._id, result[ 0 ]._adult === 1 );
             }
             else
             {
@@ -144,9 +176,7 @@ hook.register( "PostClientConnected", function( client, socket )
         } );
     } );
 
-    client.registerConfig( "uploader", uploader );
-
-
+    // client.registerConfig( "uploader", uploader );
 } );
 
 module.exports = FileUploadHandler;

@@ -921,6 +921,17 @@
     text-rendering: optimizeLegibility;
 }
 
+.chatImageAdult {
+    width: 100%;
+    height: 100%;
+}
+
+.chatImageAdultWarning {
+    width: 100%;
+    height: 100%;
+    color: white;
+}
+
 .chatProfileName {
     position: relative;
     display: inline-block;

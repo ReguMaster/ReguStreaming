@@ -65,7 +65,7 @@ Tracker.requestWHOIS = function( ipAddress, callback )
         .catch( function( err )
         {
             callback( false, null );
-            Logger.write( Logger.LogType.Error, `[Queue] Failed to process Tracker.requestWHOIS -> (${ err.stack })` );
+            Logger.write( Logger.LogType.Error, `[Queue] Failed to process Tracker.requestWHOIS (error:${ err.stack })` );
         } );
 }
 
@@ -100,7 +100,7 @@ Tracker.getCountryCode = function( ipAddress, callback )
                     if ( result2 )
                         callback( result2._countryCode );
                     else
-                        console.log( "err" );
+                        callback( "ERROR" );
                 } );
             } );
         }

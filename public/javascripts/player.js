@@ -58,8 +58,8 @@ reguStreaming.canUpload = function( fileData, callback )
     var allowType = [
         "image/png",
         "image/gif",
-        "image/jpg",
-        "image/jpeg"
+        "image/jpg"
+        // "image/jpeg" // *TODO: 서버 문제가 해결될 때 까지 jpeg 포맷 금지
     ];
 
     if ( fileData )
@@ -78,14 +78,14 @@ reguStreaming.canUpload = function( fileData, callback )
                 if ( width <= 2048 && height <= 2048 )
                     callback( true );
                 else
-                    callback( false, "파일을 업로드 할 수 없습니다, 2048x2048 크기를 초과하는 이미지는 업로드할 수 없습니다." ); // 맞춤법 검사 바람
+                    callback( false, "파일을 업로드할 수 없습니다, 2048x2048 크기를 초과하는 이미지는 업로드할 수 없습니다." );
             }
         }
         else
-            callback( false, "파일을 업로드 할 수 없습니다, gif, png, jpg 형식의 이미지만 업로드할 수 있습니다." );
+            callback( false, "파일을 업로드할 수 없습니다, gif, png, jpg 형식의 이미지만 업로드할 수 있습니다." );
     }
     else
-        callback( false, "파일을 업로드 할 수 없습니다, 파일 데이터가 올바르지 않습니다." );
+        callback( false, "파일을 업로드할 수 없습니다, 파일 데이터가 올바르지 않습니다." );
 }
 
 reguStreaming.imageUploadButtonClicked = function( )
@@ -363,7 +363,7 @@ $( window )
                     // console.log( reguStreaming.fileUploadData[ 0 ] );
                 }
                 else
-                    util.notification( util.notificationType.warning, "업로드 불가 :", reason || "이 이미지는 업로드할 수 없습니다.", 2000 );
+                    util.notification( util.notificationType.warning, "파일 업로드 오류", reason || "정의되지 않은 오류가 발생했습니다.", 4000 );
 
                 controls.imageFileInput.val( "" );
             } );
@@ -530,10 +530,10 @@ socket.on( "RS.uploadFileError", function( data )
     switch ( data )
     {
         case 0:
-            reason = "파일을 업로드 할 수 없습니다, gif, png, jpg 형식의 이미지만 업로드할 수 있습니다.";
+            reason = "파일을 업로드할 수 없습니다, gif, png, jpg 형식의 이미지만 업로드할 수 있습니다.";
             break;
         case 1:
-            reason = "파일을 업로드 할 수 없습니다, 데이터베이스 오류가 발생했습니다.";
+            reason = "파일을 업로드할 수 없습니다, 데이터베이스 오류가 발생했습니다.";
             break;
         case 2:
             reason = "해당 파일을 서버에서 처리 중 오류가 발생했습니다, 나중에 다시 시도해주세요.";
@@ -542,7 +542,7 @@ socket.on( "RS.uploadFileError", function( data )
             reason = "정의되지 않은 오류가 발생했습니다.";
     }
 
-    util.notification( util.notificationType.warning, "업로드 오류", reason, 4000 );
+    util.notification( util.notificationType.warning, "파일 업로드 오류", reason, 4000 );
 } );
 
 function runChatCommand( message )
@@ -944,7 +944,7 @@ reguStreaming.chatFormatBase = {
         <img src="{1}" alt="Profile Image" class="chatProfileAvatar" /> \
             <p class="chatProfileName"></p> \
             <p class="chatReceivedTime">{2}</p> \
-            <img class="chatImage" style="object-fit: fit; width: 100%; padding: 8px; padding-top: 0; cursor: pointer;" onclick="reguStreaming.onClickChatImage( this );" onload="imageOnLoaded( );" src="{3}" /> \
+            <div class="chatImageAdult"><img class="chatImage" style="object-fit: fit; width: 100%; padding: 8px; padding-top: 0; cursor: pointer;" onclick="reguStreaming.onClickChatImage( this );" onload="imageOnLoaded( );" src="{3}" /></div>\
         </div>'
 }
 reguStreaming.currentChatMessageCount = 0;
@@ -952,7 +952,7 @@ reguStreaming.linkRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[
 
 socket.on( "RS.chat", function( data )
 {
-    var currentChatCount = reguStreaming.currentChatMessageCount;
+    // var currentChatCount = reguStreaming.currentChatMessageCount;
     var currentTime = new Date( );
     var currentTimeString = ( currentTime.getHours( ) < 12 ? "AM " : "PM " ) + ( currentTime.getHours( ) % 12 || 12 ) + ":" + ( currentTime.getMinutes( ) < 10 ? ( "0" + currentTime.getMinutes( ) ) : currentTime.getMinutes( ) );
 
@@ -986,6 +986,18 @@ socket.on( "RS.chat", function( data )
 
         childName.text( data.name );
 
+        if ( data.isAdult )
+        {
+            newObj.children( )
+                .eq( 3 )
+                .css(
+                {
+                    "filter": "blur( 5px )",
+                    "-webkit-filter": "blur( 5px )"
+                } )
+                .attr( "title", "성인 이미지로 판정되었습니다, 보시려면 클릭하세요." );
+        }
+
         if ( data.isAdmin )
         {
             newObj.css( "background-image", "linear-gradient(to right, rgba(65, 124, 127, 0.5), rgba(70, 70, 70, 0.5))" );
@@ -994,15 +1006,15 @@ socket.on( "RS.chat", function( data )
 
         setTimeout( function( obj )
         {
-            if ( obj )
-                obj.animate(
-                {
-                    opacity: "0"
-                }, 5000, function( )
-                {
-                    $( this )
-                        .remove( );
-                } );
+            // if ( obj )
+            //     obj.animate(
+            //     {
+            //         opacity: "0"
+            //     }, 5000, function( )
+            //     {
+            //         $( this )
+            //             .remove( );
+            //     } );
         }, 1000 * 20, newObj );
     }
     else if ( data.type == "system" )

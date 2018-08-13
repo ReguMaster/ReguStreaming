@@ -61,7 +61,7 @@ ChatManager.saySystem = function( roomID, message, icon, noDiscord )
 }
 
 // 이미지에 관리자 스타일 적용안댐
-ChatManager.emitImage = function( client, fileID )
+ChatManager.emitImage = function( client, fileID, isAdult )
 {
     Server.sendMessage( client.roomID, "RS.chat",
     {
@@ -69,6 +69,7 @@ ChatManager.emitImage = function( client, fileID )
         profileImage: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ), // 최적화 필요함.
         name: client.name,
         userID: client.userID,
+        isAdult: isAdult,
         fileID: fileID
     } );
 

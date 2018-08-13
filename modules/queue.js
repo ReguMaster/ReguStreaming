@@ -473,7 +473,7 @@ QueueManager.getYoutubeCaption = function( languageCode, vssId, captionList, cal
                 .catch( function( err )
                 {
                     callback( false, null );
-                    Logger.write( Logger.LogType.Error, `[Queue] Failed to process QueueManager.getYoutubeCaption -> (${ err.stack })` );
+                    Logger.write( Logger.LogType.Error, `[Queue] Failed to process QueueManager.getYoutubeCaption (error:${ err.stack })` );
                 } );
         }
         else
