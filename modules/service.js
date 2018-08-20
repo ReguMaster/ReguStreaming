@@ -12,9 +12,24 @@ const Server = require( "../server" );
 const path = require( "path" );
 const fileStream = require( "fs" );
 const hook = require( "../hook" );
-const reguUtil = require( "../util" );
+const util = require( "../util" );
 const FileStorage = require( "../filestorage" );
 const Logger = require( "../modules/logger" );
+// Object.defineProperties
+
+var a = 'strin';
+var b = a;
+a += 'g';
+console.log( a ); // 'string'
+console.log( b ); // 'strin'
+
+
+//https://stackoverflow.com/questions/8128578/reading-value-from-console-interactively
+process.stdin.addListener( "data", function( data )
+{
+    // Interact.process( data.toString( )
+    //     .trim( ) );
+} );
 
 ServiceManager.notification = [ ];
 ServiceManager.serviceStatus = 0;
@@ -155,7 +170,7 @@ ServiceManager.done = function( )
                     embed:
                     {
                         color: colorString[ 0 ],
-                        description: "모든 서비스가 온라인입니다!",
+                        description: "모든 서비스가 온라인입니다.",
                         author:
                         {
                             name: "서비스 정상"

@@ -3,6 +3,7 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
+const apiConfig = require( "../const/config" );
 const express = require( "express" );
 const path = require( "path" );
 const fileStream = require( "fs" );
@@ -13,13 +14,18 @@ const Database = require( "../modules/db" );
 const Logger = require( "../modules/logger" );
 const util = require( "util" );
 const uniqid = require( "uniqid" );
-// const ClientManager = require( "../client" );
 const QueueManager = require( "../modules/queue" );
 const ServiceManager = require( "../modules/service" );
 const hook = require( "../hook" );
 const reguUtil = require( "../util" );
 const superagent = require( "superagent" );
 const Server = require( "../server" );
+const cheerio = require( "cheerio" );
+const recaptcha = new( require( "recaptcha2" ) )(
+{
+    siteKey: apiConfig.Recaptcha.siteKey,
+    secretKey: apiConfig.Recaptcha.secretKey
+} );
 
 // http://expressjs.com/ko/advanced/best-practice-performance.html#restart
 router.get( "/", function( req, res )
@@ -117,49 +123,7 @@ router.get( "/media/:room", function( req, res )
             return;
         }
 
-        // var videoLengthSize = ( ( 128 / 8 ) * playingData.videoLength ) * 1000;
-        // res.writeHead( 200,
-        // {
-        //     'Set-Cookie': 'fileDownload=true; path=/',
-        //     'Content-Type': 'video/mp4',
-        //     'Content-disposition': 'attachment; filename*=UTF-8\'\'' + fixedEncodeURI( playingData.videoDirectURL ),
-        //     'Content-Length': videoLengthSize
-        // } );
-        // res.pipe( );
-
-        // res.status( 200 );
-        // res.setHeader( "Content-Type", "video/mp4" );
-        // res.setHeader( "Location", playingData.mediaContentURL );
-
-        // res.location( playingData.mediaContentURL );
         res.redirect( playingData.mediaContentURL );
-
-
-        //         var movieStream = fs.createReadStream("./test.mp4");
-        // movieStream.on('open', function () {
-        //     res.writeHead(206, {
-        //         "Content-Range": "bytes " + start + "-" + end + "/" + total,
-        //             "Accept-Ranges": "bytes",
-        //             "Content-Length": chunksize,
-        //             "Content-Type": "video/mp4"
-        //     });
-        //     // This just pipes the read stream to the response object (which goes 
-        //     //to the client)
-        //     movieStream.pipe(res);
-        // });
-
-        // fileStream.createReadStream( "./test.mp4" )
-        //     .pipe( res );
-
-        // res.status( 200 );
-        // res.setHeader( "Content-Type", "video/mp4" );
-
-        // var request = superagent.get( playingData.mediaContentURL )
-        //     .on( "response", function( res2 ) {
-
-        //     } );
-
-        // request.pipe( res );
     }
     else
         res.status( 403 )
@@ -224,22 +188,6 @@ router.get( "/ban/:id", function( req, res )
         res.redirect( "/?banDataError" );
 } );
 
-// router.get( "/api/loginInfo", ensureAuthenticated, function( req, res )
-// {
-//     if ( req.query.apiKey && req.query.apiKey === "test" )
-//     {
-//         res.send( `success<br /><img src='${ req.user.avatarFull }' alt='Your Avatar Image' /><br />
-//         ID: ${ req.user.id }<br />
-//         Name: ${ req.user.displayName }<br />` );
-//     }
-//     else
-//         res.status( 403 )
-//         .render( "error",
-//         {
-//             code: 403
-//         } );
-// } );
-
 router.get( "/login", function( req, res )
 {
     if ( !req.isAuthenticated( ) )
@@ -250,11 +198,6 @@ router.get( "/login", function( req, res )
     }
 
     res.redirect( "/" );
-} );
-
-router.get( "/test", function( req, res )
-{
-    res.render( "test" );
 } );
 
 router.get( "/logout", function( req, res )
@@ -274,24 +217,6 @@ router.get( "/logout", function( req, res )
 
     res.redirect( "/" );
 } );
-
-function ensureAuthenticated( req, res, next )
-{
-    if ( req.isAuthenticated( ) )
-        return next( );
-
-    res.redirect( "/?loginRequire" );
-}
-
-// router.get( '/account', ensureAuthenticated, function( req, res )
-// {
-//     console.log( req.session );
-
-//     // console.log( req.user );
-//     res.send( `<p><img src='${req.user.photos[2].value}>' alt='Your Avatar Image' /></p>
-// <p>ID: ${req.user.id}></p>
-// <p>Name: ${req.user.displayName}></p>` );
-// } );
 
 router.get( "/admin", function( req, res )
 {
@@ -320,12 +245,11 @@ router.get( "/files/:id", function( req, res )
             return;
         }
 
-        Database.queryWithEscape( `SELECT _file, _type from userfile WHERE _id = ?`, [ req.params.id ], function( result )
+        Database.queryWithEscape( `SELECT _file, _type from userfile WHERE _id = ?`, [ req.params.id ], function( status, result )
         {
-            if ( result && result.length === 1 )
+            if ( status === "success" )
             {
                 result = result[ 0 ];
-
                 res.type( "image/" + result._type )
                     .sendFile( path.join( __dirname, "/../", "userfiles", result._file + "." + result._type ) );
             }
@@ -356,7 +280,7 @@ router.get( "/files/:id", function( req, res )
     }
 } );
 
-router.get( "/login/guest", function( req, res )
+router.post( "/login/guest", function( req, res )
 {
     if ( req.isAuthenticated( ) )
     {
@@ -364,15 +288,46 @@ router.get( "/login/guest", function( req, res )
         return;
     }
 
-    if ( req.session )
+    if ( !req.session )
     {
-        var ipAddress = req.headers[ "x-forwarded-for" ] || req.connection.remoteAddress;
+        res.redirect( "/?error=500" );
+        return;
+    }
 
-        if ( ipAddress )
+    if ( !req.body.key )
+    {
+        res.status( 403 )
+            .render( "error",
+            {
+                code: 403
+            } );
+
+        return;
+    }
+
+    var ipAddress = req.ip;
+    var onSuccess = function( data )
+    {
+        req.session.passport = {};
+        req.session.passport.user = {
+            id: data._tag,
+            displayName: data._name + "#" + data._tag.substring( 0, 8 ),
+            avatar: "/images/avatar/guest_64.png",
+            avatarFull: "/images/avatar/guest_184.png",
+            provider: "guest"
+        }
+
+        res.send( "success" );
+    };
+
+    var onError = function( err )
+    {
+        res.send( "code=500" );
+    };
+
+    recaptcha.validate( req.body.key )
+        .then( function( )
         {
-            if ( ipAddress.substr( 0, 7 ) == "::ffff:" )
-                ipAddress = ipAddress.substr( 7 )
-
             var isAllowedAccount = hook.run( "CanLoginAccount", ipAddress, null );
 
             if ( isAllowedAccount && isAllowedAccount.isBanned )
@@ -383,54 +338,26 @@ router.get( "/login/guest", function( req, res )
 
             Logger.write( Logger.LogType.Info, `[Router] Login with guest ... ${ ipAddress }` );
 
-            var onError = function( err )
-            {
-                res.redirect( "/?error=500" );
-            }
-
             // 코드 좀 바꾸기 (Promise 패턴)
-            Database.executeProcedure( "FIND_USER_BY_IPADDRESS", [ ipAddress ], function( result )
+            Database.executeProcedure( "FIND_USER_BY_IPADDRESS", [ ipAddress ], function( status, data )
             {
-                if ( result.length === 1 ) // 1이 아니면 뭔가 문제가 생긴것. (다중 값은 존재할 수 없음 '현재로서는')
-                {
-                    req.session.passport = {};
-                    req.session.passport.user = {
-                        id: result[ 0 ]._tag,
-                        displayName: result[ 0 ]._name + "#" + result[ 0 ]._tag.substring( 0, 8 ),
-                        avatar: "/images/avatar/guest_64.png",
-                        avatarFull: "/images/avatar/guest_184.png",
-                        provider: "guest"
-                    }
-
-                    res.redirect( "/" );
-                }
-                else if ( result.length >= 2 )
+                if ( status === "success" && data.length === 1 ) // 1이 아니면 뭔가 문제가 생긴것. (다중 값은 존재할 수 없음 '현재로서는')
+                    onSuccess( data[ 0 ] );
+                else if ( data.length >= 2 )
                 {
                     Logger.write( Logger.LogType.Important, `[Router] WARNING : User account duplicated! this is not good!!! ${ ipAddress }` );
                     onError( );
                 }
                 else
                 {
-                    // 여기부터 해야함
-                    Database.executeProcedure( "REGISTER_GUEST", [ "guest", "Guest", uniqid( ), ipAddress ], function( result2 )
+                    Database.executeProcedure( "REGISTER_GUEST", [ "guest", "Guest", uniqid( ), ipAddress ], function( status2, data2 )
                     {
-                        if ( result2.affectedRows === 1 )
+                        if ( status === "success" && data2.affectedRows === 1 )
                         {
-                            Database.executeProcedure( "FIND_USER_BY_IPADDRESS", [ ipAddress ], function( result3 )
+                            Database.executeProcedure( "FIND_USER_BY_IPADDRESS", [ ipAddress ], function( status3, data3 )
                             {
-                                if ( result3.length === 1 ) // 1이 아니면 뭔가 문제가 생긴것. (다중 값은 존재할 수 없음 '현재로서는')
-                                {
-                                    req.session.passport = {};
-                                    req.session.passport.user = {
-                                        id: result3[ 0 ]._tag,
-                                        displayName: result3[ 0 ]._name + "#" + result3[ 0 ]._tag.substring( 0, 8 ),
-                                        avatar: "/images/avatar/guest_64.png",
-                                        avatarFull: "/images/avatar/guest_184.png",
-                                        provider: "guest"
-                                    }
-
-                                    res.redirect( "/" );
-                                }
+                                if ( status3 === "success" && data3.length === 1 ) // 1이 아니면 뭔가 문제가 생긴것. (다중 값은 존재할 수 없음 '현재로서는')
+                                    onSuccess( data3[ 0 ] );
                                 else
                                     onError( );
                             }, onError );
@@ -443,18 +370,13 @@ router.get( "/login/guest", function( req, res )
                     }, onError );
                 }
             }, onError );
-        }
-        else
+        } )
+        .catch( function( err )
         {
-            res.redirect( "/?error=500" );
-        }
+            Logger.write( Logger.LogType.Error, `[Router] Failed to login with GUEST: recaptcha error (err:${ recaptcha.translateErrors( err ) }) ${ ipAddress }` );
 
-        // res.redirect( "/" );
-    }
-    else
-    {
-        res.redirect( "/?error=500" );
-    }
+            onError( );
+        } );
 } );
 
 router.get( "/login/steam", function( req, res )
@@ -487,9 +409,7 @@ router.get( "/login/kakao", function( req, res )
         return;
     }
 
-    // res.redirect( "/login/kakao/return" );
-
-    res.redirect( "/" );
+    res.redirect( "/login/kakao/return" );
 } );
 
 // router.get( "/login/facebook", passport.authenticate( "facebook",

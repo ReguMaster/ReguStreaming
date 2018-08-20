@@ -33,22 +33,4 @@ hook.run = function( id, ...args )
     return result;
 }
 
-// hook.register( "test", function( )
-// {
-//     console.log( "wow" );
-
-//     return 1;
-// } )
-
-// hook.register( "test", function( )
-// {
-//     console.log( "dont touch me" );
-
-//     return "regumaster";
-// } )
-
-// var va = hook.run( "test" );
-
-// console.log( "return : " + va )
-
 module.exports = hook;

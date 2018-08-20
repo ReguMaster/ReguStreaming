@@ -58,8 +58,8 @@ reguStreaming.canUpload = function( fileData, callback )
     var allowType = [
         "image/png",
         "image/gif",
-        "image/jpg"
-        // "image/jpeg" // *TODO: 서버 문제가 해결될 때 까지 jpeg 포맷 금지
+        "image/jpg",
+        "image/jpeg"
     ];
 
     if ( fileData )
@@ -537,6 +537,9 @@ socket.on( "RS.uploadFileError", function( data )
             break;
         case 2:
             reason = "해당 파일을 서버에서 처리 중 오류가 발생했습니다, 나중에 다시 시도해주세요.";
+            break;
+        case 3:
+            reason = "파일을 업로드할 수 없습니다, 2048x2048 크기를 초과하는 이미지는 업로드할 수 없습니다.";
             break;
         default:
             reason = "정의되지 않은 오류가 발생했습니다.";
@@ -1066,7 +1069,7 @@ socket.on( "RS.chat", function( data )
         // newObj.css( "background-image", "linear-gradient( to right, rgba(177, 177, 235, 0.3), rgba(70, 70, 70, 0.5))" );
 */
 
-        controls.chatBoxInner
+        controls.chatBoxInner.stop( )
             .animate(
             {
                 scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
@@ -1124,7 +1127,7 @@ socket.on( "RS.chat", function( data )
             childName.css( "text-shadow", "0px 0px 12px rgba( 91, 216, 222, 1 )" );
         }
 
-        controls.chatBoxInner
+        controls.chatBoxInner.stop( )
             .animate(
             {
                 scrollTop: controls.chatBoxInner[ 0 ].scrollHeight

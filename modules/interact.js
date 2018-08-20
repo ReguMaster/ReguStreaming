@@ -202,11 +202,6 @@ Interact.process = function( args )
     }
 }
 
-//https://stackoverflow.com/questions/8128578/reading-value-from-console-interactively
-process.stdin.addListener( "data", function( data )
-{
-    Interact.process( data.toString( )
-        .trim( ) );
-} );
+
 
 module.exports = Interact;

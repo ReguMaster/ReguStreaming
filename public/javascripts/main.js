@@ -615,14 +615,38 @@ reguStreaming.AjaxOnlyRoom = function( )
     } );
 }
 
+onRecaptcha = function( key )
+{
+    $.ajax(
+    {
+        url: "/login/guest",
+        type: "post",
+        data:
+        {
+            key: key
+        },
+        success: function( data )
+        {
+            if ( data === "success" )
+                window.location.reload( );
+            else
+                window.location = "/?" + data;
+        },
+        error: function( err )
+        {
+            util.notification( util.notificationType.error, "reCAPTCHA 오류", "알 수 없는 reCAPTCHA 오류가 발생했습니다.", 4000 );
+        }
+    } );
+}
+
 reguStreaming.login = function( type )
 {
     if ( type === "guest" )
     {
-        util.showModal( "로그인 경고", "손님 계정으로 로그인하시겠습니까? 소셜 계정을 연동하지 않으면 서비스가 제한될 수 있습니다.", "손님 계정으로 로그인", "소셜 계정으로 로그인", function( )
-        {
-            window.location = "/login/" + type;
-        } );
+        $( ".modal-recaptcha" )
+            .show( ); // *TODO: 추후 문제가 될 수 있음, modal onClosed 후 hide 하는 함수 실행 고려바람.
+
+        util.showModal( "로그인 경고", "손님 계정으로 로그인하시겠습니까? 소셜 계정을 연동하지 않으면 서비스가 제한될 수 있습니다, 손님 계정으로 로그인 하시려면 아래 reCAPTCHA를 완료하세요.", "소셜 계정으로 로그인", null, null, null, true );
 
         return;
     }
@@ -773,197 +797,3 @@ reguStreaming.onLoginSuccess = function( success )
         //     } );
     }
 }
-
-/*
-if ( getParameterByName( "mode" ) === "1" )
-{
-    console.log( "CLIENT 1 MODE" );
-
-    var peer = new Peer( "client_1",
-    {
-        host: "regustreaming.oa.to",
-        port: 443,
-        path: "/peerjs",
-        secure: true
-    } );
-
-    peer.on( "open", function( id )
-    {
-        console.log( "peer opened : " + id )
-    } )
-
-    peer.on( "connection", function( dataConnection )
-    {
-        console.log( "peer conn" )
-        console.log( dataConnection );
-
-        dataConnection.on( "open", function( )
-        {
-            console.log( 'OPEN' );
-        } );
-
-        dataConnection.on( "data", function( data )
-        {
-            console.log( 'Received', data );
-        } );
-    } )
-}
-else
-{
-    console.log( "CLIENT 0 MODE" );
-
-    var peer = new Peer( "client_0",
-    {
-        host: "regustreaming.oa.to",
-        port: 443,
-        path: "/peerjs",
-        secure: true
-    } );
-
-    peer.on( "open", function( id )
-    {
-        console.log( "peer opened : " + id )
-    } )
-
-    var dataConnection = peer.connect( "client_1" );
-
-    peer.on( "connection", function( conn )
-    {
-        console.log( "peer conn" )
-
-        setInterval( function( )
-        {
-            conn.send( "test" );
-        }, 500 );
-
-    } )
-
-
-}
-
-
-// var peer = new Peer( "master",
-// {
-//     host: "regustreaming.oa.to",
-//     port: 443,
-//     path: "/peerjs",
-//     secure: true
-// } );
-
-
-function startVoiceRecord( )
-{
-    navigator.getUserMedia(
-    {
-        audio: true,
-        video: true
-    }, gotStream, function( err )
-    {
-        console.log( err );
-    } );
-
-    // ss( socket )
-    //     .emit( 'voice', stream,
-    //     {
-    //         wow: "wow"
-    //     } );
-}
-
-
-function gotStream( mediaStream )
-{
-    var mediaRecorder = new MediaRecorder( mediaStream );
-    mediaRecorder.onstart = function( e )
-    {
-        console.log( "onstart", e )
-        this.chunks = [ ];
-    };
-    mediaRecorder.ondataavailable = function( e )
-    {
-        this.chunks.push( e.data );
-
-        console.log( "ondataavailable", this.chunks );
-
-        var blob = new Blob( this.chunks,
-        {
-            'type': 'audio/ogg; codecs=opus'
-        } );
-        socket.emit( 'radio', blob );
-
-        this.chunks = [ ];
-    };
-    mediaRecorder.onstop = function( e )
-    {
-        console.log( mediaRecorder.chunks );
-    };
-
-    mediaRecorder.start( );
-
-    setInterval( function( )
-    {
-        mediaRecorder.requestData( )
-    }, 5000 );
-
-    //     mediaRecorder.start( );
-
-    //     setTimeout( function( )
-    //     {
-    //         mediaRecorder.stop( );
-    //     }, 1000 );
-    // };
-
-    // Start recording
-    // mediaRecorder.start( );
-
-    // Stop recording after 5 seconds and broadcast it to server
-    // setTimeout( function( )
-    // {
-    //     mediaRecorder.stop( );
-    // }, 1000 );
-    // socket.emit( "voiceStart",  );
-}
-
-
-socket.on( 'voice', function( arrayBuffer )
-{
-    var blob = new Blob( [ arrayBuffer ],
-    {
-        'type': 'audio/ogg; codecs=opus'
-    } );
-    // var audio = document.createElement( 'audio' );
-    // audio.src = window.URL.createObjectURL( blob );
-    // audio.play( );
-
-    var vid1 = $( "#musicVideo" );
-    vid1.show( );
-    vid1.css( "opacity", 1 );
-
-    vid1.get( 0 )
-        .src = URL.createObjectURL( blob );
-
-    // if ( vid1.get( 0 )
-    //     .paused )
-    vid1.get( 0 )
-        .play( );
-} );
-
-// socket.on( "voiceRec", function( stream )
-// {
-//     console.log( data );
-//     var vid1 = $( "#musicVideo" );
-
-//     console.log( );
-
-//     vid1.on( "loadedmetadata", function( e )
-//     {
-//         vid1.get( 0 )
-//             .play( );
-//         console.log( "loaded" );
-//     } );
-
-//     vid1.show( );
-//     vid1.css( "opacity", 1 );
-
-//     vid1.get( 0 )
-//         .src = data;
-// } );*/

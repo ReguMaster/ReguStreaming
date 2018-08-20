@@ -30,10 +30,10 @@ Tracker.register = function( ipAddress, callback )
                 orgName = json.korean.user.netinfo.orgName;
             }
 
-            Database.query( `INSERT IGNORE INTO tracker ( _ipAddress, _protocolType, _registry, _countryCode, _addr, _orgName, _json ) VALUES ( '${ json.query }', '${ json.queryType }', '${ json.registry }', '${ json.countryCode }', '${ addr }', '${ orgName }', '${ JSON.stringify( json ) }' )`, function( result, fields )
+            Database.query( `INSERT IGNORE INTO tracker ( _ipAddress, _protocolType, _registry, _countryCode, _addr, _orgName, _json ) VALUES ( '${ json.query }', '${ json.queryType }', '${ json.registry }', '${ json.countryCode }', '${ addr }', '${ orgName }', '${ JSON.stringify( json ) }' )`, function( status, result, fields )
             {
                 if ( callback )
-                    callback( );
+                    callback( status );
             } );
         }
     } );
@@ -71,10 +71,10 @@ Tracker.requestWHOIS = function( ipAddress, callback )
 
 Tracker.get = function( ipAddress, callback, onError )
 {
-    Database.query( `SELECT _ipAddress, _registry, _countryCode FROM tracker WHERE _ipAddress = '${ ipAddress }'`, function( result, fields )
+    Database.query( `SELECT _ipAddress, _registry, _countryCode FROM tracker WHERE _ipAddress = '${ ipAddress }'`, function( status, data )
     {
-        if ( result.length > 0 && result[ 0 ] )
-            callback( result[ 0 ] );
+        if ( status === "success" && data.length > 0 )
+            callback( data[ 0 ] );
         else
             callback( null );
     }, onError );
@@ -93,15 +93,20 @@ Tracker.getCountryCode = function( ipAddress, callback )
         {
             // 없으면 등록한 후 다시 검색 ...
 
-            Tracker.register( ipAddress, function( )
+            Tracker.register( ipAddress, function( status )
             {
-                Tracker.get( ipAddress, function( result2 )
+                if ( status === "success" )
                 {
-                    if ( result2 )
-                        callback( result2._countryCode );
-                    else
-                        callback( "ERROR" );
-                } );
+                    Tracker.get( ipAddress, function( result2 )
+                    {
+                        if ( result2 )
+                            callback( result2._countryCode );
+                        else
+                            callback( "ERROR" );
+                    } );
+                }
+                else
+                    callback( "ERROR" );
             } );
         }
     }, function( err )

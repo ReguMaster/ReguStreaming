@@ -14,6 +14,7 @@ const util = require( "../util" );
 const readChunk = require( "read-chunk" );
 const superagent = require( "superagent" );
 const fileType = require( "file-type" );
+const imageSize = util.promisify( require( "image-size" ) );
 const SocketIOFileUpload = require( "socketio-file-upload" );
 const apiConfig = require( "../const/config" )
     .Kakao;
@@ -23,13 +24,14 @@ FileUploadHandler.FileDirectory = "./userfiles";
 FileUploadHandler.allowFileList = [
     "png",
     "gif",
-    "jpg"
-    // "jpeg" // *TODO: 서버 문제가 해결될 때 까지 jpeg 포맷 금지
+    "jpg",
+    "jpeg"
 ];
 FileUploadHandler.statusCode = {
     typeNotAllowedError: 0,
     databaseError: 1,
-    serverError: 2
+    serverError: 2,
+    imageSizeError: 3
 }
 
 FileUploadHandler.checkAdultImage = function( client, fileLocation, callback )
@@ -60,12 +62,15 @@ hook.register( "PostClientConnected", function( client, socket )
     var uploader = new SocketIOFileUpload( );
     uploader.dir = FileUploadHandler.FileDirectory;
     uploader.listen( socket );
+
+    // *TODO: 서버사이드 파일 거부 추가바람 (by 사이즈)
     uploader.uploadValidator = function( event, callback )
     {
+        // console.log( event );
         callback( true );
     };
 
-    uploader.on( "start", ( data ) =>
+    uploader.on( "start", function( data )
     {
         // 경우에따라 파일 내용으로 수정해야함.
         var extension = path.extname( data.file.name );
@@ -76,68 +81,78 @@ hook.register( "PostClientConnected", function( client, socket )
         data.file.name = fileName;
     } );
 
-    uploader.on( "saved", ( event ) =>
-    {
-        // *TODO: 서버사이드 파일 거부 추가바람 (by 사이즈)
-        var id = util.sha1( event.file.name );
+    uploader.on( "saved", async function( event ) // *WARNING: 파일 업로드 성능 저하 원인이 될 수 있음 (async).
+        {
+            var id = util.sha1( event.file.name );
+            var size = await imageSize( event.file.pathName );
 
-        readChunk( event.file.pathName, 0, 4100 )
-            .then( function( buffer )
+            if ( size.width > 2048 || size.height > 2048 )
             {
-                var magicNumberFileType = fileType( buffer );
+                Logger.write( Logger.LogType.Warning, `[FileUpload] FileUpload rejected. (error:imageSizeError, width:${ size.width }, height:${ size.height }) ${ client.information( ) }` );
+                socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.imageSizeError );
 
-                if ( !magicNumberFileType || FileUploadHandler.allowFileList.indexOf( event.file.type ) === -1 || FileUploadHandler.allowFileList.indexOf( magicNumberFileType.ext ) === -1 )
+                return;
+            }
+
+            readChunk( event.file.pathName, 0, 4100 )
+                .then( function( buffer )
                 {
-                    Logger.write( Logger.LogType.Warning, `[FileUpload] FileUpload rejected. (error:typeNotAllowedError, extension:${ event.file.type }, magicNumber:${ magicNumberFileType ? magicNumberFileType.ext : "unknown" }) ${ client.information( ) }` );
-                    socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.typeNotAllowedError );
+                    var magicNumberFileType = fileType( buffer );
 
-                    return;
-                }
-
-                // 파일 확장자와 매직넘버 불일치, 사용자가 임의로 확장자를 바꿈 -> 보안 로그는 남기되 업로드는 허가
-                if ( event.file.type !== magicNumberFileType.ext )
-                    Logger.write( Logger.LogType.Important, `[FileUpload] WARNING: File extension and magic number mismatch! (id:${ id }, extension:${ event.file.type }, magicNumber:${ magicNumberFileType.ext }) ${ client.information( ) }` );
-
-                var onCheck = function( isAdult )
-                {
-                    Database.queryWithEscape( `INSERT IGNORE INTO userfile ( _id, _file, _originalFileName, _type, _adult ) VALUES ( ?, ?, ?, ?, ? )`, [ id, event.file.name, event.file.originalName, event.file.type, isAdult ? "1" : "0" ], function( result )
+                    // 보안 로그 -> 사용자가 임의로 패킷을 정의했을 가능성이 있음.
+                    if ( !magicNumberFileType || FileUploadHandler.allowFileList.indexOf( event.file.type ) === -1 || FileUploadHandler.allowFileList.indexOf( magicNumberFileType.ext ) === -1 )
                     {
-                        if ( result && result.affectedRows === 1 )
+                        Logger.write( Logger.LogType.Important, `[FileUpload] FileUpload rejected. (error:typeNotAllowedError, extension:${ event.file.type }, magicNumber:${ magicNumberFileType ? magicNumberFileType.ext : "unknown" }) ${ client.information( ) }` );
+                        socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.typeNotAllowedError );
+
+                        // *TODO: 파일 확장자가 올바르지 않을 시 업로드 된 파일 삭제 추가
+                        return;
+                    }
+
+                    // 파일 확장자와 매직넘버 불일치, 사용자가 임의로 확장자를 바꿈 -> 보안 로그는 남기되 업로드는 허가
+                    if ( event.file.type !== magicNumberFileType.ext )
+                        Logger.write( Logger.LogType.Important, `[FileUpload] WARNING: File extension and magic number mismatch! (id:${ id }, extension:${ event.file.type }, magicNumber:${ magicNumberFileType.ext }) ${ client.information( ) }` );
+
+                    var onCheck = function( isAdult )
+                    {
+                        Database.executeProcedure( "REGISTER_USERFILE", [ id, event.file.name, event.file.originalName, event.file.type, isAdult ? "1" : "0" ], function( status, data )
                         {
-                            ChatManager.emitImage( client, id, isAdult );
-                            Logger.write( Logger.LogType.Event, `[FileUpload] File uploaded. ${ client.information() } -> ${ event.file.name }:${ id }` );
-                        }
-                    }, function( err )
-                    {
-                        socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.databaseError );
-                    } );
-                };
+                            if ( status === "success" )
+                            {
+                                ChatManager.emitImage( client, id, isAdult );
+                                Logger.write( Logger.LogType.Event, `[FileUpload] File uploaded. ${ client.information() } -> ${ event.file.name }:${ id }` );
+                            }
+                        }, function( err )
+                        {
+                            socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.databaseError );
+                        } );
+                    };
 
-                if ( event.file.type != "gif" )
+                    if ( event.file.type != "gif" )
+                    {
+                        FileUploadHandler.checkAdultImage( client, event.file.pathName, function( isAdult )
+                        {
+                            onCheck( isAdult );
+                        } );
+                    }
+                    else
+                        onCheck( false );
+                } )
+                .catch( function( err )
                 {
-                    FileUploadHandler.checkAdultImage( client, event.file.pathName, function( isAdult )
-                    {
-                        onCheck( isAdult );
-                    } );
-                }
-                else
-                    onCheck( false );
-            } )
-            .catch( function( err )
-            {
-                Logger.write( Logger.LogType.Error, `[FileUpload] Failed to upload file. (error:${ err.stack }) ${ client.information( ) }` );
-                socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.serverError );
-            } );
-    } );
+                    Logger.write( Logger.LogType.Error, `[FileUpload] Failed to upload file. (error:${ err.stack }) ${ client.information( ) }` );
+                    socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.serverError );
+                } );
+        } );
 
-    uploader.on( "error", ( event ) =>
+    uploader.on( "error", function( event )
     {
         socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.serverError );
 
         Logger.write( Logger.LogType.Error, `[FileUpload] Failed to upload file. (error:${ event.error.message }) ${ client.information( ) }` );
     } );
 
-    socket.on( "RS.uploadFile", ( data ) =>
+    socket.on( "RS.uploadFile", function( data )
     {
         if ( !util.isValidSocketData( data,
             {
@@ -150,18 +165,16 @@ hook.register( "PostClientConnected", function( client, socket )
             return;
         }
 
-        var fileName = util.sha256( path.basename( data.name ) + "_" + data.size );
-
-        Database.queryWithEscape( `SELECT _id, _adult from userfile WHERE _file = ?`, [ fileName ], function( result )
+        Database.executeProcedure( "FIND_USERFILE", [ util.sha256( path.basename( data.name ) + "_" + data.size ) ], function( status, data )
         {
-            if ( result && result.length === 1 )
+            if ( status === "success" && data.length > 0 )
             {
                 socket.emit( "RS.uploadFileReceive",
                 {
                     exists: true
                 } );
 
-                ChatManager.emitImage( client, result[ 0 ]._id, result[ 0 ]._adult === 1 );
+                ChatManager.emitImage( client, data[ 0 ]._id, data[ 0 ]._adult === 1 );
             }
             else
             {

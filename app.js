@@ -102,7 +102,7 @@ const onErrorAtWebServer = function( err )
         // *TODO: dns 리프레쉬 이후 다시 listen 함수 호출하는 코드 작성
     }
     else
-        Logger.write( Logger.LogType.Error, `[SERVER] Unhandled WebServer Error: \n${ err.stack }` );
+        Logger.write( Logger.LogType.Error, `[SERVER] Unhandled WebServer error: \n${ err.stack }` );
 }
 
 expressWebServer.on( "error", onErrorAtWebServer );
