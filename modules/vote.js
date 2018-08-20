@@ -10,7 +10,6 @@ const Server = require( "../server" );
 const Logger = require( "./logger" );
 const util = require( "../util" );
 const QueueManager = require( "./queue" );
-// const ClientManager = require( "../client" );
 const ChatManager = require( "./chat" );
 const hook = require( "../hook" );
 
@@ -80,9 +79,6 @@ VoteManager.register = function( client )
             VoteManager.finished( roomID, data );
         }
     }, 1000 );
-
-    console.log( "vote register " );
-    console.log( this._voteList );
 
     var voteData = this._voteList[ client.room ];
 

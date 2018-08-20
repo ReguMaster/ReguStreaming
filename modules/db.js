@@ -79,12 +79,6 @@ Database.query = function( sql, onResult, onError )
         else
             result.status = ( result.affectedRows > 0 || result.changedRows > 0 ) ? "success" : "failed";
 
-        // result.status = !!result[ 0 ];
-        // console.log( typeof result );
-        // console.log( result.length, !!result.length );
-        // // console.log( result[ 0 ].constructor.name );
-        // console.log( result );
-
         if ( onResult )
             onResult( result.status, result, fields );
 
@@ -142,14 +136,6 @@ Database.registerProcedure( "FIND_USER_BY_IPADDRESS", `SELECT * FROM user WHERE 
 Database.registerProcedure( "REGISTER_GUEST", `INSERT IGNORE INTO user ( _provider, _name, _tag, _ipAddress ) VALUES ( ?, ?, ?, ? )` );
 Database.registerProcedure( "REGISTER_USERFILE", `INSERT IGNORE INTO userfile ( _id, _file, _originalFileName, _type, _adult ) VALUES ( ?, ?, ?, ?, ? )` );
 Database.registerProcedure( "FIND_USERFILE", `SELECT _id, _adult from userfile WHERE _file = ?` );
-
-hook.register( "MySQLConnected", ( connected ) =>
-{
-    // Database.query( "DELETE FROM user WHERE _name = 'asd'" );
-    if ( connected )
-        Database.query( "SELECT * FROM user LIMIT 2" );
-} );
-
 
 // Database.build = function( )
 // {

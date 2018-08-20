@@ -7,10 +7,10 @@
 
 const hook = {};
 
-hook._list = [ ];
+hook._list = {};
 hook.register = function( id, method )
 {
-    if ( this._list[ id ] == null )
+    if ( !this._list[ id ] )
         this._list[ id ] = [ ];
 
     this._list[ id ].push( method );
@@ -18,7 +18,7 @@ hook.register = function( id, method )
 
 hook.run = function( id, ...args )
 {
-    if ( this._list[ id ] == null ) return;
+    if ( !this._list[ id ] ) return;
 
     var length = this._list[ id ].length;
     var result;
@@ -31,6 +31,12 @@ hook.run = function( id, ...args )
     }
 
     return result;
+}
+
+hook.remove = function( id )
+{
+    if ( this._list[ id ] )
+        delete this._list[ id ];
 }
 
 module.exports = hook;

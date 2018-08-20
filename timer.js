@@ -5,11 +5,10 @@
 
 'use strict';
 
+const timer = {};
 const Logger = require( "./modules/logger" );
 
-const timer = {};
 timer._list = {};
-
 timer.create = function( id, interval, loopCount, callback )
 {
     var obj = {

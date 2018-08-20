@@ -15,14 +15,6 @@ const hook = require( "../hook" );
 const util = require( "../util" );
 const FileStorage = require( "../filestorage" );
 const Logger = require( "../modules/logger" );
-// Object.defineProperties
-
-var a = 'strin';
-var b = a;
-a += 'g';
-console.log( a ); // 'string'
-console.log( b ); // 'strin'
-
 
 //https://stackoverflow.com/questions/8128578/reading-value-from-console-interactively
 process.stdin.addListener( "data", function( data )
@@ -219,10 +211,7 @@ ServiceManager.done = function( )
 // ServiceManager.registerNotification( "SERVICE_UPDATE_KO", ServiceManager.notificationType.warning, "서비스 업데이트", "현재 서비스 업데이트 작업 중입니다, 일부 서비스를 이용하실 수 없으며 불편을 드려 죄송합니다." );
 // ServiceManager.registerNotification( "SERVICE_UPDATE_EN", ServiceManager.notificationType.warning, "Service Update", "We are currently working on a service update, some services are not available and we apologize for any inconvenience." );
 ServiceManager.setServiceStatus( 1 );
-
-// ServiceManager.registerNotification( "WOW", ServiceManager.notificationType.warning, "채널 접속 차단", "현재 일부 채널에서 문제가 발생하여 채널 접속을 차단했습니다, 불편을 드려 죄송합니다." );
 ServiceManager.registerNotification( "SNS_LOGIN_WARN", ServiceManager.notificationType.warning, "소셜 계정 로그인", "외부 서비스 접근에 문제가 발생하여 현재 스팀을 통한 로그인을 제외한 모든 소셜 계정 로그인이 불가능 합니다, 불편을 드려 죄송합니다." );
-// ServiceManager.registerNotification( "SNS_LOGIN_WARN_EN", ServiceManager.notificationType.warning, "Social Account Login", "We are sorry for having trouble using login with external service except Steam." );
 
 ServiceManager.refreshBackground( );
 

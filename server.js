@@ -130,9 +130,9 @@ hook.register( "Initialize", function( )
     hook.run( "OnCreateOfficialRoom", Server.ROOM );
 } );
 
-Server.DiscordClient.on( 'ready', ( ) =>
+Server.DiscordClient.on( "ready", function( )
 {
-    console.log( `Logged in as ${Server.DiscordClient.user.tag}!` );
+    Logger.write( Logger.LogType.Info, `[Discord] Logged in as ${ Server.DiscordClient.user.tag }.` );
 
     hook.run( "PostReadyDiscordClient" );
 
@@ -162,31 +162,6 @@ Server.DiscordClient.on( "message", function( message )
 
     hook.run( "PostDiscordMessage", message );
 } );
-
-// DiscordClient.on( 'message', message =>
-// {
-//     if ( !message.guild ) return;
-
-//     if ( message.content === 'join' )
-//     {
-//         if ( message.member.voiceChannel )
-//         {
-//             message.member.voiceChannel.join( )
-//                 .then( connection =>
-//                 { // Connection is an instance of VoiceConnection
-//                     connection.play( broadcast );
-//                     message.reply( 'I have successfully connected to the channel!' );
-//                 } )
-//                 .catch( console.log );
-
-
-//         }
-//         else
-//         {
-//             message.reply( 'You need to join a voice channel first!' );
-//         }
-//     }
-// } );
 
 // Server.DiscordClient.login( config.DISCORD_BOT_TOKEN );
 
@@ -648,13 +623,6 @@ App.socketIO.on( "connect", function( socket )
         // } );
     } );
 
-    // socket.on( "binaryData", function( data )
-    // {
-    //     console.log( data );
-
-    //     Server.sendMessage( client.room, "binaryDataReceive", data );
-    // } );
-
     socket.on( "regu.requestUserInfo", function( data )
     {
         if ( !util.isValidSocketData( data,
@@ -715,19 +683,10 @@ require( "./filestorage" );
 // require( "./datastream" );
 
 require( "./modules/chat" );
-
-// require( "./client" );
-
-// require( "./modules/room" );
 require( "./modules/service" );
-// require( "./modules/queue" );
-
 require( "./modules/interact" );
-
 require( "./modules/vote" );
-
 require( "./modules/fileupload" );
-
 require( "./modules/tracker" );
 require( "./modules/admin" );
 

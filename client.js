@@ -5,16 +5,10 @@
 
 'use strict';
 
-const ClientManager = {};
-// const path = require( "path" );
-// const Main = require( "./app" );
-// const fileStream = require( "fs" );
-// const reguUtil = require( "./util" );
+// const ClientManager = {};
 const BanManager = require( "./modules/ban" );
 const Logger = require( "./modules/logger" );
 const hook = require( "./hook" );
-// const FileStorage = require( "./filestorage" );
-// const Tracker = require( "./modules/tracker" );
 
 module.exports = class Client
 {
