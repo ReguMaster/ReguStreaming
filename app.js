@@ -17,8 +17,6 @@ const Logger = require( "./modules/logger" );
 const DNS = require( "./modules/dns" );
 const express = require( "express" );
 const session = require( "express-session" );
-const redisClient = require( "redis" )
-    .createClient( );
 const RedisStore = require( "connect-redis" )( session );
 const app = express( );
 
@@ -33,6 +31,17 @@ const expressWebServerSSL = require( "https" )
         key: fileStream.readFileSync( "./ssl/private.key" )
     }, app );
 
+Main.config = {};
+Main.config.host = util.getLocalIP( )
+    .ipAddress;
+Main.config.devMode = process.argv[ 2 ] === "-dev";
+Main.config.enableAutoQueue = false;
+
+Main.app = app;
+Main.redisClient = require( "redis" )
+    .createClient( );
+Main.socketIO = require( "socket.io" )( expressWebServerSSL );
+
 const sessionMiddleware = session(
 {
     name: "sessionID",
@@ -44,7 +53,7 @@ const sessionMiddleware = session(
     },
     store: new RedisStore(
     {
-        client: redisClient
+        client: Main.redisClient
     } ),
     genid: function( req )
     {
@@ -55,28 +64,19 @@ const sessionMiddleware = session(
     saveUninitialized: true
 } );
 
-Main.config = {};
-Main.config.host = util.getLocalIP( )
-    .ipAddress;
-Main.config.devMode = process.argv[ 2 ] === "-dev";
-Main.config.enableAutoQueue = false;
-
-Main.app = app;
-Main.socketIO = require( "socket.io" )( expressWebServerSSL );
-
 process.title = "ReguStreaming : Server";
 
-redisClient.on( "connect", function( )
+Main.redisClient.on( "connect", function( )
 {
     Logger.write( Logger.LogType.Info, `[Redis] Redis database connected.` );
 } );
 
-redisClient.on( "reconnecting", function( )
+Main.redisClient.on( "reconnecting", function( )
 {
     Logger.write( Logger.LogType.Warning, `[Redis] Reconnecting ...` );
 } );
 
-redisClient.on( "error", function( err )
+Main.redisClient.on( "error", function( err )
 {
     Logger.write( Logger.LogType.Error, `[Redis] ERROR! : ${ err.message }` );
 } );

@@ -5,21 +5,20 @@
 
 'use struct'
 
+const Server = {};
 const App = require( "./app" );
 const util = require( "./util" );
 const hook = require( "./hook" );
 const Logger = require( "./modules/logger" );
-var Client = require( "./client" );
-
+const Client = require( "./client" );
 const Tracker = require( "./modules/tracker" );
 const Discord = require( "discord.js" );
-const config = require( "./const/config" );
-
-const Server = {};
+const apiConfig = require( "./const/config" );
 
 Server.CONN = [ ];
 Server.CLIENT = {};
 Server.ROOM = {};
+Server.QUEUE = {};
 Server.MANAGEMENT_CONSOLE = [ ];
 Server.DiscordClient = new Discord.Client( );
 Server.discordInitialized = false;
@@ -52,12 +51,11 @@ Server.emitDiscord = function( channelType, message )
     }
 }
 
-// const ServiceManager = require( "./modules/service" );
-// Server.QUEUE = [ ];
-
+// *TODO : 성능 하락 이슈가 있을 수 있음. (deepCopy)
 Server.getRoomDataForClient = function( )
 {
     var roomData = util.deepCopy( this.ROOM );
+    var queueData = util.deepCopy( this.QUEUE );
 
     var keys = Object.keys( roomData );
     var keysLength = keys.length;
@@ -65,17 +63,12 @@ Server.getRoomDataForClient = function( )
     for ( var i = 0; i < keysLength; i++ )
     {
         delete roomData[ keys[ i ] ].onConnect;
-        delete roomData[ keys[ i ] ].queueList;
+        delete roomData[ keys[ i ] ].config;
 
         roomData[ keys[ i ] ].count = this.getRoomClientCount( keys[ i ] );
 
-        if ( !util.isEmpty( roomData[ keys[ i ] ].currentPlayingQueue ) )
-            roomData[ keys[ i ] ].currentPlaying = roomData[ keys[ i ] ].currentPlayingQueue.mediaName;
-
-        delete roomData[ keys[ i ] ].currentPlayingQueue;
-        delete roomData[ keys[ i ] ].config;
-        delete roomData[ keys[ i ] ].currentPlayingPos;
-        // delete roomData[ keys[ i ] ].clients;
+        if ( !util.isEmpty( queueData[ keys[ i ] ].currentPlayingQueue ) )
+            roomData[ keys[ i ] ].currentPlaying = queueData[ keys[ i ] ].currentPlayingQueue.mediaName;
     }
 
     return roomData;
@@ -90,15 +83,62 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
         desc: desc,
         maxConnectable: maxConnectable,
         onConnect: onConnect,
-        config: config,
-        // clients: [ ],
+        config: config
+    };
+
+    this.QUEUE[ roomID ] = {
         queueList: [ ],
         currentPlayingQueue:
         {},
         currentPlayingPos: 0
-    }
+    };
 
     this.CLIENT[ roomID ] = [ ];
+
+    App.redisClient.get( "RS.QUEUE." + roomID + ".queueList", function( err, result )
+    {
+        if ( err || !result ) return;
+
+        try
+        {
+            Server.QUEUE[ roomID ].queueList = JSON.parse( result );
+            Logger.write( Logger.LogType.Info, `[Queue] [${ roomID }] queueList overridden from RedisDB.` );
+        }
+        catch ( exception )
+        {
+            Logger.write( Logger.LogType.Warning, `[Queue] Failed to fetch [${ roomID }] queueList from RedisDB! (err:${ err })` );
+        }
+    } );
+
+    App.redisClient.get( "RS.QUEUE." + roomID + ".currentPlayingQueue", function( err, result )
+    {
+        if ( err || !result ) return;
+
+        try
+        {
+            Server.QUEUE[ roomID ].currentPlayingQueue = JSON.parse( result );
+            Logger.write( Logger.LogType.Info, `[Queue] [${ roomID }] currentPlayingQueue overridden from RedisDB.` );
+        }
+        catch ( exception )
+        {
+            Logger.write( Logger.LogType.Warning, `[Queue] Failed to fetch [${ roomID }] currentPlayingQueue from RedisDB! (err:${ err })` );
+        }
+    } );
+
+    App.redisClient.get( "RS.QUEUE." + roomID + ".currentPlayingPos", function( err, result )
+    {
+        if ( err || !result ) return;
+
+        try
+        {
+            Server.QUEUE[ roomID ].currentPlayingPos = Number( result ) || 0;
+            Logger.write( Logger.LogType.Info, `[Queue] [${ roomID }] currentPlayingPos overridden from RedisDB.` );
+        }
+        catch ( exception )
+        {
+            Logger.write( Logger.LogType.Warning, `[Queue] Failed to fetch [${ roomID }] currentPlayingPos from RedisDB! (err:${ err })` );
+        }
+    } );
 }
 
 // Server.getRoomClient = function(roomID)
@@ -163,7 +203,7 @@ Server.DiscordClient.on( "message", function( message )
     hook.run( "PostDiscordMessage", message );
 } );
 
-// Server.DiscordClient.login( config.DISCORD_BOT_TOKEN );
+// Server.DiscordClient.login( apiConfig.DISCORD_BOT_TOKEN );
 
 hook.register( "PostClientConnected", function( client, socket )
 {
@@ -485,28 +525,20 @@ Server.isConnectable = function( roomID, sessionID, userID, ipAddress, countryCo
     //     }
     // }
 
-    // if ( !this.canUseNickname( data.name ) )
-    // {
-    //     return {
-    //         accept: false,
-    //         reason: "사용할 수 없는 닉네임을 설정했습니다. (영어, 한글, 숫자 3 ~ 10자, 특수문자 불가, 일부 특정 단어 불가)"
-    //     };
-    // }
-
     return {
         accept: true
     }
 }
 
-// room 접속했을 때 socket 초기화 작업
 Server.onConnect = function( socket )
 {
-    // 여기에 룸 체크 다시하기
+    // *TODO: 여기에 룸 체크 다시하기 -> 필요 없을 수 있음.
     var roomID = socket.handshake.session.roomID;
 
-    if ( !this.ROOM[ roomID ] ) // wow fucking doge
+    if ( !this.ROOM[ roomID ] ) // *오류: 가끔 room Initialize 보다 먼저 클라이언트가 들어올 시 룸 데이터가 없으므로 오류가 발생함.
     {
         console.log( "WARNING!" );
+        socket.disconnect( );
         return;
     }
 
@@ -516,8 +548,7 @@ Server.onConnect = function( socket )
     this.CLIENT[ roomID ].push( client );
     this.registerConnList( socket );
 
-    // ClientManager.refreshCount( );
-    // 이거 좀 최적화하기.. clientCountUpdate
+    // *TODO: 최적화 필요. clientCountUpdate
     this.sendMessage( client.room, "regu.clientCountUpdate",
     {
         count: this.getRoomClientCount( roomID ),
@@ -547,7 +578,7 @@ Server.onDisconnect = function( client )
         this.CLIENT[ roomID ].splice( this.CLIENT[ roomID ].indexOf( client ), 1 );
         // this.CLIENT.splice( this.CLIENT.indexOf( client ), 1 );
 
-        // this.refreshCount( );
+        // *TODO: 최적화 필요. clientCountUpdate
         this.sendMessage( client.room, "regu.clientCountUpdate",
         {
             count: this.getRoomClientCount( roomID ),

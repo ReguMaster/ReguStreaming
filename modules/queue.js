@@ -26,6 +26,7 @@ QueueManager.providerType = {
     Tvple: 2,
     Direct: 3,
     KakaoTV: 4
+    // SoundCloud: 5
 }
 
 // 오후 8:41 - RIPPLE: 사클
@@ -663,7 +664,7 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
 
         var onRegister = function( )
         {
-            if ( !Server.ROOM[ roomID ] )
+            if ( !Server.QUEUE[ roomID ] )
             {
                 if ( client )
                     client.emit( "regu.queueRegisterReceive", QueueManager.statusCode.unknownError );
@@ -685,9 +686,11 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
 
             callback( client, QueueManager.statusCode.success );
 
-            Server.sendMessage( roomID, "regu.queue", newData );
+            Server.sendMessage( roomID, "RS.queueEvent", newData );
 
-            Server.ROOM[ roomID ].queueList.push( queueData );
+            Server.QUEUE[ roomID ].queueList.push( queueData );
+
+            App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
 
             if ( client )
             {
@@ -834,7 +837,7 @@ QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, sta
                         // // 여기서부터 해야함.
                         // // 2018-06-22
 
-                        // Server.sendMessage( roomID, "regu.queue",
+                        // Server.sendMessage( roomID, "RS.queueEvent",
                         // {
                         //     type: "register",
                         //     id: queueData.id,
@@ -861,9 +864,9 @@ QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, sta
 
                         callback( client, QueueManager.statusCode.success );
 
-                        Server.sendMessage( roomID, "regu.queue", newData );
+                        Server.sendMessage( roomID, "RS.queueEvent", newData );
 
-                        Server.ROOM[ roomID ].queueList.push( queueData );
+                        Server.QUEUE[ roomID ].queueList.push( queueData );
 
                         if ( client )
                             ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download" );
@@ -985,7 +988,7 @@ QueueManager._processRegisterKakaoTV = function( client, roomID, url, videoID, s
                         // // 여기서부터 해야함.
                         // // 2018-06-22
 
-                        // Server.sendMessage( roomID, "regu.queue",
+                        // Server.sendMessage( roomID, "RS.queueEvent",
                         // {
                         //     type: "register",
                         //     id: queueData.id,
@@ -1012,9 +1015,9 @@ QueueManager._processRegisterKakaoTV = function( client, roomID, url, videoID, s
 
                         callback( client, QueueManager.statusCode.success );
 
-                        Server.sendMessage( roomID, "regu.queue", newData );
+                        Server.sendMessage( roomID, "RS.queueEvent", newData );
 
-                        Server.ROOM[ roomID ].queueList.push( queueData );
+                        Server.QUEUE[ roomID ].queueList.push( queueData );
 
                         if ( client )
                             ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download" );
@@ -1147,7 +1150,7 @@ QueueManager._processRegisterTvple = function( client, roomID, url, videoID, sta
                                     success: true
                                 } );
 
-                                Server.sendMessage( roomID, "regu.queue",
+                                Server.sendMessage( roomID, "RS.queueEvent",
                                 {
                                     type: "register",
                                     id: queueData.id,
@@ -1216,7 +1219,7 @@ QueueManager._processRegisterDirect = function( client, roomID, url, videoID, st
                 } );
             }
 
-            Server.sendMessage( roomID, "regu.queue",
+            Server.sendMessage( roomID, "RS.queueEvent",
             {
                 type: "register",
                 id: queueData.id,
@@ -1238,16 +1241,16 @@ QueueManager._processRegisterDirect = function( client, roomID, url, videoID, st
 
 QueueManager.getCount = function( roomID )
 {
-    if ( !Server.ROOM[ roomID ] ) return 0;
+    if ( !Server.QUEUE[ roomID ] ) return 0;
 
-    return Server.ROOM[ roomID ].queueList.length || 0;
+    return Server.QUEUE[ roomID ].queueList.length || 0;
 }
 
 QueueManager.getPlayingData = function( roomID )
 {
-    if ( !Server.ROOM[ roomID ] ) return {};
+    if ( !Server.QUEUE[ roomID ] ) return {};
 
-    return Server.ROOM[ roomID ].currentPlayingQueue ||
+    return Server.QUEUE[ roomID ].currentPlayingQueue ||
     {};
 }
 
@@ -1290,28 +1293,28 @@ QueueManager.register = function( providerType, client, roomID, url, videoID, st
 
 QueueManager.clear = function( roomID, alsoPlayingQueue )
 {
-    if ( !Server.ROOM[ roomID ] ) return;
+    if ( !Server.QUEUE[ roomID ] ) return;
 
-    Server.ROOM[ roomID ].queueList = [ ];
+    Server.QUEUE[ roomID ].queueList = [ ];
 
     if ( alsoPlayingQueue )
     {
         QueueManager.skip( roomID );
     }
 
-    Server.sendMessage( roomID, "regu.queue",
+    Server.sendMessage( roomID, "RS.queueEvent",
     {
         type: "dataReq",
-        queueList: Server.ROOM[ roomID ].queueList
+        queueList: Server.QUEUE[ roomID ].queueList
     } );
 }
 
 QueueManager.skip = function( roomID )
 {
-    if ( !Server.ROOM[ roomID ] ) return;
+    if ( !Server.QUEUE[ roomID ] ) return;
     if ( !this.isPlaying( roomID ) ) return;
 
-    Server.ROOM[ roomID ].currentPlayingQueue = {};
+    Server.QUEUE[ roomID ].currentPlayingQueue = {};
 
     Server.sendMessage( roomID, "RS.mediaPlay",
     {
@@ -1321,14 +1324,14 @@ QueueManager.skip = function( roomID )
 
 QueueManager.removeAt = function( roomID, index )
 {
-    if ( Server.ROOM[ roomID ] && index >= 0 && index < Server.ROOM[ roomID ].queueList.length )
+    if ( Server.QUEUE[ roomID ] && index >= 0 && index < Server.QUEUE[ roomID ].queueList.length )
     {
-        Server.ROOM[ roomID ].queueList.splice( index, 1 );
+        Server.QUEUE[ roomID ].queueList.splice( index, 1 );
 
-        Server.sendMessage( roomID, "regu.queue",
+        Server.sendMessage( roomID, "RS.queueEvent",
         {
             type: "dataReq",
-            queueList: Server.ROOM[ roomID ].queueList
+            queueList: Server.QUEUE[ roomID ].queueList
         } );
     }
 }
@@ -1339,20 +1342,20 @@ QueueManager.moveTo = function( roomID, index, toIndex ) {
 
 QueueManager.setVideoPos = function( roomID, pos )
 {
-    if ( !Server.ROOM[ roomID ] ) return;
+    if ( !Server.QUEUE[ roomID ] ) return;
     if ( !this.isPlaying( roomID ) ) return;
 
-    Server.ROOM[ roomID ].currentPlayingPos = pos;
+    Server.QUEUE[ roomID ].currentPlayingPos = pos;
     Server.sendMessage( roomID, "RS.setMediaPos", pos );
 }
 
 QueueManager.removeFirst = function( roomID )
 {
-    if ( Server.ROOM[ roomID ] && Server.ROOM[ roomID ].queueList.length > 0 ) // 수정 바람
+    if ( Server.QUEUE[ roomID ] && Server.QUEUE[ roomID ].queueList.length > 0 ) // 수정 바람
     {
-        Server.ROOM[ roomID ].queueList.splice( 0, 1 );
+        Server.QUEUE[ roomID ].queueList.splice( 0, 1 );
 
-        Server.sendMessage( roomID, "regu.queue",
+        Server.sendMessage( roomID, "RS.queueEvent",
         {
             type: "removeRecent"
         } );
@@ -1361,9 +1364,9 @@ QueueManager.removeFirst = function( roomID )
 
 QueueManager.isEmpty = function( roomID )
 {
-    if ( !Server.ROOM[ roomID ] ) return true;
+    if ( !Server.QUEUE[ roomID ] ) return true;
 
-    return Server.ROOM[ roomID ].queueList.length == 0;
+    return Server.QUEUE[ roomID ].queueList.length === 0;
 }
 
 // var urlParsedObj = url.parse("https://www.youtube.com/watch?v=A8KrxWUnsWo");
@@ -1372,18 +1375,18 @@ QueueManager.isEmpty = function( roomID )
 
 QueueManager.sendQueueList = function( socket, roomID )
 {
-    if ( !Server.ROOM[ roomID ] ) return;
+    if ( !Server.QUEUE[ roomID ] ) return;
 
-    socket.emit( "regu.queue",
+    socket.emit( "RS.queueEvent",
     {
         type: "dataReq",
-        queueList: Server.ROOM[ roomID ].queueList
+        queueList: Server.QUEUE[ roomID ].queueList
     } );
 }
 
 QueueManager.sendUserVoteList = function( socket, roomID )
 {
-    socket.emit( "regu.queue",
+    socket.emit( "RS.queueEvent",
     {
         type: "userVoteRefresh",
         voteList: QueueManager.getPlayingData( roomID )
@@ -1404,10 +1407,10 @@ QueueManager.play = function( roomID )
         return;
     }
 
-    var recentQueue = Server.ROOM[ roomID ].queueList[ 0 ];
+    var recentQueue = Server.QUEUE[ roomID ].queueList[ 0 ];
 
-    Server.ROOM[ roomID ].currentPlayingQueue = recentQueue;
-    Server.ROOM[ roomID ].currentPlayingPos = recentQueue.mediaPosition;
+    Server.QUEUE[ roomID ].currentPlayingQueue = recentQueue;
+    Server.QUEUE[ roomID ].currentPlayingPos = recentQueue.mediaPosition;
 
     Server.sendMessage( roomID, "RS.mediaPlay", recentQueue );
 
@@ -1433,11 +1436,13 @@ QueueManager.play = function( roomID )
 
     QueueManager.removeFirst( roomID );
 
+    App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+    App.redisClient.set( "RS.QUEUE." + roomID + ".currentPlayingQueue", JSON.stringify( Server.QUEUE[ roomID ].currentPlayingQueue ) );
+
     Logger.write( Logger.LogType.Event, `[Queue] [${ roomID }] Room playing ${ recentQueue.mediaName }-${ recentQueue.mediaProviderURL } by (${ ( recentQueue.user ? recentQueue.user.information : "SERVER" ) })` );
 
     hook.run( "PostPlayQueue", roomID, recentQueue );
 }
-
 
 // 남용 막기 위해 이 시스템은 roomID 설정을 안함;
 QueueManager.registerTimeDelay = function( client, delay )
@@ -1513,10 +1518,9 @@ hook.register( "OnCreateOfficialRoom", function( )
 {
     hook.register( "TickTok", function( )
     {
-        util.forEach( Server.ROOM, ( room ) =>
+        util.forEach( Server.QUEUE, function( queueData, roomID )
         {
-            var roomID = room.roomID;
-            var currentQueueData = room.currentPlayingQueue;
+            var currentQueueData = queueData.currentPlayingQueue;
 
             if ( !QueueManager.isEmpty( roomID ) && util.isEmpty( currentQueueData ) )
             {
@@ -1526,7 +1530,7 @@ hook.register( "OnCreateOfficialRoom", function( )
             else if ( QueueManager.isEmpty( roomID ) && util.isEmpty( currentQueueData ) )
                 return
 
-            if ( currentQueueData.mediaDuration <= room.currentPlayingPos - 3 ) // 3초 딜레이
+            if ( currentQueueData.mediaDuration <= queueData.currentPlayingPos - 3 ) // 3초 딜레이
             {
                 if ( QueueManager.isEmpty( roomID ) )
                 {
@@ -1544,25 +1548,18 @@ hook.register( "OnCreateOfficialRoom", function( )
                 return;
             }
 
-            room.currentPlayingPos += Server.getRoomConfig( roomID, "playbackRate", 1.0 );
+            queueData.currentPlayingPos += Server.getRoomConfig( roomID, "playbackRate", 1.0 );
+
+            if ( queueData.currentPlayingPos % 3 === 0 ) // 3초마다 currentPlayingPos redisDB 에 저장
+                App.redisClient.set( "RS.QUEUE." + roomID + ".currentPlayingPos", queueData.currentPlayingPos.toString( ) );
         } );
-
-        // for ( var i = 0; i < roomIDListLength; i++ )
-        // {
-        //     var roomID = roomIDList[ i ];
-
-        // }
     } );
 
     if ( !App.config.enableAutoQueue ) return;
 
-    util.forEach( Server.ROOM, ( room ) =>
+    util.forEach( Server.QUEUE, function( queueData, roomID )
     {
-        var roomID = room.roomID;
-
         if ( roomID !== "24hournc" && roomID !== "24hourjapan" ) return;
-
-        // console.log( QueueManager.config.randomPlayList[ Math.floor( Math.random( ) * QueueManager.config.randomPlayList.length ) ] );
 
         QueueManager.refreshRandomPlayList(
             QueueManager.config.randomPlayList[ "_" + roomID ][ Math.floor( Math.random( ) * QueueManager.config.randomPlayList[ "_" + roomID ].length ) ],
@@ -1617,23 +1614,21 @@ QueueManager.refreshRandomPlayList = function( listURL, callback )
         } );
 }
 
-hook.register( "ModifyQueueData", function( roomID, queueData )
-{
-    // if ( roomID === "everync" )
-    // {
-    //     console.log( queueData.mediaDuration );
-    //     queueData.mediaDuration = queueData.mediaDuration / 1.15;
-    //     console.log( queueData.mediaDuration );
-    //     return queueData;
-    // }
-} );
+// hook.register( "ModifyQueueData", function( roomID, queueData )
+// {
+// if ( roomID === "everync" )
+// {
+//     console.log( queueData.mediaDuration );
+//     queueData.mediaDuration = queueData.mediaDuration / 1.15;
+//     console.log( queueData.mediaDuration );
+//     return queueData;
+// }
+// } );
 
 hook.register( "PostPlayQueue", function( roomID, queueData )
 {
     if ( !App.config.enableAutoQueue ) return;
     if ( roomID !== "24hournc" && roomID !== "24hourjapan" ) return;
-
-    // console.log( QueueManager.getCount( roomID ) );
 
     if ( QueueManager.getCount( roomID ) < 5 )
     {
@@ -1694,9 +1689,9 @@ setInterval( function( )
 
 QueueManager.isPlaying = function( roomID )
 {
-    if ( !Server.ROOM[ roomID ] ) return false;
+    if ( !Server.QUEUE[ roomID ] ) return false;
 
-    return Server.ROOM[ roomID ].currentPlayingQueue != null && !util.isEmpty( Server.ROOM[ roomID ].currentPlayingQueue );
+    return Server.QUEUE[ roomID ].currentPlayingQueue != null && !util.isEmpty( Server.QUEUE[ roomID ].currentPlayingQueue );
 }
 
 hook.register( "PostClientConnected", function( client, socket )
@@ -1751,8 +1746,8 @@ hook.register( "PostClientConnected", function( client, socket )
         else
         {
             var newData = util.deepCopy( playingData );
-            newData.mediaPosition = Server.ROOM[ roomID ].currentPlayingPos;
-            // 자막 잇을경우 요청 없을경우 요청 안하기 바꾸기
+            newData.mediaPosition = Server.QUEUE[ roomID ].currentPlayingPos;
+            // *TODO: 자막 잇을경우 요청 없을경우 요청 안하기 바꾸기
             // newData.extra = {
             //     caption: result
             // };
@@ -1794,7 +1789,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
     socket.on( "queueDataRequest", function( data )
     {
-        socket.emit( "regu.queue",
+        socket.emit( "RS.queueEvent",
         {
             type: "dataReq"
         } );

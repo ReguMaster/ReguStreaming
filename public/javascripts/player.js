@@ -738,10 +738,8 @@ socket.on( "regu.queueRegisterReceive", function( data )
 // 여기 최적화 필요함.,.
 // id 시스템 관리 넣기
 //https://www.zerocho.com/category/jQuery/post/57c3a8821efc521700a70918
-socket.on( "regu.queue", function( data )
+socket.on( "RS.queueEvent", function( data )
 {
-    console.log( data );
-
     if ( data.type == "register" )
     {
         var newObj = $( String.format(
