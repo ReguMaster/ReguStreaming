@@ -7,16 +7,23 @@
 
 const Logger = {};
 
-const App = require( "../app" );
-// const Server = require( "../server" );
+const fileStream = require( "fs" );
 const path = require( "path" );
 const consoleColor = require( "colors" );
-const FileStream = require( "fs" );
 const DateConverter = require( "dateformat" );
 const hook = require( "../hook" );
 
 Logger.currentDate = new Date( );
-Logger.directory = "./logs/regustreaming-log-" + DateConverter( Logger.currentDate, "yyyy-mm-dd" ) + ".log"; // 버그있어요. (다음날 되면 안댐)
+Logger.config = {
+    directory: "./logs/regustreaming-log-" + DateConverter( Logger.currentDate, "yyyy-mm-dd" ) + ".log" // *오류: 날짜가 pass 되면 안댐
+};
+
+fileStream.access( Logger.config.directory, fileStream.constants.F_OK, function( err )
+{
+    if ( err )
+        console.error( `[Logger] Logger directory missing! (directory:${ Logger.config.directory })` );
+} );
+
 // Logger.LogStream = FileStream.openSync( Logger.directory, "a+", 666 );
 
 // 버그이쪄염;;
@@ -85,18 +92,18 @@ Logger.write = function( logLevel, message )
 
     if ( logLevel == Logger.LogType.Important )
     {
-        FileStream.appendFile( "./logs/IMPORTANT_regustreaming-log-" + DateConverter( Logger.currentDate, "yyyy-mm-dd" ) + ".log", messageFixed + "\r\n", function( error )
+        fileStream.appendFile( "./logs/IMPORTANT_regustreaming-log-" + DateConverter( Logger.currentDate, "yyyy-mm-dd" ) + ".log", messageFixed + "\r\n", function( err )
         {
-            if ( error )
-                console.log( error );
+            if ( err )
+                console.error( `[Logger] Failed to save LOG! (err:${ err.stack })` );
         } );
     }
     else
     {
-        FileStream.appendFile( Logger.directory, messageFixed + "\r\n", function( error )
+        fileStream.appendFile( this.config.directory, messageFixed + "\r\n", function( err )
         {
-            if ( error )
-                console.log( error );
+            if ( err )
+                console.error( `[Logger] Failed to save LOG! (err:${ err.stack })` );
         } );
     }
 
