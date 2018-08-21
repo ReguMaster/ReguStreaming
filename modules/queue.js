@@ -298,54 +298,40 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
     };
 }
 
-
-// QueueManager._queueList = [ ];
 QueueManager._recentClientList = [ ];
-// QueueManager.currentQueueData = [ ];
-// QueueManager.currentPlayingPos = [ ]
-
+QueueManager._randomVideos = [ ];
 QueueManager.config = {
-    DELAY: 1000 * 60, // 수정 바람 60
-    LANGUAGE_CODE: "ko"
+    DELAY: 1000 * 60,
+    LANGUAGE_CODE: "ko",
+    randomPlayList:
+    {
+        _24hournc: [
+            "https://www.youtube.com/playlist?list=PLckeMyCaCCIN_JU1V4oADW50DlGOREoLj"
+        ],
+        _24hourjapan: [
+            "https://www.youtube.com/playlist?list=PLwe1-DOXcLUYoY-3Crzq1f2ay-bnIOhOT"
+        ]
+    }
     // MAX_DURATION: 420, // 420
-    // DIRECTORY: path.join( __dirname, "../public/youtube_sounds" ),
-    // YOUTUBE_FILE_FORMAT: "yt_%s.mp3"
 }
 
-hook.register( "PreRegisterQueue", function( videoType, client, roomID, url, videoID )
-{
-    // if ( roomID === "osu" && videoType === QueueManager.providerType.Ani24 )
-    // {
-    //     return {
-    //         accept: false,
-    //         reason: "'빅 홀 오스' 채널에서는 애니메이션을 재생할 수 없습니다, 애니메이션 채널로 이동해주세요."
-    //     }
-    // }
-
-    // if ( roomID === "anime" && videoType === QueueManager.providerType.Youtube )
-    // {
-    //     return {
-    //         accept: false,
-    //         reason: "'애니메이션' 채널에서는 유튜브를 재생할 수 없습니다, 다른 채널로 이동해주세요."
-    //     }
-    // }
-} );
-
-// hook.register( "RoomInitialized", function( rooms )
+// hook.register( "OnRegisterQueue", function( providerType, client, roomID, url, videoID )
 // {
-//     var length = rooms.length;
-
-//     for ( var i = 0; i < length; i++ )
-//     {
-//         var roomID = rooms[ i ].roomID;
-
-//         QueueManager._queueList[ roomID ] = [ ];
-//         QueueManager.currentQueueData[ roomID ] = {};
-//         QueueManager.currentPlayingPos[ roomID ] = 0;
-//         QueueManager._randomVideos[ roomID ] = [ ];
-
-//         hook.run( "RoomQueueCreated", roomID );
+// if ( roomID === "osu" && videoType === QueueManager.providerType.Ani24 )
+// {
+//     return {
+//         accept: false,
+//         reason: "'빅 홀 오스' 채널에서는 애니메이션을 재생할 수 없습니다, 애니메이션 채널로 이동해주세요."
 //     }
+// }
+
+// if ( roomID === "anime" && videoType === QueueManager.providerType.Youtube )
+// {
+//     return {
+//         accept: false,
+//         reason: "'애니메이션' 채널에서는 유튜브를 재생할 수 없습니다, 다른 채널로 이동해주세요."
+//     }
+// }
 // } );
 
 QueueManager.getYoutubeHighestQualityResource = function( data )
@@ -1254,41 +1240,29 @@ QueueManager.getPlayingData = function( roomID )
     {};
 }
 
+// *TODO: 로직 에러 -> 다시 작성 바람.
 QueueManager.register = function( providerType, client, roomID, url, videoID, startPosition, force )
 {
-    var can = force ?
+    var onRegisterQueue = force ?
     {
         accept: true
-    } : hook.run( "CanRegisterQueue", providerType, client, roomID, url, videoID );
+    } : hook.run( "OnRegisterQueue", providerType, client, roomID, url, videoID );
 
-    if ( can && !can.accept )
+    if ( onRegisterQueue && !onRegisterQueue.accept )
     {
         registerFailed( client, can.reason, can.reason, true );
+
+        // QueueManager._onRegister( client, onRegisterQueue.code, url, err, isError )
         return;
     }
 
     if ( !force )
         QueueManager.registerTimeDelay( client, QueueManager.config.DELAY );
 
-    switch ( providerType )
-    {
-        // function( client, url, videoID, startPosition, callback )
-        case QueueManager.providerType.Youtube:
-            this._processRegisterYoutube( client, roomID, url, videoID, startPosition, QueueManager._onRegister );
-            break;
-        case QueueManager.providerType.Ani24:
-            this._processRegisterAni24( client, roomID, url, videoID, startPosition, QueueManager._onRegister );
-            break;
-        case QueueManager.providerType.Tvple:
-            this._processRegisterTvple( client, roomID, url, videoID, startPosition, QueueManager._onRegister );
-            break;
-        case QueueManager.providerType.Direct:
-            this._processRegisterDirect( client, roomID, url, videoID, startPosition, QueueManager._onRegister );
-            break;
-        case QueueManager.providerType.KakaoTV:
-            this._processRegisterKakaoTV( client, roomID, url, videoID, startPosition, QueueManager._onRegister );
-            break;
-    }
+    var providers = Object.keys( QueueManager.providerType );
+
+    if ( providers[ providerType ] ) // *TODO: else 작성하기
+        this[ "_processRegister" + providers[ providerType ] ]( client, roomID, url, videoID, startPosition, QueueManager._onRegister );
 }
 
 QueueManager.clear = function( roomID, alsoPlayingQueue )
@@ -1451,7 +1425,7 @@ QueueManager.registerTimeDelay = function( client, delay )
 
     QueueManager._recentClientList.push(
     {
-        identification: client.ipAddress,
+        identification: client.userID,
         delay: Date.now( ) + delay,
         lastQueueRequest: null // *TODO;
     } );
@@ -1461,7 +1435,7 @@ QueueManager.isOnTimeDelay = function( client, checkDelay )
 {
     for ( var i = 0; i < QueueManager._recentClientList.length; i++ )
     {
-        if ( QueueManager._recentClientList[ i ].identification == client.ipAddress )
+        if ( QueueManager._recentClientList[ i ].identification == client.userID )
         {
             if ( checkDelay )
             {
@@ -1480,39 +1454,13 @@ QueueManager.removeTimeDelay = function( client )
 {
     for ( var i = 0; i < QueueManager._recentClientList.length; i++ )
     {
-        if ( QueueManager._recentClientList[ i ].identification == client.ipAddress )
+        if ( QueueManager._recentClientList[ i ].identification == client.userID )
         {
             QueueManager._recentClientList.splice( i, 1 );
             break;
         }
     }
 }
-
-QueueManager.forceAdd = function( roomID, url )
-{
-    // var reason = QueueManager.preQueueRegister( null, roomID,
-    // {
-    //     url: url
-    // }, true );
-
-    // if ( !reason.accept )
-    // {
-    //     Logger.write( Logger.LogType.Error, `[Queue] Queue register request rejected! -> 'reason: ${ reason.reason }' SERVER` );
-    //     return;
-    // }
-
-    // QueueManager.register( QueueManager.providerType.Ani24, null, roomID, url, url );
-}
-
-QueueManager.config.randomPlayList = {
-    _24hournc: [
-        "https://www.youtube.com/playlist?list=PLckeMyCaCCIN_JU1V4oADW50DlGOREoLj"
-    ],
-    _24hourjapan: [
-        "https://www.youtube.com/playlist?list=PLwe1-DOXcLUYoY-3Crzq1f2ay-bnIOhOT"
-    ]
-};
-QueueManager._randomVideos = [ ];
 
 hook.register( "OnCreateOfficialRoom", function( )
 {
