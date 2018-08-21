@@ -139,10 +139,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
         Logger.write( Logger.LogType.Info, `[Chat] ${ client.information( ) } : ${ chatMessage }` );
     } );
-} );
 
-hook.register( "PostClientConnected", function( client )
-{
     ChatManager.saySystem( client.room, `${ client.name }님이 접속하셨습니다.`, "glyphicon glyphicon-user" );
 } );
 

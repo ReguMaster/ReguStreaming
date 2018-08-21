@@ -22,12 +22,11 @@ module.exports = class Client
     {
         // too long!
         this._passport = this._socket.handshake.session.passport;
-        // this._passport = this._socket.request.session.passport;
 
         this._userName = this._passport.user.displayName;
         this._userID = this._passport.user.id.toString( );
         this._roomID = roomID;
-        this._rank = "admin";
+        this._rank = "guest";
 
         // console.log( this._passport );
         // console.log( this._socket );
@@ -36,7 +35,7 @@ module.exports = class Client
 
         if ( roomConfig )
         {
-            this.emit( "regu.initialize",
+            this.emit( "RS.initialize",
             {
                 roomConfig: roomConfig
             } );

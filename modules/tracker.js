@@ -6,12 +6,10 @@
 'use strict';
 
 const Tracker = {};
-const hook = require( "../hook" );
+// const hook = require( "../hook" );
 const Database = require( "./db" );
 const superagent = require( "superagent" );
-const config = require( "../const/config" );
-
-Tracker._whoisAPIKey = config.WHOIS_API_KEY;
+const apiConfig = require( "../const/config" );
 
 Tracker.register = function( ipAddress, callback )
 {
@@ -41,10 +39,10 @@ Tracker.register = function( ipAddress, callback )
 
 Tracker.requestWHOIS = function( ipAddress, callback )
 {
-    superagent.get( `http://whois.kisa.or.kr/openapi/whois.jsp?query=${ ipAddress }&key=${ Tracker._whoisAPIKey }&answer=json` )
+    superagent.get( `http://whois.kisa.or.kr/openapi/whois.jsp?query=${ ipAddress }&key=${ apiConfig.WHOIS_API_KEY }&answer=json` )
         .then( function( res )
         {
-            if ( res.statusCode === 200 )
+            if ( res.status === 200 )
             {
                 var json = JSON.parse( res.text );
 
@@ -59,7 +57,7 @@ Tracker.requestWHOIS = function( ipAddress, callback )
             else
             {
                 callback( false, null );
-                throw new Error( "HTTP error code : " + res.statusCode );
+                throw new Error( "HTTP error code : " + res.status );
             }
         } )
         .catch( function( err )

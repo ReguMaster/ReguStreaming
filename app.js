@@ -181,11 +181,10 @@ hook.register( "Initialize", function( )
 {
     app.use( "/", function( req, res, next )
     {
-        // request was via https, so do no special handling
         if ( req.secure )
             next( );
         else
-            res.redirect( "https://" + req.headers.host + req.url );
+            res.redirect( `https://${ req.headers.host }${ req.url }` ); // HTTP 연결 HTTPS 로 변경
     } );
     app.use( "/", require( "./routes/index" ) );
     app.use( function( req, res, next )

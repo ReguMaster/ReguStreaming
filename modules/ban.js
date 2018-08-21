@@ -11,7 +11,6 @@ const FileStorage = require( "../filestorage" );
 const hook = require( "../hook" );
 const reguUtil = require( "../util" );
 const Logger = require( "./logger" );
-// const nodeARP = require( "node-arp" );
 
 BanManager._list = [ ];
 

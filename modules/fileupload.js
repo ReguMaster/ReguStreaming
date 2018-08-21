@@ -16,8 +16,7 @@ const superagent = require( "superagent" );
 const fileType = require( "file-type" );
 const imageSize = util.promisify( require( "image-size" ) );
 const SocketIOFileUpload = require( "socketio-file-upload" );
-const apiConfig = require( "../const/config" )
-    .Kakao;
+const apiConfig = require( "../const/config" );
 
 FileUploadHandler.FileNameFormat = "uf_%s";
 FileUploadHandler.FileDirectory = "./userfiles";
@@ -39,15 +38,14 @@ FileUploadHandler.checkAdultImage = function( client, fileLocation, callback )
     superagent.post( "https://kapi.kakao.com/v1/vision/adult/detect" )
         .type( "multipart/form-data" )
         .attach( "file", fileLocation )
-        .set( "Authorization", "KakaoAK " + apiConfig.clientID )
+        .set( "Authorization", "KakaoAK " + apiConfig.Kakao.clientID )
         .then( function( res )
         {
             if ( res.status !== 200 )
                 return;
 
-            var jsonObj = JSON.parse( res.text );
-
-            callback( jsonObj.result.adult >= 0.8 );
+            callback( JSON.parse( res.text )
+                .result.adult >= 0.8 );
         } )
         .catch( function( err )
         {

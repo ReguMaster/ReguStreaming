@@ -2091,7 +2091,7 @@ socket.on( "regu.client.configChanged", function( data )
     reguStreaming.onLocalConfigChanged( data.configName, data.configValue );
 } );
 
-socket.on( "regu.initialize", function( data )
+socket.on( "RS.initialize", function( data )
 {
     reguStreaming.serverConfig = data ||
     {

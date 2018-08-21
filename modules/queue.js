@@ -4,7 +4,6 @@
 */
 
 const QueueManager = {};
-const path = require( "path" );
 const App = require( "../app" );
 const Server = require( "../server" );
 const YoutubeConverter = require( "horizon-youtube-mp3" );
@@ -19,11 +18,7 @@ const superagent = require( "superagent" );
 const cheerio = require( "cheerio" );
 const getDuration = require( "get-video-duration" );
 const ServiceManager = require( "./service" );
-// const datastream = require( "../datastream" );
 const decodeHTML = require( "decode-html" );
-
-// const datastream = require( "../datastream" );
-// const getVideoInfo = require( "get-video-info" );
 
 QueueManager.providerType = {
     Youtube: 0,
@@ -352,7 +347,7 @@ hook.register( "PreRegisterQueue", function( videoType, client, roomID, url, vid
 //     }
 // } );
 
-QueueManager.getYoutubeHighQualityResource = function( data )
+QueueManager.getYoutubeHighestQualityResource = function( data )
 {
     try
     {
@@ -401,7 +396,7 @@ QueueManager.getYoutubeHighQualityResource = function( data )
         Logger.write( Logger.LogType.Error, `[Queue] ERROR: Unknown server process error. -> (Error: ${ exception.stack })'` );
 
         return {
-            videoThumbnail: "images/nanachi.png",
+            videoThumbnail: "images/chito.jpg",
             videoDirectURL: ""
         }
     }
@@ -409,78 +404,74 @@ QueueManager.getYoutubeHighQualityResource = function( data )
 
 QueueManager.getYoutubeCaption = function( languageCode, vssId, captionList, callback )
 {
-    if ( captionList && captionList.length )
+    if ( !captionList || !captionList.length )
+        return callback( false, null );
+
+    var caption = captionList.find( function( t )
     {
-        var caption = captionList.find( function( t )
-        {
-            return t.languageCode === languageCode && t.vssId === vssId;
-        } );
+        return t.languageCode === languageCode && t.vssId === vssId;
+    } );
 
-        if ( caption )
-        {
-            var url = caption.baseUrl;
+    if ( !caption )
+        return callback( false, null );
 
-            superagent.get( url )
-                .then(
-                    function( res )
+    var url = caption.baseUrl;
+
+    superagent.get( url )
+        .then(
+            function( res )
+            {
+                if ( res.status !== 200 )
+                    throw new Error( "HTTP error code : " + res.status );
+
+                util.parseXML( res.text, function( err, result )
+                {
+                    if ( err )
+                        throw new Error( "XML parse error : " + err );
+
+                    if ( result.transcript && result.transcript.text )
                     {
-                        if ( res.status !== 200 )
-                            throw new Error( "HTTP error code : " + res.statusCode );
+                        // 2018-07-19 2:35:44 (!    ERROR    !) : [Queue] Failed to process QueueManager.getYoutubeCaption -> (TypeError: Cannot read property 'replace' of undefined
+                        // at decodeHTMLEntities (D:\NodeJS\ReguStreaming\regustreaming\node_modules\decode-html\index.js:15:14)
+                        // at D:\NodeJS\ReguStreaming\regustreaming\modules\queue.js:394:50
+                        // at Array.map (native)
+                        // at D:\NodeJS\ReguStreaming\regustreaming\modules\queue.js:391:76
+                        // at D:\NodeJS\ReguStreaming\regustreaming\util.js:44:9
+                        // at Parser.<anonymous> (D:\NodeJS\ReguStreaming\regustreaming\node_modules\xml2js\lib\parser.js:303:18)
+                        // at emitOne (events.js:96:13)
+                        // at Parser.emit (events.js:188:7)
+                        // at Object.onclosetag (D:\NodeJS\ReguStreaming\regustreaming\node_modules\xml2js\lib\parser.js:261:26)
+                        // at emit (D:\NodeJS\ReguStreaming\regustreaming\node_modules\sax\lib\sax.js:624:35)
+                        // at emitNode (D:\NodeJS\ReguStreaming\regustreaming\node_modules\sax\lib\sax.js:629:5))
 
-                        util.parseXML( res.text, function( err, result )
+                        var newResult = result.transcript.text.map( function( source )
                         {
-                            if ( err )
-                                throw new Error( "XML parse error : " + err );
-
-                            if ( result.transcript && result.transcript.text )
+                            if ( source && source.attr )
                             {
-                                // 2018-07-19 2:35:44 (!    ERROR    !) : [Queue] Failed to process QueueManager.getYoutubeCaption -> (TypeError: Cannot read property 'replace' of undefined
-                                // at decodeHTMLEntities (D:\NodeJS\ReguStreaming\regustreaming\node_modules\decode-html\index.js:15:14)
-                                // at D:\NodeJS\ReguStreaming\regustreaming\modules\queue.js:394:50
-                                // at Array.map (native)
-                                // at D:\NodeJS\ReguStreaming\regustreaming\modules\queue.js:391:76
-                                // at D:\NodeJS\ReguStreaming\regustreaming\util.js:44:9
-                                // at Parser.<anonymous> (D:\NodeJS\ReguStreaming\regustreaming\node_modules\xml2js\lib\parser.js:303:18)
-                                // at emitOne (events.js:96:13)
-                                // at Parser.emit (events.js:188:7)
-                                // at Object.onclosetag (D:\NodeJS\ReguStreaming\regustreaming\node_modules\xml2js\lib\parser.js:261:26)
-                                // at emit (D:\NodeJS\ReguStreaming\regustreaming\node_modules\sax\lib\sax.js:624:35)
-                                // at emitNode (D:\NodeJS\ReguStreaming\regustreaming\node_modules\sax\lib\sax.js:629:5))
-
-                                var newResult = result.transcript.text.map( function( source )
-                                {
-                                    if ( source && source.attr )
+                                return {
+                                    val: source.val ? decodeHTML( source.val ) : "",
+                                    attr:
                                     {
-                                        return {
-                                            val: source.val ? decodeHTML( source.val ) : "",
-                                            attr:
-                                            {
-                                                start: Number( source.attr.start ),
-                                                dur: Number( source.attr.dur )
-                                            }
-                                        }
+                                        start: Number( source.attr.start ),
+                                        dur: Number( source.attr.dur )
                                     }
-                                    else
-                                        return source;
-                                } );
-
-                                callback( true, newResult );
+                                }
                             }
                             else
-                                throw new Error( "Unknown javascript object : " + result );
+                                return source;
                         } );
-                    } )
-                .catch( function( err )
-                {
-                    callback( false, null );
-                    Logger.write( Logger.LogType.Error, `[Queue] Failed to process QueueManager.getYoutubeCaption (error:${ err.stack })` );
+
+                        callback( true, newResult );
+                    }
+                    else
+                        throw new Error( "Unknown javascript object : " + result );
                 } );
-        }
-        else
-            return callback( false, null );
-    }
-    else
-        return callback( false, null );
+            } )
+        .catch( function( err )
+        {
+            callback( false, null );
+            Logger.write( Logger.LogType.Error, `[Queue] Failed to process QueueManager.getYoutubeCaption (error:${ err.stack })` );
+        } );
 }
 
 // *TODO;
@@ -556,7 +547,7 @@ QueueManager.userVote = function( client, type )
     };
 }
 
-// params: client (클라이언트), code (오류 코드), url (입력한 주소(콘솔표시용)), err (콘솔에 표시할 오류메세지), isError (오류인지 표시, 아니면 reject status)
+// *params: client (클라이언트), code (오류 코드), url (입력한 주소(콘솔표시용)), err (콘솔에 표시할 오류메세지), isError (오류인지 표시, 아니면 reject status)
 QueueManager._onRegister = function( client, code, url, err, isError )
 {
     if ( client )
@@ -577,8 +568,6 @@ QueueManager._onRegister = function( client, code, url, err, isError )
             Logger.write( Logger.LogType.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ ( keys[ code ] || "unknown" ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
     }
 }
-
-// QueueManager._processRegisterYoutube( client, url, videoID, startPosition, 
 
 QueueManager.statusCode = {
     success: 0,
@@ -608,34 +597,18 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
         {
             if ( typeof err === "string" )
             {
-                // registerFailed( client,
-                //     `죄송합니다, 서버 처리 중 오류가 발생했습니다, 영상 목록에 추가할 수 없습니다.(API_ERROR_${ err })`,
-                //     `${ url } -> ${ err }`,
-                //     false
-                // );
-
-                //client, code, url, err, isError
+                // client, code, url, err, isError
                 if ( err === "errorOnGetInfo." )
                     return callback( client, QueueManager.statusCode.failedToGetInformationError, url, err, true );
                 else
                     return callback( client, QueueManager.statusCode.serverError, url, err, true );
             }
             else
-            {
-                // registerFailed( client,
-                //     "죄송합니다, 서버 처리 중 오류가 발생했습니다, 영상 목록에 추가할 수 없습니다. (API_ERROR_UNKNOWN)",
-                //     `${ url } -> Unknown`,
-                //     false
-                // );
-
                 return callback( client, QueueManager.statusCode.serverError, url, err, true );
-            }
-
         }
 
         if ( !data.isValid )
             return callback( client, QueueManager.statusCode.notValidError, url, null, false );
-
 
         if ( data.isLivestream )
             return callback( client, QueueManager.statusCode.liveStreamError, url, null, false );
@@ -653,28 +626,15 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
         //     return;
         // }
 
-        // var videoLengthTime = util.calcTime( videoLengthSec );
-        // var maxAllowLengthTime = util.calcTime( QueueManager.config.MAX_DURATION );
-
         if ( startPosition > videoLengthSec )
             return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
-        // return registerFailed( client,
-        //     "죄송합니다, 영상 시작 시간이 영상 길이를 초과했습니다, 영상 목록에 추가할 수 없습니다.",
-        //     `${ url } -> StartLengthOver`,
-        //     true
-        // );
 
         if ( Math.abs( videoLengthSec - startPosition ) <= 10 )
             return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
-        // return registerFailed( client,
-        //     "죄송합니다, 영상 길이와 시작 시간의 간격이 너무 짧습니다 (10초 이하), 영상 목록에 추가할 수 없습니다.",
-        //     `${ url } -> StartLengthTooShort`,
-        //     true
-        // );
 
-        var highQualityResources = QueueManager.getYoutubeHighQualityResource( data );
+        var highQualityResources = QueueManager.getYoutubeHighestQualityResource( data );
 
-        queueData.id = "yt_" + videoID + "_" + Date.now( );
+        queueData.id = `youtube_${ videoID }_${ Date.now( ) }`;
         queueData.mediaName = data.videoName || "알 수 없음";
         queueData.mediaProvider = QueueManager.providerType.Youtube;
         queueData.mediaProviderURL = url;
@@ -682,6 +642,11 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
         queueData.mediaContentURL = highQualityResources.videoDirectURL;
         queueData.mediaDuration = videoLengthSec;
         queueData.mediaPosition = startPosition;
+        queueData.userVote = {};
+        queueData.userVoteSum = {
+            like: 0,
+            unlike: 0
+        };
 
         if ( client )
             queueData.user = {
@@ -690,12 +655,6 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
                 avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
                 information: client.information( )
             };
-
-        queueData.userVote = {};
-        queueData.userVoteSum = {
-            like: 0,
-            unlike: 0
-        };
 
         var newQueueData = hook.run( "ModifyQueueData", roomID, queueData );
 
@@ -708,6 +667,7 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
             {
                 if ( client )
                     client.emit( "regu.queueRegisterReceive", QueueManager.statusCode.unknownError );
+
                 console.log( "room boombed..." )
                 return;
             }
@@ -823,7 +783,7 @@ QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, sta
                         if ( Math.abs( duration - startPosition ) <= 60 )
                             return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
 
-                        queueData.id = "ani24_" + videoID + "_" + Date.now( );
+                        queueData.id = `ani24_${ videoID }_${ Date.now( ) }`;
                         queueData.mediaName = title || "알 수 없음";
                         queueData.mediaProvider = QueueManager.providerType.Ani24;
                         queueData.mediaProviderURL = url;
