@@ -16,13 +16,6 @@ const util = require( "../util" );
 const FileStorage = require( "../filestorage" );
 const Logger = require( "../modules/logger" );
 
-//https://stackoverflow.com/questions/8128578/reading-value-from-console-interactively
-process.stdin.addListener( "data", function( data )
-{
-    // Interact.process( data.toString( )
-    //     .trim( ) );
-} );
-
 ServiceManager.notification = [ ];
 ServiceManager.serviceStatus = 0;
 

@@ -241,7 +241,7 @@
     right: 0;
 }
 
-.processBackgroundSpinner>div {
+.processBackgroundSpinner > div {
     background-color: white;
     height: 100%;
     width: 6px;
@@ -853,7 +853,7 @@
     border-radius: 10px;
 }
 
-#queueRegisterContainer>p {
+#queueRegisterContainer > p {
     color: black;
 }
 

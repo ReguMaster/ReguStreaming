@@ -9,7 +9,6 @@ const Logger = {};
 
 const fileStream = require( "fs" );
 const path = require( "path" );
-const consoleColor = require( "colors" );
 const DateConverter = require( "dateformat" );
 const hook = require( "../hook" );
 
@@ -56,7 +55,7 @@ Logger.LogType = {
     Error: 2,
     Event: 3,
     Important: 99
-}
+};
 Logger.write = function( logLevel, message )
 {
     var messageFixed = `${ DateConverter( Logger.currentDate, "yyyy-mm-dd h:MM:ss" ) } (^level^) : ${ message }`;
@@ -65,30 +64,29 @@ Logger.write = function( logLevel, message )
     {
         case Logger.LogType.Info:
             messageFixed = messageFixed.replace( "^level^", "INFO" );
-
-            console.log( messageFixed.bold );
             break;
         case Logger.LogType.Event:
             messageFixed = messageFixed.replace( "^level^", "EVENT" );
-
-            console.log( messageFixed.bold.cyan );
             break;
         case Logger.LogType.Warning:
             messageFixed = messageFixed.replace( "^level^", "!   WARNING   !" );
-
-            console.log( messageFixed.bold.yellow );
             break;
         case Logger.LogType.Error:
             messageFixed = messageFixed.replace( "^level^", "!    ERROR    !" );
-
-            console.log( messageFixed.bgRed.bold.white );
             break;
         case Logger.LogType.Important:
             messageFixed = messageFixed.replace( "^level^", "!    IMPOR    !" );
-
-            console.log( messageFixed.bgBlue.bold.white );
             break;
     }
+
+    // console.log( Logger.LogTypeKey[ logLevel ] + "^" + messageFixed );
+
+    process.send(
+    {
+        type: "log",
+        logLevel: logLevel,
+        message: messageFixed
+    } );
 
     if ( logLevel == Logger.LogType.Important )
     {
@@ -110,11 +108,16 @@ Logger.write = function( logLevel, message )
     hook.run( "OnLog", logLevel, messageFixed );
 }
 
-// var legacyLog = console.log;
-// console.log = function( ...message )
-// {
-//     legacyLog( ...message );
-//     hook.run( "OnLog", 0, message );
-// }
+var legacyLog = console.log;
+console.log = function( ...message )
+{
+    legacyLog( ...message );
+
+    process.send(
+    {
+        type: "log",
+        message: messageFixed
+    } );
+}
 
 module.exports = Logger;

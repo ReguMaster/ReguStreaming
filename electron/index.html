@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="ko">
+
+    <head>
+        <meta charset="utf-8">
+        <style>
+        html,
+        body {
+            margin: 0px;
+        }
+
+        ::-webkit-scrollbar {
+            width: 12px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background-color: #161616;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background-color: rgb( 80, 80, 80);
+        }
+
+        ::-webkit-scrollbar-button {
+            background-color: rgb( 50, 50, 50);
+        }
+
+        ::-webkit-scrollbar-corner {
+            background-color: #161616;
+        }
+
+        p {
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            font-family: 'Consolas', 'Arial', 'sans-serif';
+            font-size: 13px;
+            color: white;
+            background-color: #161616;
+        }
+
+        .RS-logConsole {
+            overflow-y: scroll;
+            white-space: normal;
+            height: calc(100% - 34px);
+            color: white;
+        }
+
+        .RS-status {
+            width: 100%;
+            height: 32px;
+            background-color: #1d1d1d;
+            -webkit-user-select: none;
+        }
+
+        .RS-status-icon {
+            width: 16px;
+            height: 100%;
+            transition: all ease 0.5s;
+            display: inline-block;
+        }
+
+        .RS-status-stats {
+            display: inline-block;
+            margin-top: 8px;
+            margin-right: 12px;
+            float: right;
+        }
+
+        .RS-status-serverName {
+            font-size: 20px;
+            margin-left: 6px;
+            display: inline-block;
+            position: absolute;
+            top: 4px;
+        }
+
+        .online {
+            background-color: rgb(37, 255, 110);
+        }
+
+        .offline {
+            background-color: rgb(255, 37, 37);
+        }
+
+        .RS-logItem {
+            padding: 3px;
+            padding-top: 1px;
+            padding-bottom: 1px;
+        }
+
+        .logLevel-0 {}
+
+        .logLevel-1 {
+            color: yellow;
+        }
+
+        .logLevel-2 {
+            color: red;
+        }
+
+        .logLevel-3 {
+            color: cyan;
+        }
+
+        .logLevel-99 {
+            color: blue;
+        }
+        </style>
+    </head>
+
+    <body>
+        <div class="RS-status">
+            <div class="RS-status-icon"></div>
+            <p class="RS-status-serverName">ReguStreaming : SERVER</p>
+            <p class="RS-status-stats">CPU: 0%, RAM: 0bytes</p>
+        </div>
+        <div class="RS-logConsole"></div>
+
+        <script>
+        let logCount = 0;
+        window.$ = window.jQuery = require( "jquery" );
+        window.electron = require( "electron" );
+
+        window.onbeforeunload = function( e )
+        {
+            return false;
+        }
+
+        let controls = {
+            logConsole: $( ".RS-logConsole" ),
+            statusIcon: $( ".RS-status-icon" ),
+            statusStat: $( ".RS-status-stats" )
+        };
+
+        electron.ipcRenderer.on( "serverStats", function( event, stats )
+        {
+            controls.statusStat.text( `CPU: ${ stats.cpu }%, RAM: ${ stats.memory }bytes` );
+        } );
+
+        electron.ipcRenderer.on( "clearLog", function( event, stats )
+        {
+            controls.logConsole.empty( );
+            logCount = 0;
+        } );
+
+        electron.ipcRenderer.on( "serverStatus", function( event, code )
+        {
+            controls.statusIcon.removeClass( "online offline" );
+
+            switch ( code )
+            {
+                case 0:
+                    controls.statusIcon.addClass( "offline" );
+                    break;
+                case 1:
+                    controls.statusIcon.addClass( "online" );
+                    break;
+            }
+        } );
+
+        electron.ipcRenderer.on( "log", function( event, level, message )
+        {
+            if ( ++logCount > 500 )
+            {
+                logCount--;
+                $( "#logItem:first" ).remove( );
+            }
+
+            controls.logConsole.append( `<div class="RS-logItem logLevel-${ level }" id="logItem">${ message }</div>` );
+            controls.logConsole.scrollTop( 99999999 );
+        } );
+        </script>
+    </body>
+
+</html>

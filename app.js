@@ -64,8 +64,6 @@ const sessionMiddleware = session(
     saveUninitialized: true
 } );
 
-process.title = "ReguStreaming : Server";
-
 Main.redisClient.on( "connect", function( )
 {
     Logger.write( Logger.LogType.Info, `[Redis] Redis database connected.` );
@@ -91,6 +89,14 @@ process.on( "uncaughtException", function( err )
     Logger.write( Logger.LogType.Error, `[SERVER] Unhandled Exception: \n${ err.stack }` );
 } );
 
+// 2018-08-22 11:40:23 (!    ERROR    !) : [SERVER] Unhandled WebServer error:
+// Error: listen EADDRINUSE 1.236.112.166:443
+//     at Object._errnoException (util.js:992:11)
+//     at _exceptionWithHostPort (util.js:1014:20)
+//     at Server.setupListenHandle [as _listen2] (net.js:1355:14)
+//     at listenInCluster (net.js:1396:12)
+//     at GetAddrInfoReqWrap.doListen [as callback] (net.js:1505:7)
+//     at GetAddrInfoReqWrap.onlookup [as oncomplete] (dns.js:97:10)
 const onErrorAtWebServer = function( err )
 {
     if ( err.code === "EADDRNOTAVAIL" )
@@ -122,7 +128,8 @@ Main.Listen = function( )
 Main.InitializeServer = function( )
 {
     Logger.write( Logger.LogType.Info, "Booting server ..." );
-    require( "console-title" )( "ReguStreaming : Server" );
+
+    process.title = "ReguStreaming : Server";
 
     app.use( express.static( path.join( __dirname, "public" ) ) );
     // app.use( express.static( path.join( __dirname, "b" ) ) );
