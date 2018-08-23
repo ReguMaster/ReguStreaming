@@ -6,7 +6,10 @@
         <style>
         html,
         body {
-            margin: 0px;
+            padding: 0;
+            margin: 0;
+            width: 100%;
+            height: 100%;
         }
 
         ::-webkit-scrollbar {
@@ -42,9 +45,9 @@
         }
 
         .RS-logConsole {
-            overflow-y: scroll;
+            overflow-y: auto;
             white-space: normal;
-            height: calc(100% - 34px);
+            max-height: calc(100% - 32px);
             color: white;
         }
 
@@ -86,9 +89,9 @@
         }
 
         .RS-logItem {
-            padding: 3px;
-            padding-top: 1px;
-            padding-bottom: 1px;
+            padding: 0;
+            padding-top: 0;
+            padding-bottom: 0;
         }
 
         .logLevel-0 {}
@@ -124,16 +127,16 @@
         window.$ = window.jQuery = require( "jquery" );
         window.electron = require( "electron" );
 
-        window.onbeforeunload = function( e )
-        {
-            return false;
-        }
-
         let controls = {
             logConsole: $( ".RS-logConsole" ),
             statusIcon: $( ".RS-status-icon" ),
             statusStat: $( ".RS-status-stats" )
         };
+
+        window.onbeforeunload = function( e )
+        {
+            return false;
+        }
 
         electron.ipcRenderer.on( "serverStats", function( event, stats )
         {
@@ -169,8 +172,12 @@
                 $( "#logItem:first" ).remove( );
             }
 
+            var isOnBottom = controls.logConsole.scrollTop( ) + controls.logConsole.innerHeight( ) >= controls.logConsole.prop( "scrollHeight" );
+
             controls.logConsole.append( `<div class="RS-logItem logLevel-${ level }" id="logItem">${ message }</div>` );
-            controls.logConsole.scrollTop( 99999999 );
+
+            if ( isOnBottom )
+                controls.logConsole.scrollTop( controls.logConsole.prop( "scrollHeight" ) );
         } );
         </script>
     </body>

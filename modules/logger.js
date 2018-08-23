@@ -105,7 +105,7 @@ Logger.write = function( logLevel, message )
         } );
     }
 
-    hook.run( "OnLog", logLevel, messageFixed );
+    // hook.run( "OnLog", logLevel, messageFixed );
 }
 
 var legacyLog = console.log;
@@ -116,7 +116,7 @@ console.log = function( ...message )
     process.send(
     {
         type: "log",
-        message: messageFixed
+        message: message
     } );
 }
 
