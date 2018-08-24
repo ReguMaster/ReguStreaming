@@ -550,7 +550,7 @@ QueueManager._onRegister = function( client, code, url, err, isError )
         var keys = Object.keys( QueueManager.statusCode );
 
         if ( isError )
-            Logger.write( Logger.LogType.Error, `[Queue] ERROR: Failed to register Queue. (url:${ url }, error:${ err.stack })\n${ ( client ? client.information( ) : "SERVER" ) }` );
+            Logger.write( Logger.LogType.Error, `[Queue] ERROR: Failed to register Queue. (url:${ url }, error:${ err.stack || err })\n${ ( client ? client.information( ) : "SERVER" ) }` );
         else
             Logger.write( Logger.LogType.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ ( keys[ code ] || "unknown" ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
     }

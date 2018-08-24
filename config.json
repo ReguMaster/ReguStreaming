@@ -1,0 +1,13 @@
+{
+	"exception": [
+		".vscode",
+		"const",
+		"logs",
+		"fileStorage",
+		"node_modules",
+		"ssl",
+		"userfiles",
+		"config.json"
+	],
+	"targetFolder": "D:/Github/ReguStreaming"
+}
