@@ -66,6 +66,7 @@ FileStorage.loadAsync = function( id, type, defaultValue = [ ], callback )
     } );
 }
 
+// *TODO: 구현
 FileStorage.loadSync = function( id, type, defaultValue ) {
 
 }
