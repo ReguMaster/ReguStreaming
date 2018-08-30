@@ -26,46 +26,46 @@
 
 @keyframes serviceStatusIconInfoAnimate {
     0% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 
     50% {
-        box-shadow: 0px 0px 16px rgb( 56, 110, 156);
-        transform: scale( 1.1);
+        box-shadow: 0px 0px 16px rgb(56, 110, 156);
+        transform: scale(1.1);
     }
 
     100% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 }
 
 @keyframes serviceStatusIconWarningAnimate {
     0% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 
     50% {
-        box-shadow: 0px 0px 16px rgb( 255, 141, 58);
-        transform: scale( 1.1);
+        box-shadow: 0px 0px 16px rgb(255, 141, 58);
+        transform: scale(1.1);
     }
 
     100% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 }
 
 @keyframes serviceStatusIconDangerAnimate {
     0% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 
     50% {
-        box-shadow: 0px 0px 16px rgb( 202, 64, 61);
-        transform: scale( 1.1);
+        box-shadow: 0px 0px 16px rgb(202, 64, 61);
+        transform: scale(1.1);
     }
 
     100% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 }
 
@@ -88,23 +88,26 @@
     top: 116px;
     left: 290px;
     border-radius: 12px;
-    background-color: rgba( 235, 235, 235, 1);
+    background-color: rgba(235, 235, 235, 1);
     z-index: 10;
     display: none;
 }
 
 @keyframes stretch {
+
     0%,
     40%,
     100% {
         transform: scaleY(0.4)
     }
+
     20% {
         transform: scaleY(1)
     }
 }
 
 @keyframes serviceNotificationContainerBounceInDown {
+
     from,
     60%,
     75%,
@@ -190,7 +193,7 @@
     z-index: 10;
     display: block;
     display: none;
-    background-color: rgba( 0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.7);
 }
 
 .processBackground {
@@ -206,7 +209,7 @@
     z-index: 50;
     display: block;
     display: none;
-    background-color: rgba( 0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.7);
     /* pointer-events: none; */
     /* background-size: 62px;
     background-position: center center;
@@ -281,7 +284,7 @@
     width: -moz-calc(100% - 350px);
     width: calc(100% - 350px); */
     background-color: rgba(50, 50, 50, 0.5);
-    box-shadow: 0 0 12px rgb( 50, 50, 50);
+    box-shadow: 0 0 12px rgb(50, 50, 50);
 }
 
 #canvas {
@@ -330,7 +333,7 @@
     font-size: 17px;
     position: relative;
 
-    color: rgb( 235, 235, 235);
+    color: rgb(235, 235, 235);
 }
 
 #welcomeClientCount {
@@ -340,7 +343,7 @@
     font-size: 13px;
     position: relative;
 
-    color: rgb( 200, 200, 200);
+    color: rgb(200, 200, 200);
 }
 
 #agreeConnectButton {
@@ -370,7 +373,7 @@
 }
 
 ::-webkit-scrollbar-track {
-    background: rgba( 0, 0, 0, 0);
+    background: rgba(0, 0, 0, 0);
     -webkit-border-radius: 0px;
     border-radius: 0px;
 }
@@ -378,7 +381,7 @@
 ::-webkit-scrollbar-thumb {
     height: 2px;
     width: 50px;
-    background: rgb( 235, 235, 235);
+    background: rgb(235, 235, 235);
     -webkit-border-radius: 0px;
     border-radius: 0px;
 }
@@ -560,7 +563,7 @@
     left: 0;
     object-fit: contain;
     background-size: cover;
-    background-color: rgba( 0, 0, 0, 1);
+    background-color: rgba(0, 0, 0, 1);
     /* width: -webkit-calc(100% - 350px);
     width: -moz-calc(100% - 350px);
     width: calc(100% - 350px); */
@@ -640,8 +643,8 @@
     margin-bottom: 0px;
 
     color: black;
-    background-color: rgba( 153, 204, 255, 0.8);
-    box-shadow: 0 0 16px rgb( 153, 204, 255);
+    background-color: rgba(153, 204, 255, 0.8);
+    box-shadow: 0 0 16px rgb(153, 204, 255);
 }
 
 .queueItemTitle {
@@ -651,7 +654,7 @@
     display: inline-block;
 
     position: relative;
-    text-shadow: 0px 0px 6px rgba( 0, 0, 0, 1);
+    text-shadow: 0px 0px 6px rgba(0, 0, 0, 1);
 
     color: white;
     word-wrap: break-word;
@@ -667,11 +670,11 @@
     position: absolute;
     bottom: 10px;
 
-    text-shadow: 0px 0px 12px rgba( 20, 20, 20, 1);
+    text-shadow: 0px 0px 12px rgba(20, 20, 20, 1);
     text-align: center;
     font-size: 13px;
 
-    color: rgb( 235, 235, 235);
+    color: rgb(235, 235, 235);
     z-index: 2;
     word-wrap: break-word;
 
@@ -688,13 +691,13 @@
     float: right;
 
     background-color: rgba(5, 5, 5, 0.75);
-    text-shadow: 0px 0px 12px rgba( 20, 20, 20, 1);
+    text-shadow: 0px 0px 12px rgba(20, 20, 20, 1);
 
     font-size: 13px;
 
     z-index: 2;
 
-    color: rgb( 235, 235, 235);
+    color: rgb(235, 235, 235);
 }
 
 .queueItemThumbnail {
@@ -705,14 +708,14 @@
     object-fit: cover;
 
     border: 1px solid rgb(150, 150, 150);
-    box-shadow: 0px 0px 6px rgb( 150, 150, 150);
+    box-shadow: 0px 0px 6px rgb(150, 150, 150);
 }
 
 .queueItemThumbnailCover {
     width: 100%;
     height: 100%;
     position: absolute;
-    background-color: rgba( 15, 15, 15, 0.5);
+    background-color: rgba(15, 15, 15, 0.5);
     /* border-radius: 8px; */
     z-index: 1;
 }
@@ -720,7 +723,7 @@
 .dialogContainer {
     width: 600px;
     height: 390px;
-    background-color: rgba( 235, 235, 235, 0.9);
+    background-color: rgba(235, 235, 235, 0.9);
     display: block;
     position: absolute;
     top: 0;
@@ -738,18 +741,18 @@
     width: 100%;
     height: 42px;
     position: absolute;
-    background-color: rgba( 73, 161, 255, 1);
+    background-color: rgba(73, 161, 255, 1);
 }
 
 .dialogTitleText {
     margin: 12px;
     font-size: 15px;
     color: white;
-    text-shadow: 0px 0px 12px rgba( 100, 100, 100, 0.7);
+    text-shadow: 0px 0px 12px rgba(100, 100, 100, 0.7);
 }
 
 #settingContainerTitleBar {
-    background-color: rgba( 60, 60, 60, 1);
+    background-color: rgba(60, 60, 60, 1);
 }
 
 #settingContainerCloseButton {
@@ -761,7 +764,7 @@
 #userInfoContainer {}
 
 #userInfoContainerTitleBar {
-    background-color: rgba( 60, 60, 60, 1);
+    background-color: rgba(60, 60, 60, 1);
 }
 
 #userInfoContainerCloseButton {
@@ -784,7 +787,7 @@
     bottom: 54px;
     margin: 0;
     font-size: 25px;
-    color: rgb( 30, 30, 30);
+    color: rgb(30, 30, 30);
 }
 
 #userInfoContainerProfileIP {
@@ -813,8 +816,8 @@
 
 .userRightMenu {
     width: 250px;
-    background-color: rgba( 235, 235, 235, 1);
-    box-shadow: 0px 0px 12px rgba( 50, 50, 50, 0.5);
+    background-color: rgba(235, 235, 235, 1);
+    box-shadow: 0px 0px 12px rgba(50, 50, 50, 0.5);
     border-style: solid;
     border-width: 1px;
     border-color: grey;
@@ -834,14 +837,14 @@
 }
 
 .userRightMenu-item:hover {
-    background-color: rgba( 153, 204, 255, 0.8);
+    background-color: rgba(153, 204, 255, 0.8);
     cursor: pointer;
 }
 
 #queueRegisterContainer {
     width: 600px;
     height: 390px;
-    background-color: rgb( 235, 235, 235);
+    background-color: rgb(235, 235, 235);
     display: block;
     position: absolute;
     top: 0;
@@ -863,13 +866,13 @@
     width: 100%;
     height: 42px;
     position: absolute;
-    background-color: rgba( 73, 161, 255, 1);
+    background-color: rgba(73, 161, 255, 1);
 }
 
 #queueRegisterContainerTitleText {
     margin: 12px;
     font-size: 15px;
-    text-shadow: 0px 0px 12px rgba( 100, 100, 100, 0.7);
+    text-shadow: 0px 0px 12px rgba(100, 100, 100, 0.7);
 }
 
 .chatMessageContainer {
@@ -881,7 +884,7 @@
     margin: 10px;
     margin-bottom: 0;
     padding: 0;
-    background-color: rgba( 255, 255, 255, 0.9);
+    background-color: rgba(255, 255, 255, 0.9);
     /* background-image: linear-gradient( to right, rgba(30, 30, 30, 0.35), rgba(70, 70, 70, 0.5)); */
     border-radius: 6px;
 
@@ -915,7 +918,7 @@
     float: right;
     font-size: 10px;
     font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
-    color: rgb( 100, 100, 100);
+    color: rgb(100, 100, 100);
 
     -webkit-font-smoothing: antialiased;
     text-rendering: optimizeLegibility;
@@ -940,7 +943,7 @@
     margin-left: 3px;
     font-size: 13px;
     font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
-    color: rgb( 70, 70, 70);
+    color: rgb(70, 70, 70);
     cursor: pointer;
 
     -webkit-font-smoothing: antialiased;
@@ -957,7 +960,7 @@
     font-size: 13px;
     word-wrap: break-word;
     font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
-    color: rgb( 0, 0, 0);
+    color: rgb(0, 0, 0);
 
     font-weight: 600;
 
@@ -974,41 +977,13 @@
     z-index: 1;
 }
 
-.reguTextField:focus {
-    outline: none;
-    border-color: #9ecaed;
-    box-shadow: 0 0 10px #9ecaed;
-}
-
-.reguTextField::placeholder {
-    /* Chrome, Firefox, Opera, Safari 10.1+ */
-    color: rgb( 30, 30, 30);
-    opacity: 1;
-}
-
-.reguTextField:-ms-input-placeholder {
-    /* Internet Explorer 10-11 */
-    color: rgb( 30, 30, 30);
-}
-
-.reguTextField::-ms-input-placeholder {
-    /* Microsoft Edge */
-    color: rgb( 30, 30, 30);
-}
-
-.reguTextField::placeholder {
-    /* Chrome, Firefox, Opera, Safari 10.1+ */
-    color: rgb( 30, 30, 30);
-    opacity: 1;
-}
-
 #chatTextField {
     width: 330px;
     height: 38px;
     right: 6px;
     bottom: 6px;
 
-    background-color: rgba( 235, 235, 235, 1);
+    background-color: rgba(235, 235, 235, 1);
     color: black;
     position: absolute;
     padding: 5px;
@@ -1026,8 +1001,8 @@
     right: 0;
     margin: 0 auto;
     border-radius: 16px;
-    box-shadow: 0 0 10px rgba( 150, 150, 150, 0.5);
-    background-color: rgba( 50, 50, 50, 0.6);
+    box-shadow: 0 0 10px rgba(150, 150, 150, 0.5);
+    background-color: rgba(50, 50, 50, 0.6);
 }
 
 #voteContainerAcceptButton {
@@ -1144,7 +1119,7 @@
     right: 0;
     bottom: 28px;
     text-align: center;
-    color: rgb( 235, 235, 235);
+    color: rgb(235, 235, 235);
 
     /* animation: bounceInUp 2s; */
     /* animation: footerTitleIntro 1s;
@@ -1192,17 +1167,6 @@
 
     position: relative;
     display: inline;
-}
-
-.reguTextField {
-    border: 2px solid rgba( 0, 0, 0, 0);
-    border-radius: 7px;
-}
-
-.reguTextField:focus {
-    outline: none;
-    border-color: #9ecaed;
-    box-shadow: 0 0 10px #9ecaed;
 }
 
 #queueRegisterRunButton {
@@ -1257,7 +1221,7 @@
     font-size: 17px;
     display: block;
 
-    color: rgb( 255, 255, 255);
+    color: rgb(255, 255, 255);
     margin-bottom: 6px;
     text-align: right;
     margin-right: 36px;
@@ -1267,7 +1231,7 @@
     left: 50px;
     top: 80px;
     position: absolute;
-    background-color: rgba( 30, 30, 30, 0.5);
+    background-color: rgba(30, 30, 30, 0.5);
     max-width: 55%;
     max-height: 200px;
     width: auto;
@@ -1322,7 +1286,7 @@
     height: -moz-calc(100% - 112px);
     height: calc(100% - 112px);
 
-    background-color: rgba( 0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.7);
     display: block;
     display: none;
     z-index: 3;
@@ -1480,7 +1444,7 @@
 }
 
 #videoLocationBar {
-    background-color: rgba( 200, 200, 200, 1);
+    background-color: rgba(200, 200, 200, 1);
     width: -webkit-calc(100% - 350px);
     width: -moz-calc(100% - 350px);
     width: calc(100% - 350px);
@@ -1491,7 +1455,7 @@
 }
 
 #videoLocationBarKnob {
-    background-color: rgba( 200, 0, 0, 1);
+    background-color: rgba(200, 0, 0, 1);
     border-radius: 16px;
     left: 0;
     bottom: 4px;
@@ -1506,8 +1470,8 @@
     margin-left: 10px;
     display: inline;
 
-    color: rgb( 235, 235, 235);
-    text-shadow: 0px 2px 12px rgba( 255, 255, 255, 1);
+    color: rgb(235, 235, 235);
+    text-shadow: 0px 2px 12px rgba(255, 255, 255, 1);
     opacity: 0;
     margin-right: 36px;
 }
@@ -1517,8 +1481,8 @@
     display: block;
     margin-right: 36px;
 
-    color: rgb( 235, 235, 235);
-    text-shadow: 0px 2px 12px rgba( 255, 255, 255, 1);
+    color: rgb(235, 235, 235);
+    text-shadow: 0px 2px 12px rgba(255, 255, 255, 1);
     opacity: 0;
     text-align: right;
 }
@@ -1533,7 +1497,7 @@
     /* Full-width */
     height: 5px;
     border-radius: 5px;
-    background: rgba( 100, 100, 100, 0.5);
+    background: rgba(100, 100, 100, 0.5);
     outline: none;
 }
 
@@ -1565,7 +1529,7 @@
     height: 20px;
     /* Slider handle height */
     border-radius: 10px;
-    background: rgb( 255, 255, 255);
+    background: rgb(255, 255, 255);
     cursor: pointer;
     /* Cursor on hover */
 }
@@ -1576,7 +1540,7 @@
     height: 20px;
     /* Slider handle height */
     border-radius: 10px;
-    background: rgb( 255, 255, 255);
+    background: rgb(255, 255, 255);
     cursor: pointer;
     /* Cursor on hover */
 }
@@ -1622,7 +1586,7 @@
     position: absolute;
     margin: auto;
     text-align: center;
-    text-shadow: 0px 0px 12px rgba( 0, 0, 0, 1);
+    text-shadow: 0px 0px 12px rgba(0, 0, 0, 1);
     width: 100%;
     height: 24px;
 }
@@ -1794,7 +1758,7 @@
 .roomListTitleBar {
     width: 100%;
     height: 32px;
-    background-color: rgba( 200, 200, 200, 0.3);
+    background-color: rgba(200, 200, 200, 0.3);
 }
 
 .roomList {}
@@ -1813,7 +1777,7 @@
     font-size: 15px;
     padding: 6px;
     padding-left: 12px;
-    text-shadow: 0px 0px 6px rgba( 20, 20, 20, 0.5);
+    text-shadow: 0px 0px 6px rgba(20, 20, 20, 0.5);
 
 }
 
@@ -1822,7 +1786,7 @@
     height: 72px;
     border-radius: 16px;
     margin-bottom: 12px;
-    background-color: rgba( 200, 200, 200, 0.2);
+    background-color: rgba(200, 200, 200, 0.2);
     cursor: pointer;
 }
 
@@ -1858,7 +1822,7 @@
     padding: 0;
     font-size: 13px;
     color: white;
-    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 1);
+    text-shadow: 0px 0px 12px rgba(50, 50, 50, 1);
     margin-top: 8px;
     margin-left: 24px;
     position: absolute;
@@ -1871,7 +1835,7 @@
     color: white;
     top: 0;
     left: 27%;
-    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 1);
+    text-shadow: 0px 0px 12px rgba(50, 50, 50, 1);
     font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
     margin-top: 28px;
     margin-left: 24px;
@@ -1888,9 +1852,9 @@
     padding: 0;
 
     font-size: 15px;
-    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 0.5);
+    text-shadow: 0px 0px 12px rgba(50, 50, 50, 0.5);
 
-    color: rgb( 119, 206, 249);
+    color: rgb(119, 206, 249);
 
     float: right;
     margin: 0 auto;

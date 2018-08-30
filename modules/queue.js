@@ -4,8 +4,10 @@
 */
 
 const QueueManager = {};
+
 const App = require( "../app" );
 const Server = require( "../server" );
+const path = require( "path" );
 const YoutubeConverter = require( "horizon-youtube-mp3" );
 const URL = require( "url" );
 const querystring = require( "querystring" );
@@ -25,8 +27,9 @@ QueueManager.providerType = {
     Ani24: 1,
     Tvple: 2,
     Direct: 3,
-    KakaoTV: 4
-    // SoundCloud: 5
+    KakaoTV: 4,
+    Niconico: 5
+    // SoundCloud: 6
 }
 
 // 오후 8:41 - RIPPLE: 사클
@@ -45,6 +48,24 @@ QueueManager.providerType = {
 // var urlParsed = url.parse( uu );
 
 QueueManager.urlValidChecker = [
+    {
+        type: QueueManager.providerType.Niconico,
+        host: [ "nicovideo.jp", "www.nicovideo.jp" ],
+        validFormat: "http://www.nicovideo.jp/watch/sm26573512",
+        checker: function( urlParsed, query )
+        {
+            if ( urlParsed.pathname.indexOf( "/watch/" ) === 0 )
+            {
+                return urlParsed.href;
+            }
+        },
+        getVideoID: function( urlParsed, query )
+        {
+            var p = urlParsed.pathname.split( "/" );
+
+            return p[ p.length - 1 ];
+        }
+    },
     {
         type: QueueManager.providerType.KakaoTV,
         host: "tv.kakao.com",
@@ -174,16 +195,16 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
 {
     if ( !force )
     {
-        if ( !this.isEmpty( roomID ) && this.isOnTimeDelay( client, true ) )
+        if ( client && !this.isEmpty( roomID ) && this.isOnTimeDelay( client, true ) )
             return {
                 code: this.statusCode.delayError
             };
-    }
 
-    if ( Server.getRoomConfig( roomID, "disallow_queue_request", false ) )
-        return {
-            code: this.statusCode.roomConfigDisallowError
-        };
+        if ( Server.getRoomConfig( roomID, "disallow_queue_request", false ) )
+            return {
+                code: this.statusCode.roomConfigDisallowError
+            };
+    }
 
     if ( data.url.length <= 0 )
         return {
@@ -228,10 +249,29 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
                             }
                             else if ( typeof checkResult === "string" )
                             {
+                                if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                                    return {
+                                        code: this.statusCode.serviceBlockedError
+                                    };
+
                                 return {
                                     code: this.statusCode.success,
                                     type: checkerData.type,
                                     newURL: checkResult,
+                                    videoID: checkerData.getVideoID ? checkerData.getVideoID( urlParsed, query ) : ""
+                                };
+                            }
+                            else if ( typeof checkResult === "boolean" )
+                            {
+                                if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                                    return {
+                                        code: this.statusCode.serviceBlockedError
+                                    };
+
+                                return {
+                                    code: this.statusCode.success,
+                                    type: checkerData.type,
+                                    newURL: data.url,
                                     videoID: checkerData.getVideoID ? checkerData.getVideoID( urlParsed, query ) : ""
                                 };
                             }
@@ -662,14 +702,6 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
             var newData = util.deepCopy( queueData );
             newData.type = "register";
 
-            // if ( client ) // client가 있을경우.
-            // {
-            //     client.emit( "regu.queueRegisterReceive",
-            //     {
-            //         code: QueueManager.statusCode.success
-            //     } );
-            // }
-
             callback( client, QueueManager.statusCode.success );
 
             Server.sendMessage( roomID, "RS.queueEvent", newData );
@@ -1024,6 +1056,138 @@ QueueManager._processRegisterKakaoTV = function( client, roomID, url, videoID, s
         } );
 }
 
+const phantom = require( 'phantom' );
+
+// *TODO: cheerio로 element 불러올 시 값이 올바르지 않은 경우에 대한 예외처리 바람.
+QueueManager._processRegisterNiconico = async function( client, roomID, url, videoID, startPosition, callback )
+{
+    var queueData = {};
+    // *TODO: onRegister는 Queue 추가 함수마다 똑같으므로 메소드 추가바람
+    var onRegister = function( )
+    {
+        if ( !Server.QUEUE[ roomID ] )
+        {
+            if ( client )
+                client.emit( "regu.queueRegisterReceive", QueueManager.statusCode.unknownError );
+
+            console.log( "room boombed..." )
+            return;
+        }
+
+        var newData = util.deepCopy( queueData );
+        newData.type = "register";
+
+        callback( client, QueueManager.statusCode.success );
+
+        Server.sendMessage( roomID, "RS.queueEvent", newData );
+
+        Server.QUEUE[ roomID ].queueList.push( queueData );
+
+        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+
+        if ( client )
+        {
+            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
+            Server.emitDiscord( roomID,
+            {
+                embed:
+                {
+                    color: 10181046,
+                    image:
+                    {
+                        url: queueData.mediaThumbnail
+                    },
+                    description: `'${ queueData.mediaName }' 영상이 대기열에 추가되었습니다.`,
+                    author:
+                    {
+                        name: "대기열 추가"
+                    },
+                    url: "https://regustreaming.oa.to",
+                    timestamp: new Date( ),
+                    footer:
+                    {
+                        text: queueData.user.name + "님이 추가함"
+                    }
+                }
+            } );
+        }
+        else
+        {
+            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
+            // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
+        }
+
+        Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
+    };
+
+    const instance = await phantom.create( );
+    const page = await instance.createPage( );
+
+    // await page.on( "onLoadFinished", async function( status )
+    // {
+    //     
+    // } );
+
+    const status = await page.open( url );
+
+    // *TODO: 테스트 바람.
+    if ( status !== "success" )
+        return callback( client, QueueManager.statusCode.failedToGetInformationError, url, status, true );
+
+
+    const cookies = await page.property( "cookies" );
+
+
+    const content = await page.property( "content" );
+    await instance.exit( );
+
+    const $ = cheerio.load( content );
+
+    var nicoAPIData = JSON.parse( decodeURIComponent( $( "#js-initial-watch-data" )
+        .attr( "data-api-data" ) ) );
+    var duration = Number( nicoAPIData.video.duration || 10 );
+
+    console.log( nicoAPIData );
+
+    if ( startPosition > duration )
+        return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
+
+    if ( Math.abs( duration - startPosition ) <= 60 )
+        return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
+
+    queueData.id = `niconico_${ videoID }_${ Date.now( ) }`;
+    queueData.mediaProvider = QueueManager.providerType.Niconico;
+    queueData.mediaProviderURL = url;
+    queueData.mediaContentURL = nicoAPIData.video.smileInfo.url;
+    queueData.mediaName = nicoAPIData.video.title;
+    queueData.mediaThumbnail = nicoAPIData.video.largeThumbnailURL;
+    queueData.mediaDuration = duration;
+    queueData.mediaPosition = startPosition;
+    queueData.userVote = {};
+    queueData.userVoteSum = {
+        like: 0,
+        unlike: 0
+    };
+    queueData.extra = {
+        cookies: cookies
+    };
+
+    if ( client )
+        queueData.user = {
+            name: client.name,
+            userID: client.userID,
+            avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+            information: client.information( )
+        };
+
+    var newQueueData = hook.run( "ModifyQueueData", roomID, queueData );
+
+    if ( newQueueData )
+        queueData = newQueueData;
+
+    onRegister( );
+}
+
 // 오류 코드들 정리점;
 QueueManager._processRegisterTvple = function( client, roomID, url, videoID, startSec )
 {
@@ -1177,52 +1341,115 @@ QueueManager._processRegisterTvple = function( client, roomID, url, videoID, sta
         } );
 }
 
-QueueManager._processRegisterDirect = function( client, roomID, url, videoID, startSec )
+QueueManager._processRegisterDirect = async function( client, roomID, url, videoID, startPosition, callback )
 {
-    getDuration( url )
-        .then( function( duration )
+    var queueData = {};
+    var duration = await getDuration( url );
+    var videoLengthSec = Number( duration || 10 );
+
+    // if ( videoLengthSec > QueueManager.config.MAX_DURATION )
+    // {
+    //     registerFailed( client,
+    //         "죄송합니다, 영상이 최대 허용 길이를 초과했습니다, 영상 목록에 추가할 수 없습니다.",
+    //         `${ url } -> OverTime`,
+    //         true
+    //     );
+
+    //     return;
+    // }
+
+    if ( startPosition > videoLengthSec )
+        return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
+
+    // if ( Math.abs( videoLengthSec - startPosition ) <= 10 ) // *TODO: 10초 제한 수정하기
+    //     return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
+
+    queueData.id = `direct_${ videoID }_${ Date.now( ) }`;
+    queueData.mediaName = decodeURI( path.basename( url ) ) || "알 수 없음";
+    queueData.mediaProvider = QueueManager.providerType.Direct;
+    queueData.mediaProviderURL = url;
+    queueData.mediaThumbnail = "";
+    queueData.mediaContentURL = url;
+    queueData.mediaDuration = videoLengthSec;
+    queueData.mediaPosition = startPosition;
+    queueData.userVote = {};
+    queueData.userVoteSum = {
+        like: 0,
+        unlike: 0
+    };
+
+    if ( client )
+        queueData.user = {
+            name: client.name,
+            userID: client.userID,
+            avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+            information: client.information( )
+        };
+
+    var newQueueData = hook.run( "ModifyQueueData", roomID, queueData );
+
+    if ( newQueueData )
+        queueData = newQueueData;
+
+    // *TODO: onRegister는 Queue 추가 함수마다 똑같으므로 메소드 추가바람
+    var onRegister = function( )
+    {
+        if ( !Server.QUEUE[ roomID ] )
         {
-            var queueData = {};
-            queueData.id = "direct_" + videoID + "_" + Date.now( );
-            queueData.videoName = url;
-            queueData.videoProvider = "Direct";
-            queueData.videoThumbnail = "";
-            queueData.videoLength = duration;
-            queueData.videoDirectURL = url;
-            queueData.soundDirectURL = null;
-            queueData.videoProviderURL = url;
-            queueData.startTime = startSec;
-            queueData.owner = client ? client.name : "채널 관리자";
-            queueData.userID = client ? client.userID : "server";
-            queueData.avatar = client ? client.getPassportField( "avatar", "/images/avatar/guest_64.png" ) : "/images/avatar/guest_64.png";
-            queueData.videoConverted = true;
-
             if ( client )
+                client.emit( "regu.queueRegisterReceive", QueueManager.statusCode.unknownError );
+
+            console.log( "room boombed..." )
+            return;
+        }
+
+        var newData = util.deepCopy( queueData );
+        newData.type = "register";
+
+        callback( client, QueueManager.statusCode.success );
+
+        Server.sendMessage( roomID, "RS.queueEvent", newData );
+
+        Server.QUEUE[ roomID ].queueList.push( queueData );
+
+        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+
+        if ( client )
+        {
+            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
+            Server.emitDiscord( roomID,
             {
-                client.emit( "regu.queueRegisterReceive",
+                embed:
                 {
-                    success: true
-                } );
-            }
-
-            Server.sendMessage( roomID, "RS.queueEvent",
-            {
-                type: "register",
-                id: queueData.id,
-                videoName: queueData.videoName,
-                videoThumbnail: queueData.videoThumbnail,
-                videoLength: queueData.videoLength,
-                startTime: queueData.startTime,
-                owner: queueData.owner,
-                userID: queueData.userID,
-                avatar: queueData.avatar,
-                videoConverted: queueData.videoConverted
+                    color: 10181046,
+                    image:
+                    {
+                        url: queueData.mediaThumbnail
+                    },
+                    description: `'${ queueData.mediaName }' 영상이 대기열에 추가되었습니다.`,
+                    author:
+                    {
+                        name: "대기열 추가"
+                    },
+                    url: "https://regustreaming.oa.to",
+                    timestamp: new Date( ),
+                    footer:
+                    {
+                        text: queueData.user.name + "님이 추가함"
+                    }
+                }
             } );
+        }
+        else
+        {
+            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
+            // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
+        }
 
-            ChatManager.saySystem( roomID, queueData.videoName + " 영상이 목록에 추가되었습니다. (by " + ( client ? ( client.name + "#" + client.userID ) : "서버" ) + ")", "glyphicon glyphicon-download" );
+        Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
+    };
 
-            QueueManager._queueList[ roomID ].push( queueData );
-        } );
+    onRegister( );
 }
 
 QueueManager.getCount = function( roomID )
@@ -1245,14 +1472,13 @@ QueueManager.register = function( providerType, client, roomID, url, videoID, st
 {
     var onRegisterQueue = force ?
     {
-        accept: true
+        code: this.statusCode.success
     } : hook.run( "OnRegisterQueue", providerType, client, roomID, url, videoID );
 
-    if ( onRegisterQueue && !onRegisterQueue.accept )
+    if ( onRegisterQueue && onRegisterQueue.code !== this.statusCode.success )
     {
-        registerFailed( client, can.reason, can.reason, true );
+        QueueManager._onRegister( client, onRegisterQueue.code, url, null, false )
 
-        // QueueManager._onRegister( client, onRegisterQueue.code, url, err, isError )
         return;
     }
 
@@ -1343,10 +1569,6 @@ QueueManager.isEmpty = function( roomID )
     return Server.QUEUE[ roomID ].queueList.length === 0;
 }
 
-// var urlParsedObj = url.parse("https://www.youtube.com/watch?v=A8KrxWUnsWo");
-// var querystringParsedObj = querystring.parse(urlParsedObj.query);
-// console.log(querystringParsedObj);
-
 QueueManager.sendQueueList = function( socket, roomID )
 {
     if ( !Server.QUEUE[ roomID ] ) return;
@@ -1418,7 +1640,7 @@ QueueManager.play = function( roomID )
     hook.run( "PostPlayQueue", roomID, recentQueue );
 }
 
-// 남용 막기 위해 이 시스템은 roomID 설정을 안함;
+// *NOTE: 남용 막기 위해 이 시스템은 roomID 설정을 안함;
 QueueManager.registerTimeDelay = function( client, delay )
 {
     QueueManager.removeTimeDelay( client ); // 이미 있는 경우 처리
@@ -1478,7 +1700,7 @@ hook.register( "OnCreateOfficialRoom", function( )
             else if ( QueueManager.isEmpty( roomID ) && util.isEmpty( currentQueueData ) )
                 return
 
-            if ( currentQueueData.mediaDuration <= queueData.currentPlayingPos - 3 ) // 3초 딜레이
+            if ( currentQueueData.mediaDuration <= queueData.currentPlayingPos ) // *TODO: 3초 딜레이 수정바람
             {
                 if ( QueueManager.isEmpty( roomID ) )
                 {

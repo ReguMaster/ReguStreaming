@@ -89,6 +89,7 @@ process.on( "uncaughtException", function( err )
     Logger.write( Logger.LogType.Error, `[SERVER] Unhandled Exception: \n${ err.stack }` );
 } );
 
+// *NOTE:
 // 2018-08-22 11:40:23 (!    ERROR    !) : [SERVER] Unhandled WebServer error:
 // Error: listen EADDRINUSE 1.236.112.166:443
 //     at Object._errnoException (util.js:992:11)
@@ -139,16 +140,22 @@ Main.InitializeServer = function( )
         {
             extended: false
         } ) );
-    app.use( require( "compression" )( ) );
-    app.use( require( "cookie-parser" )( ) );
+    app.use( require( "compression" )( ) ); // gzip 압축 미들웨어 사용
+    app.use( require( "cookie-parser" )( ) ); // cookie 지원 미들웨어 사용
     app.use( require( "socketio-file-upload" )
         .router );
 
+    // Global 헤더 설정
     app.use( function( req, res, next )
     {
         // https://www.npmjs.com/package/cache-headers
-        // res.setHeader( "Cache-Control", "no-cache, no-store" );
+
         res.setHeader( "X-Powered-By", "Doshigatai" );
+
+        // res.setHeader( "Cache-Control", "no-cache, no-store" );
+        // res.header( "Access-Control-Allow-Headers", "*" );
+        // res.header( "Access-Control-Allow-Credentials", true );
+        // res.header( "Access-Control-Allow-Methods", "GET,PUT,POST,DELETE" );
         next( );
     } );
 
@@ -157,12 +164,6 @@ Main.InitializeServer = function( )
     app.use( passport.session( ) );
 
     Main.socketIO.use( require( "express-socket.io-session" )( sessionMiddleware ) );
-
-    // app.use( require( "express-status-monitor" )(
-    // {
-    //     websocket: Main.ioSSL,
-    //     port: 443
-    // } ) );
 
     app.set( "trust proxy", true );
     app.set( "views", path.join( __dirname, "views" ) );

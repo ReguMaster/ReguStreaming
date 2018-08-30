@@ -6,21 +6,21 @@
 const apiConfig = require( "../const/config" );
 const express = require( "express" );
 const path = require( "path" );
-const fileStream = require( "fs" );
+// const fileStream = require( "fs" );
 const router = express.Router( );
 const passport = require( "passport" );
 const BanManager = require( "../modules/ban" );
 const Database = require( "../modules/db" );
 const Logger = require( "../modules/logger" );
-const util = require( "util" );
+const util = require( "../util" );
 const uniqid = require( "uniqid" );
 const QueueManager = require( "../modules/queue" );
 const ServiceManager = require( "../modules/service" );
 const hook = require( "../hook" );
-const reguUtil = require( "../util" );
-const superagent = require( "superagent" );
+// const superagent = require( "superagent" );
 const Server = require( "../server" );
-const cheerio = require( "cheerio" );
+// const cheerio = require( "cheerio" );
+// const cookie = require( "cookie" );
 const recaptcha = new( require( "recaptcha2" ) )(
 {
     siteKey: apiConfig.Recaptcha.siteKey,
@@ -45,6 +45,7 @@ router.get( "/", function( req, res )
         return;
     }
 
+    // *NOTE: 세션 올바르지 않을 시 오류 발생 (ex: redis 접속 실패시)
     if ( !!!req.session.discordRecommend )
         req.session.discordRecommend = 1;
 
@@ -78,7 +79,7 @@ router.get( "/extra/:room", function( req, res )
     {
         var playingData = QueueManager.getPlayingData( req.params.room );
 
-        if ( reguUtil.isEmpty( playingData ) )
+        if ( util.isEmpty( playingData ) )
         {
             res.send( "{}" );
 
@@ -115,7 +116,7 @@ router.get( "/media/:room", function( req, res )
     {
         var playingData = QueueManager.getPlayingData( req.params.room );
 
-        if ( reguUtil.isEmpty( playingData ) )
+        if ( util.isEmpty( playingData ) )
         {
             res.status( 204 )
                 .send( "" );
@@ -123,7 +124,7 @@ router.get( "/media/:room", function( req, res )
             return;
         }
 
-        res.redirect( playingData.mediaContentURL );
+        res.redirect( 302, playingData.mediaContentURL );
     }
     else
         res.status( 403 )
@@ -352,7 +353,7 @@ router.post( "/login/guest", function( req, res )
                 {
                     Database.executeProcedure( "REGISTER_GUEST", [ "guest", "Guest", uniqid( ), ipAddress ], function( status2, data2 )
                     {
-                        if ( status === "success" && data2.affectedRows === 1 )
+                        if ( status2 === "success" && data2.affectedRows === 1 )
                         {
                             Database.executeProcedure( "FIND_USER_BY_IPADDRESS", [ ipAddress ], function( status3, data3 )
                             {

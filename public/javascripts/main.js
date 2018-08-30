@@ -180,9 +180,9 @@ window.onload = function( )
     } );
 
 
-    if ( util.isIE( ) || util.isEdge( ) )
+    if ( util.isIE( ) )
     {
-        util.notification( util.notificationType.warning, "호환성 알림 :", "이 사이트는 해당 브라우저에서 테스트되지 않았습니다<br />버그 발견 시 즉시 신고해주세요.", 0 );
+        util.notification( util.notificationType.warning, "호환성 알림 :", "해당 브라우저에서 호환성 문제가 확인되었습니다, 다른 브라우저로 이용해주세요.", 0 );
     }
 
     reguStreaming.documentLoaded = true;

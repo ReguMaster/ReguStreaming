@@ -12,6 +12,7 @@ const
     BrowserWindow,
     Menu,
     shell,
+    ipcMain,
     dialog
 } = require( "electron" );
 const path = require( "path" );
@@ -178,29 +179,24 @@ class MainProcess
     {
         this.process = child_process.fork( cmd, arg );
 
-        // this.process.stdout.setEncoding( "utf8" );
-        // this.process.stdout.on( "data", function( msg )
-        // {
-        //     var codeIndex = msg.indexOf( "^" );
-        //     Electron.sendIPC( "log", msg.substring( 0, codeIndex ), msg.substring( codeIndex + 1 ) );
-        // } );
-
-        // this.process.stderr.on( "data", function( msg )
-        // {
-        //     Electron.sendIPC( "log", "Error", msg );
-        // } );
-
         this.process.on( "message", function( body )
         {
-            console.log( "onMessage" )
-            console.log( body );
-
             switch ( body.type )
             {
                 case "log":
                     Electron.sendIPC( "log", body.logLevel || 0, body.message );
 
                     break;
+                case "commandResultAlert":
+                    dialog.showMessageBox( Electron.mainWindow,
+                    {
+                        type: "error",
+                        title: "ReguStreaming",
+                        message: `${ body.command } 명령어 실행 중 오류가 발생했습니다.`,
+                        detail: body.message,
+                        buttons: [ "확인" ],
+                        noLink: true
+                    } );
             }
         } );
 
@@ -218,6 +214,11 @@ class MainProcess
         } );
     }
 
+    send( message )
+    {
+        this.process.send( message );
+    }
+
     kill( sig )
     {
         if ( this.process )
@@ -230,16 +231,18 @@ Electron.mainWindow = null;
 Electron.startMainProcess = function( )
 {
     Electron.mainProcess = new MainProcess( "./app.js" );
-    // new MainProcess( "node", "./app.js" );
-    Electron.sendIPC( "log", "1", `[Server] Main Process starting.` );
 
+    Electron.sendIPC( "log", "1", `[Server] Main Process starting.` );
     Electron.sendIPC( "serverStatus", 1 );
 }
 
 Electron.stopMainProcess = function( )
 {
-    Electron.mainProcess.kill( );
-    Electron.mainProcess = null;
+    if ( Electron.mainProcess )
+    {
+        Electron.mainProcess.kill( );
+        Electron.mainProcess = null;
+    }
 
     Electron.sendIPC( "serverStatus", 0 );
 }
@@ -278,6 +281,11 @@ Electron.sendIPC = function( ...arg )
     if ( Electron.mainWindow && Electron.mainWindow.webContents )
         Electron.mainWindow.webContents.send.apply( Electron.mainWindow.webContents, arg );
 }
+
+ipcMain.on( "commandExecute", function( e, arg )
+{
+    Electron.mainProcess.send( arg );
+} );
 
 setInterval( function( )
 {

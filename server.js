@@ -167,6 +167,8 @@ hook.register( "Initialize", function( )
         video_position_bar_full_color: "rgba( 247, 247, 150, 1 )"
     } );
 
+    Server.roomCreated = true;
+
     hook.run( "OnCreateOfficialRoom", Server.ROOM );
 } );
 
@@ -232,10 +234,7 @@ Server.getAllClient = function( roomID )
     if ( roomID )
     {
         if ( !this.ROOM[ roomID ] )
-        {
-            Logger.write( Logger.LogType.Error, `[Server] Failed to process Server.getAllClient -> roomID is not valid!` );
-            return;
-        }
+            return [ ]; // *TODO: 경우에 따라 수정 바람
 
         return this.CLIENT[ roomID ];
     }
@@ -535,6 +534,13 @@ Server.onConnect = function( socket )
     // *TODO: 여기에 룸 체크 다시하기 -> 필요 없을 수 있음.
     var roomID = socket.handshake.session.roomID;
 
+    if ( !Server.roomCreated )
+    {
+        console.log( "WARNING!" );
+        socket.disconnect( );
+        return;
+    }
+
     if ( !this.ROOM[ roomID ] ) // *오류: 가끔 room Initialize 보다 먼저 클라이언트가 들어올 시 룸 데이터가 없으므로 오류가 발생함.
     {
         console.log( "WARNING!" );
@@ -625,6 +631,34 @@ Server.joinRoom = function( roomID, req, res, ipAddress )
     } );
 }
 
+Server.commandProcess = function( commandFullBody )
+{
+    var commandList = commandFullBody.split( " " );
+
+    if ( commandList.length <= 0 ) return;
+
+    var command = commandList[ 0 ].toString( )
+        .trim( )
+        .toLowerCase( )
+
+    if ( Server.COMMAND[ command ] )
+    {
+        var result = Server.COMMAND[ command ]( commandList );
+
+        if ( result && typeof result === "string" )
+        {
+            process.send(
+            {
+                type: "commandResultAlert",
+                command: command,
+                message: result
+            } );
+        }
+    }
+    else
+        console.log( `[Server] Unknown command '${ command }'` );
+}
+
 App.socketIO.on( "connect", function( socket )
 {
     var client;
@@ -706,20 +740,163 @@ App.socketIO.set( "authorization", function( handshakeData, next )
 
 module.exports = Server;
 
-require( "./util" );
-require( "./modules/queue" );
+// const util = require( "./util" );
+
+const QueueManager = require( "./modules/queue" );
 require( "./modules/dns" );
 require( "./modules/db" );
 require( "./filestorage" );
-// require( "./datastream" );
 
 require( "./modules/chat" );
 require( "./modules/service" );
-require( "./modules/interact" );
 require( "./modules/vote" );
 require( "./modules/fileupload" );
-require( "./modules/tracker" );
+// require( "./modules/tracker" );
 require( "./modules/admin" );
 
 hook.run( "Initialize" );
 Logger.write( Logger.LogType.Info, "Server initialized." );
+
+// *NOTE: 명령어 추가시 주의 사항 - args[ 0 ] 은 명령어가 들어있으므로 사용하지 않는다. (인수는 1번 인덱스부터 있음.)
+// *TODO: 명령어가 실행하는 함수에 성공/실패 리턴 값 구현
+Server.COMMAND = {
+    "/queue-register": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !args[ 2 ] )
+            return "Argument[2] 영상 주소를 입력하세요.";
+
+        if ( !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        var data = {
+            url: args[ 2 ],
+            start: Number( args[ 3 ] || 0 )
+        };
+        var isAllowRegister = QueueManager.isAllowRegister( null, args[ 1 ], data );
+
+        if ( isAllowRegister.code !== QueueManager.statusCode.success )
+            return util.getCodeID( QueueManager.statusCode, isAllowRegister.code ) + " 코드가 반환되었습니다.";
+
+        QueueManager.register( isAllowRegister.type, null, args[ 1 ], isAllowRegister.newURL, isAllowRegister.videoID, data.start, true );
+    },
+    "/queue-register-direct": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !args[ 2 ] )
+            return "Argument[2] 영상 주소를 입력하세요.";
+
+        if ( !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        QueueManager.register( QueueManager.providerType.Direct, null, args[ 1 ], args[ 2 ], args[ 2 ], Number( args[ 3 ] || 0 ), true );
+    },
+    "/kick": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 아이피 주소를 입력하세요.";
+
+        var client = Server.getClientByIPAddress( args[ 1 ] );
+
+        if ( client != null )
+            client.kick( args.chain( 2 ) );
+        else
+            return "Argument[2] 해당 아이피 주소의 사용자를 찾을 수 없습니다.";
+    },
+    "/kickall": function( args )
+    {
+        var reason = args.chain( 2 ) || "서버로부터 강제 퇴장 처리";
+
+        Server.getAllClient( args[ 1 ] !== "all" ? args[ 1 ] : null )
+            .forEach( ( client ) => client.kick( reason ) );
+    },
+    "/ban": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 아이피 주소를 입력하세요.";
+
+        var client = Server.getClientByIPAddress( args[ 1 ] );
+
+        if ( client ) // *NOTE: 접속 중인 클라이언트 일 경우 (킥&밴) 아닐 경우 밴 처리만
+            client.ban( args.chain( 2 ), 0 );
+        else
+            BanManager.register( [ null, args[ 1 ] ], 0, args.chain( 2 ) );
+    },
+    "/removeban": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 아이피 주소를 입력하세요.";
+
+        BanManager.remove( args[ 1 ] );
+    },
+    "/queue-continue": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        QueueManager.continueQueue( args[ 1 ] );
+    },
+    "/server-status": function( )
+    {
+        Server.getAllClient( )
+            .forEach( ( client, index ) =>
+            {
+                console.log( `${ index } : ${ client.information( ) }` );
+            } );
+    },
+    "/queue-removeat": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !args[ 2 ] || isNaN( Number( args[ 2 ] ) ) )
+            return "Argument[2] 제거할 위치를 입력하시거나 올바르게 입력하세요.";
+
+        if ( !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        QueueManager.removeAt( args[ 1 ], Number( args[ 2 ] ) );
+    },
+    "/queue-clear": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        QueueManager.clear( args[ 1 ], args[ 2 ] === "true" );
+    },
+    "/video-setpos": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !args[ 2 ] || isNaN( Number( args[ 2 ] ) ) )
+            return "Argument[2] 재생 위치를 입력하시거나 올바르게 입력하세요.";
+
+        if ( !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        QueueManager.setVideoPos( args[ 1 ], Number( args[ 2 ] ) );
+    }
+};
+
+process.on( "message", function( body )
+{
+    if ( body.type === "command" )
+        Server.commandProcess( body.command );
+} );
+
+hook.register( "PostDiscordMessage", function( message )
+{
+    if ( message.channel.id === "474835550675927050" )
+        Server.commandProcess( message.content );
+} );

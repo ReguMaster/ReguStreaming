@@ -13,6 +13,23 @@ const xml2js = require( "xml2js" );
 const os = require( "os" );
 const merge = require( "merge" );
 
+// *TODO: 코드 시스템 쓰는 logic 에 이 메소드 사용 적용
+util.getCodeID = function( codesObj, code )
+{
+    if ( typeof codesObj !== "object" || codesObj.length ) throw new Error( "codesObj is not Object type!" );
+
+    var key = Object.keys( codesObj ),
+        keyLength = key.length;
+
+    for ( var i = 0; i < keyLength; i++ )
+    {
+        if ( codesObj[ key[ i ] ] === code )
+            return key[ i ];
+    }
+
+    return "unknown code";
+}
+
 util.forEach = function( obj, inter )
 {
     if ( typeof obj !== "object" ) throw new Error( "obj is not Object type!" );

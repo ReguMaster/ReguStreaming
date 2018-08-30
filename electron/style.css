@@ -1,0 +1,132 @@
+html,
+body {
+    padding: 0;
+    margin: 0;
+    width: 100%;
+    height: 100%;
+}
+
+::-webkit-scrollbar {
+    width: 8px;
+}
+
+::-webkit-scrollbar-track {
+    background-color: #161616;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: rgb(80, 80, 80);
+}
+
+::-webkit-scrollbar-button {
+    background-color: rgb(50, 50, 50);
+}
+
+::-webkit-scrollbar-corner {
+    background-color: #161616;
+}
+
+p {
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: 'Consolas', 'Arial', 'sans-serif';
+    font-size: 13px;
+    color: white;
+    background-color: #161616;
+}
+
+.RS-logConsole {
+    overflow-y: auto;
+    white-space: normal;
+    max-width: 100%;
+    max-height: calc(100% - 65px);
+    color: white;
+}
+
+.RS-commandField {
+    width: -webkit-calc(100% - 12px);
+    padding: 6px;
+    position: fixed;
+    bottom: 0;
+    left: 0;
+
+    font-size: 12px;
+    font-family: '맑은 고딕';
+    font-style: italic;
+
+    border: none;
+}
+
+.RS-commandField:focus {
+    outline: none;
+    box-shadow: 0 0 16px #9ecaed;
+}
+
+.RS-commandField::placeholder {
+    color: rgb(30, 30, 30);
+    opacity: 1;
+}
+
+.RS-status {
+    width: 100%;
+    height: 32px;
+    background-color: #1d1d1d;
+    -webkit-user-select: none;
+}
+
+.RS-status-icon {
+    width: 16px;
+    height: 100%;
+    transition: all ease 0.5s;
+    display: inline-block;
+}
+
+.RS-status-stats {
+    display: inline-block;
+    margin-top: 8px;
+    margin-right: 12px;
+    float: right;
+}
+
+.RS-status-serverName {
+    font-size: 20px;
+    margin-left: 6px;
+    display: inline-block;
+    position: absolute;
+    top: 4px;
+}
+
+.online {
+    background-color: rgb(37, 255, 110);
+}
+
+.offline {
+    background-color: rgb(255, 37, 37);
+}
+
+.RS-logItem {
+    padding: 0;
+    padding-top: 0;
+    padding-bottom: 0;
+}
+
+.logLevel-0 {}
+
+.logLevel-1 {
+    color: yellow;
+}
+
+.logLevel-2 {
+    color: red;
+}
+
+.logLevel-3 {
+    color: cyan;
+}
+
+.logLevel-99 {
+    color: blue;
+}

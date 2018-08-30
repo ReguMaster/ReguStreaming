@@ -19,7 +19,7 @@ const Logger = require( "../modules/logger" );
 ServiceManager.notification = [ ];
 ServiceManager.serviceStatus = 0;
 
-// guest 포함 불가
+// *NOTE: guest 포함 불가
 ServiceManager.loginDisallowList = [
     // "steam",
     "naver",
@@ -56,8 +56,11 @@ ServiceManager.isLoginAllowed = function( provider )
     return this.loginDisallowList.indexOf( provider ) === -1;
 }
 
-ServiceManager.isQueueRegisterAllowed = function( roomID, provider ) {
+ServiceManager.isQueueRegisterAllowed = function( roomID, provider )
+{
+    return true;
 
+    return "made in abyss";
 }
 
 ServiceManager.background = null;
@@ -193,19 +196,10 @@ ServiceManager.done = function( )
                 } );
             }
         } );
-    // msg.channel.bulkDelete( fetched );
 }
 
-// ServiceManager.registerNotification( "TEST", ServiceManager.notificationType.danger, "Service Error", "We are aware of issues causing account transfers to intermittently fail, and are working on a fix." );
-// ServiceManager.registerNotification( "DANGER_TEST", ServiceManager.notificationType.danger, "Service Error", "We are aware of an issue with dash abilities and are currently working on a fix." );
-
-// ServiceManager.registerNotification( "WARNING_TEST", ServiceManager.notificationType.warning, "Service Problem", "Some prepaid card and PIN codes will be unavailable to be redeemed temporarily. Please try again in a few hours." );
-
-// ServiceManager.registerNotification( "SERVICE_UPDATE_KO", ServiceManager.notificationType.warning, "서비스 업데이트", "현재 서비스 업데이트 작업 중입니다, 일부 서비스를 이용하실 수 없으며 불편을 드려 죄송합니다." );
-// ServiceManager.registerNotification( "SERVICE_UPDATE_EN", ServiceManager.notificationType.warning, "Service Update", "We are currently working on a service update, some services are not available and we apologize for any inconvenience." );
 ServiceManager.setServiceStatus( 1 );
 ServiceManager.registerNotification( "SNS_LOGIN_WARN", ServiceManager.notificationType.warning, "소셜 계정 로그인", "외부 서비스 접근에 문제가 발생하여 현재 스팀을 통한 로그인을 제외한 모든 소셜 계정 로그인이 불가능 합니다, 불편을 드려 죄송합니다." );
-
 ServiceManager.refreshBackground( );
 
 setInterval( function( )

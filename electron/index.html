@@ -8,117 +8,7 @@
 
     <head>
         <meta charset="utf-8">
-        <style>
-        html,
-        body {
-            padding: 0;
-            margin: 0;
-            width: 100%;
-            height: 100%;
-        }
-
-        ::-webkit-scrollbar {
-            width: 12px;
-        }
-
-        ::-webkit-scrollbar-track {
-            background-color: #161616;
-        }
-
-        ::-webkit-scrollbar-thumb {
-            background-color: rgb( 80, 80, 80);
-        }
-
-        ::-webkit-scrollbar-button {
-            background-color: rgb( 50, 50, 50);
-        }
-
-        ::-webkit-scrollbar-corner {
-            background-color: #161616;
-        }
-
-        p {
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: 'Consolas', 'Arial', 'sans-serif';
-            font-size: 13px;
-            color: white;
-            background-color: #161616;
-        }
-
-        .RS-logConsole {
-            overflow-y: auto;
-            white-space: normal;
-            max-height: calc(100% - 32px);
-            color: white;
-        }
-
-        .RS-commandField {}
-
-        .RS-status {
-            width: 100%;
-            height: 32px;
-            background-color: #1d1d1d;
-            -webkit-user-select: none;
-        }
-
-        .RS-status-icon {
-            width: 16px;
-            height: 100%;
-            transition: all ease 0.5s;
-            display: inline-block;
-        }
-
-        .RS-status-stats {
-            display: inline-block;
-            margin-top: 8px;
-            margin-right: 12px;
-            float: right;
-        }
-
-        .RS-status-serverName {
-            font-size: 20px;
-            margin-left: 6px;
-            display: inline-block;
-            position: absolute;
-            top: 4px;
-        }
-
-        .online {
-            background-color: rgb(37, 255, 110);
-        }
-
-        .offline {
-            background-color: rgb(255, 37, 37);
-        }
-
-        .RS-logItem {
-            padding: 0;
-            padding-top: 0;
-            padding-bottom: 0;
-        }
-
-        .logLevel-0 {}
-
-        .logLevel-1 {
-            color: yellow;
-        }
-
-        .logLevel-2 {
-            color: red;
-        }
-
-        .logLevel-3 {
-            color: cyan;
-        }
-
-        .logLevel-99 {
-            color: blue;
-        }
-        </style>
+        <link rel="stylesheet" type="text/css" href="./style.css">
     </head>
 
     <body>
@@ -128,10 +18,11 @@
             <p class="RS-status-stats">CPU: 0%, RAM: 0bytes</p>
         </div>
         <div class="RS-logConsole"></div>
-        <input type="text" name="commandField" class="RS-commandField" placeholder="명령어 입력 ..." autofocus />
+        <input type="text" name="commandField" class="RS-commandField" placeholder="> ..." autofocus />
 
         <script>
         let logCount = 0;
+
         window.$ = window.jQuery = require( "jquery" );
         window.electron = require( "electron" );
 
@@ -146,21 +37,35 @@
             return false;
         }
 
-        electron.ipcRenderer.on( "serverStats", function( event, stats )
+        window.onload = function( )
+        {
+            $( ".RS-commandField" ).on( "keypress", function( e )
+            {
+                if ( e.which === 13 ) // Enter 키
+                {
+                    var self = $( this );
+
+                    if ( self.val( ).length <= 0 ) return;
+
+                    electron.ipcRenderer.send( "commandExecute",
+                    {
+                        type: "command",
+                        command: self.val( )
+                    } );
+
+                    self.val( "" );
+                }
+            } );
+        }
+
+        electron.ipcRenderer.on( "serverStats", function( e, stats )
         {
             controls.statusStat.text( `CPU: ${ stats.cpu }%, RAM: ${ stats.memory }bytes` );
         } );
 
-        electron.ipcRenderer.on( "clearLog", function( event, stats )
-        {
-            controls.logConsole.empty( );
-            logCount = 0;
-        } );
-
-        electron.ipcRenderer.on( "serverStatus", function( event, code )
+        electron.ipcRenderer.on( "serverStatus", function( e, code )
         {
             controls.statusIcon.removeClass( "online offline" );
-
             switch ( code )
             {
                 case 0:
@@ -172,7 +77,7 @@
             }
         } );
 
-        electron.ipcRenderer.on( "log", function( event, level, message )
+        electron.ipcRenderer.on( "log", function( e, level, message )
         {
             if ( ++logCount > 500 )
             {
@@ -180,12 +85,19 @@
                 $( "#logItem:first" ).remove( );
             }
 
-            var isOnBottom = controls.logConsole.scrollTop( ) + controls.logConsole.innerHeight( ) >= controls.logConsole.prop( "scrollHeight" );
+            var isScrollOnBottom = controls.logConsole.scrollTop( ) + controls.logConsole.innerHeight( ) >= controls.logConsole.prop( "scrollHeight" );
 
             controls.logConsole.append( `<div class="RS-logItem logLevel-${ level }" id="logItem">${ message }</div>` );
 
-            if ( isOnBottom )
+            if ( isScrollOnBottom )
                 controls.logConsole.scrollTop( controls.logConsole.prop( "scrollHeight" ) );
+        } );
+
+
+        electron.ipcRenderer.on( "clearLog", function( e, stats )
+        {
+            controls.logConsole.empty( );
+            logCount = 0;
         } );
         </script>
     </body>
