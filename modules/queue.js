@@ -578,12 +578,10 @@ QueueManager.userVote = function( client, type )
 QueueManager._onRegister = function( client, code, url, err, isError )
 {
     if ( client )
-    {
         client.emit( "regu.queueRegisterReceive",
         {
             code: code
         } );
-    }
 
     if ( code !== QueueManager.statusCode.success )
     {
@@ -594,6 +592,68 @@ QueueManager._onRegister = function( client, code, url, err, isError )
         else
             Logger.write( Logger.LogType.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ ( keys[ code ] || "unknown" ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
     }
+}
+
+// *NOTE: 큐 데이터 정리 후 실제로 큐에 추가하는 함수 ( _processRegisterYoutube -> _appendQueue )
+QueueManager._appendQueue = function( client, roomID, queueData )
+{
+    if ( !Server.QUEUE[ roomID ] )
+    {
+        if ( client )
+            client.emit( "regu.queueRegisterReceive", this.statusCode.unknownError );
+
+        console.log( "room boombed..." )
+        return;
+    }
+
+    var newData = util.deepCopy( queueData );
+    newData.type = "register";
+
+    if ( client )
+        client.emit( "regu.queueRegisterReceive",
+        {
+            code: this.statusCode.success
+        } );
+
+    Server.sendMessage( roomID, "RS.queueEvent", newData );
+
+    Server.QUEUE[ roomID ].queueList.push( queueData );
+
+    App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+
+    if ( client )
+    {
+        ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
+        Server.emitDiscord( roomID,
+        {
+            embed:
+            {
+                color: 10181046,
+                image:
+                {
+                    url: queueData.mediaThumbnail
+                },
+                description: `'${ queueData.mediaName }' 영상이 대기열에 추가되었습니다.`,
+                author:
+                {
+                    name: "대기열 추가"
+                },
+                url: "https://regustreaming.oa.to",
+                timestamp: new Date( ),
+                footer:
+                {
+                    text: queueData.user.name + "님이 추가함"
+                }
+            }
+        } );
+    }
+    else
+    {
+        ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
+        // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
+    }
+
+    Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ queueData.mediaProviderURL }) ${ client ? client.information( ) : "SERVER" }` );
 }
 
 QueueManager.statusCode = {
@@ -688,63 +748,6 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
         if ( newQueueData )
             queueData = newQueueData;
 
-        var onRegister = function( )
-        {
-            if ( !Server.QUEUE[ roomID ] )
-            {
-                if ( client )
-                    client.emit( "regu.queueRegisterReceive", QueueManager.statusCode.unknownError );
-
-                console.log( "room boombed..." )
-                return;
-            }
-
-            var newData = util.deepCopy( queueData );
-            newData.type = "register";
-
-            callback( client, QueueManager.statusCode.success );
-
-            Server.sendMessage( roomID, "RS.queueEvent", newData );
-
-            Server.QUEUE[ roomID ].queueList.push( queueData );
-
-            App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
-
-            if ( client )
-            {
-                ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
-                Server.emitDiscord( roomID,
-                {
-                    embed:
-                    {
-                        color: 10181046,
-                        image:
-                        {
-                            url: queueData.mediaThumbnail
-                        },
-                        description: `'${ queueData.mediaName }' 영상이 대기열에 추가되었습니다.`,
-                        author:
-                        {
-                            name: "대기열 추가"
-                        },
-                        url: "https://regustreaming.oa.to",
-                        timestamp: new Date( ),
-                        footer:
-                        {
-                            text: queueData.user.name + "님이 추가함"
-                        }
-                    }
-                } );
-            }
-            else
-            {
-                ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
-                // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
-            }
-
-            Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
-        };
-
         if ( data.videoCaptions )
         {
             QueueManager.getYoutubeCaption( QueueManager.config.LANGUAGE_CODE, "." + QueueManager.config.LANGUAGE_CODE, data.videoCaptions, function( success, result )
@@ -756,11 +759,11 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
                     };
                 }
 
-                onRegister( );
+                QueueManager._appendQueue( client, roomID, queueData );
             } );
         }
         else
-            onRegister( );
+            QueueManager._appendQueue( client, roomID, queueData );
     } );
 }
 
@@ -1062,64 +1065,6 @@ const phantom = require( 'phantom' );
 QueueManager._processRegisterNiconico = async function( client, roomID, url, videoID, startPosition, callback )
 {
     var queueData = {};
-    // *TODO: onRegister는 Queue 추가 함수마다 똑같으므로 메소드 추가바람
-    var onRegister = function( )
-    {
-        if ( !Server.QUEUE[ roomID ] )
-        {
-            if ( client )
-                client.emit( "regu.queueRegisterReceive", QueueManager.statusCode.unknownError );
-
-            console.log( "room boombed..." )
-            return;
-        }
-
-        var newData = util.deepCopy( queueData );
-        newData.type = "register";
-
-        callback( client, QueueManager.statusCode.success );
-
-        Server.sendMessage( roomID, "RS.queueEvent", newData );
-
-        Server.QUEUE[ roomID ].queueList.push( queueData );
-
-        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
-
-        if ( client )
-        {
-            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
-            Server.emitDiscord( roomID,
-            {
-                embed:
-                {
-                    color: 10181046,
-                    image:
-                    {
-                        url: queueData.mediaThumbnail
-                    },
-                    description: `'${ queueData.mediaName }' 영상이 대기열에 추가되었습니다.`,
-                    author:
-                    {
-                        name: "대기열 추가"
-                    },
-                    url: "https://regustreaming.oa.to",
-                    timestamp: new Date( ),
-                    footer:
-                    {
-                        text: queueData.user.name + "님이 추가함"
-                    }
-                }
-            } );
-        }
-        else
-        {
-            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
-            // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
-        }
-
-        Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
-    };
-
     const instance = await phantom.create( );
     const page = await instance.createPage( );
 
@@ -1185,7 +1130,7 @@ QueueManager._processRegisterNiconico = async function( client, roomID, url, vid
     if ( newQueueData )
         queueData = newQueueData;
 
-    onRegister( );
+    QueueManager._appendQueue( client, roomID, queueData );
 }
 
 // 오류 코드들 정리점;
@@ -1391,65 +1336,7 @@ QueueManager._processRegisterDirect = async function( client, roomID, url, video
     if ( newQueueData )
         queueData = newQueueData;
 
-    // *TODO: onRegister는 Queue 추가 함수마다 똑같으므로 메소드 추가바람
-    var onRegister = function( )
-    {
-        if ( !Server.QUEUE[ roomID ] )
-        {
-            if ( client )
-                client.emit( "regu.queueRegisterReceive", QueueManager.statusCode.unknownError );
-
-            console.log( "room boombed..." )
-            return;
-        }
-
-        var newData = util.deepCopy( queueData );
-        newData.type = "register";
-
-        callback( client, QueueManager.statusCode.success );
-
-        Server.sendMessage( roomID, "RS.queueEvent", newData );
-
-        Server.QUEUE[ roomID ].queueList.push( queueData );
-
-        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
-
-        if ( client )
-        {
-            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
-            Server.emitDiscord( roomID,
-            {
-                embed:
-                {
-                    color: 10181046,
-                    image:
-                    {
-                        url: queueData.mediaThumbnail
-                    },
-                    description: `'${ queueData.mediaName }' 영상이 대기열에 추가되었습니다.`,
-                    author:
-                    {
-                        name: "대기열 추가"
-                    },
-                    url: "https://regustreaming.oa.to",
-                    timestamp: new Date( ),
-                    footer:
-                    {
-                        text: queueData.user.name + "님이 추가함"
-                    }
-                }
-            } );
-        }
-        else
-        {
-            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
-            // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
-        }
-
-        Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
-    };
-
-    onRegister( );
+    QueueManager._appendQueue( client, roomID, queueData );
 }
 
 QueueManager.getCount = function( roomID )
