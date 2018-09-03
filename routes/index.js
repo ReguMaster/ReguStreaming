@@ -3,11 +3,11 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
+const router = require( "express" )
+    .Router( );
 const apiConfig = require( "../const/config" );
-const express = require( "express" );
 const path = require( "path" );
 // const fileStream = require( "fs" );
-const router = express.Router( );
 const passport = require( "passport" );
 const BanManager = require( "../modules/ban" );
 const Database = require( "../modules/db" );

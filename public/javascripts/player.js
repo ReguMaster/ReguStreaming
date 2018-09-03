@@ -649,7 +649,6 @@ socket.on( "RS.joinResult", function( data )
     $( window )
         .on( "beforeunload", function( e )
         {
-            // socket.emit( "forceDisconnect" );
             socket.disconnect( );
             // e = e || window.event;
 
