@@ -73,7 +73,7 @@ ChatManager.emitImage = function( client, fileID, isAdult )
         fileID: fileID
     } );
 
-    Logger.write( Logger.LogType.Info, `[Chat] ${ client.information( ) } : <IMAGE> ${ fileID }` );
+    Logger.write( Logger.type.Info, `[Chat] ${ client.information( ) } : <IMAGE> ${ fileID }` );
 }
 
 ChatManager.sayGlobal = function( message )
@@ -107,7 +107,7 @@ hook.register( "PostClientConnected", function( client, socket )
     {
         if ( !reguUtil.isValidSocketData( data, "string" ) )
         {
-            Logger.write( Logger.LogType.Important, `[Chat] Chat rejected. (code:dataError) ${ client.information( ) }` );
+            Logger.write( Logger.type.Important, `[Chat] Chat rejected. (code:dataError) ${ client.information( ) }` );
             return;
         }
 
@@ -119,9 +119,9 @@ hook.register( "PostClientConnected", function( client, socket )
             socket.emit( "RS.chatResult", preChat );
 
             if ( preChat !== ChatManager.statusCode.xssError )
-                Logger.write( Logger.LogType.Warning, `[Chat] Chat rejected. (code:${ ( Object.keys( ChatManager.statusCode )[ preChat ] || "unknown" ) }) -> ${ client.information( ) } : ${ chatMessage }` );
+                Logger.write( Logger.type.Warning, `[Chat] Chat rejected. (code:${ ( Object.keys( ChatManager.statusCode )[ preChat ] || "unknown" ) }) -> ${ client.information( ) } : ${ chatMessage }` );
             else
-                Logger.write( Logger.LogType.Important, `[Chat] WARNING! : XSS attack detected! -> ${ client.information( ) } : ${ chatMessage }` );
+                Logger.write( Logger.type.Important, `[Chat] WARNING! : XSS attack detected! -> ${ client.information( ) } : ${ chatMessage }` );
 
             return;
         }
@@ -137,7 +137,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
         Server.emitDiscord( client.room, client.name + " : " + chatMessage );
 
-        Logger.write( Logger.LogType.Info, `[Chat] ${ client.information( ) } : ${ chatMessage }` );
+        Logger.write( Logger.type.Info, `[Chat] ${ client.information( ) } : ${ chatMessage }` );
     } );
 
     ChatManager.saySystem( client.room, `${ client.name }님이 접속하셨습니다.`, "glyphicon glyphicon-user" );

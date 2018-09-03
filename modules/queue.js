@@ -151,45 +151,109 @@ QueueManager.urlValidChecker = [
         checker: function( urlParsed, query )
         {
             var p = urlParsed.pathname.split( "/" );
-            var id = Number( p[ p.length - 1 ] );
-            // var category = [
-            //     "parody",
-            //     "ent",
-            //     "ani",
-            //     "game",
-            //     "humor",
-            //     "sisa",
-            //     "sport",
-            //     "fashion",
-            //     "tech",
-            //     "life",
-            //     "jculture",
-            //     "other"
-            // ];
 
-            if ( id && !isNaN( id ) )
+            if ( p[ p.length - 1 ] )
             {
-                return urlParsed.href;
-            }
-            // if ( urlParsed.pathname.indexOf( "/ani_view/" ) === 0 )
-            // {
-            //     return urlParsed.href;
-            // }
+                var id = Number( p[ p.length - 1 ] );
+                // var category = [
+                //     "parody",
+                //     "ent",
+                //     "ani",
+                //     "game",
+                //     "humor",
+                //     "sisa",
+                //     "sport",
+                //     "fashion",
+                //     "tech",
+                //     "life",
+                //     "jculture",
+                //     "other"
+                // ];
 
-            return false;
+                console.log( urlParsed );
+                console.log( p );
+                console.log( id );
+
+                if ( Number.isInteger( id ) )
+                    return urlParsed.href;
+                else
+                    return false;
+            }
+            else
+                return false;
+
         },
         getVideoID: function( urlParsed, query )
         {
             var p = urlParsed.pathname.split( "/" );
             var id = Number( p[ p.length - 1 ] );
 
-            if ( id && !isNaN( id ) )
-            {
+            if ( Number.isInteger( id ) )
                 return id.toString( );
-            }
         }
     }
 ];
+
+QueueManager.getProviderExtrasByURL = function( url )
+{
+    var urlParsed = URL.parse( url );
+    var query = querystring.parse( urlParsed.query );
+    var length = this.urlValidChecker.length;
+
+    for ( var i = 0; i < length; i++ )
+    {
+        var data = this.urlValidChecker[ i ];
+
+        if ( Array.isArray( data.host ) )
+        {
+            var length2 = data.host.length;
+
+            for ( var i2 = 0; i2 < length2; i2++ )
+            {
+                if ( urlParsed.host === data.host[ i2 ] )
+                {
+                    var checkResult = checkerData.checker( urlParsed, query );
+
+                    if ( !checkResult )
+                    {
+                        return {
+                            code: this.statusCode.urlError,
+                            validFormat: checkerData.validFormat
+                        };
+                    }
+                    else if ( typeof checkResult === "string" )
+                    {
+                        if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                            return {
+                                code: this.statusCode.serviceBlockedError
+                            };
+
+                        return {
+                            code: this.statusCode.success,
+                            type: checkerData.type,
+                            newURL: checkResult,
+                            videoID: checkerData.getVideoID ? checkerData.getVideoID( urlParsed, query ) : ""
+                        };
+                    }
+                    else if ( typeof checkResult === "boolean" )
+                    {
+                        if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                            return {
+                                code: this.statusCode.serviceBlockedError
+                            };
+
+                        return {
+                            code: this.statusCode.success,
+                            type: checkerData.type,
+                            newURL: data.url,
+                            videoID: checkerData.getVideoID ? checkerData.getVideoID( urlParsed, query ) : ""
+                        };
+                    }
+                }
+            }
+        }
+    }
+}
 
 QueueManager.isAllowRegister = function( client, roomID, data, force = false )
 {
@@ -420,7 +484,7 @@ QueueManager.getYoutubeHighestQualityResource = function( data )
     }
     catch ( exception )
     {
-        Logger.write( Logger.LogType.Error, `[Queue] ERROR: Unknown server process error. -> (Error: ${ exception.stack })'` );
+        Logger.write( Logger.type.Error, `[Queue] ERROR: Unknown server process error. -> (Error: ${ exception.stack })'` );
 
         return {
             videoThumbnail: "images/chito.jpg",
@@ -497,7 +561,7 @@ QueueManager.getYoutubeCaption = function( languageCode, vssId, captionList, cal
         .catch( function( err )
         {
             callback( false, null );
-            Logger.write( Logger.LogType.Error, `[Queue] Failed to process QueueManager.getYoutubeCaption (error:${ err.stack })` );
+            Logger.write( Logger.type.Error, `[Queue] Failed to process QueueManager.getYoutubeCaption (error:${ err.stack })` );
         } );
 }
 
@@ -515,16 +579,16 @@ function registerFailed( client, reason, logErrorMessage, isRejected )
         } );
 
         if ( isRejected )
-            Logger.write( Logger.LogType.Warning, `[Queue] Client's queue register request has rejected! -> (${ logErrorMessage }) ${ client.information( ) }` );
+            Logger.write( Logger.type.Warning, `[Queue] Client's queue register request has rejected! -> (${ logErrorMessage }) ${ client.information( ) }` );
         else
-            Logger.write( Logger.LogType.Error, `[Queue] Failed to register Queue! -> (${ logErrorMessage }) ${ client.information( ) }` );
+            Logger.write( Logger.type.Error, `[Queue] Failed to register Queue! -> (${ logErrorMessage }) ${ client.information( ) }` );
     }
     else
     {
         if ( isRejected )
-            Logger.write( Logger.LogType.Warning, `[Queue] Client's queue register request has rejected! -> (${ logErrorMessage }) SERVER` );
+            Logger.write( Logger.type.Warning, `[Queue] Client's queue register request has rejected! -> (${ logErrorMessage }) SERVER` );
         else
-            Logger.write( Logger.LogType.Error, `[Queue] Failed to register Queue! -> (${ logErrorMessage }) SERVER` );
+            Logger.write( Logger.type.Error, `[Queue] Failed to register Queue! -> (${ logErrorMessage }) SERVER` );
     }
 }
 
@@ -588,9 +652,9 @@ QueueManager._onRegister = function( client, code, url, err, isError )
         var keys = Object.keys( QueueManager.statusCode );
 
         if ( isError )
-            Logger.write( Logger.LogType.Error, `[Queue] ERROR: Failed to register Queue. (url:${ url }, error:${ err.stack || err })\n${ ( client ? client.information( ) : "SERVER" ) }` );
+            Logger.write( Logger.type.Error, `[Queue] ERROR: Failed to register Queue. (url:${ url }, error:${ err.stack || err })\n${ ( client ? client.information( ) : "SERVER" ) }` );
         else
-            Logger.write( Logger.LogType.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ ( keys[ code ] || "unknown" ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
+            Logger.write( Logger.type.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ ( keys[ code ] || "unknown" ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
     }
 }
 
@@ -653,7 +717,7 @@ QueueManager._appendQueue = function( client, roomID, queueData )
         // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
     }
 
-    Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ queueData.mediaProviderURL }) ${ client ? client.information( ) : "SERVER" }` );
+    Logger.write( Logger.type.Event, `[Queue] Queue registered. -> (${ queueData.mediaProviderURL }) ${ client ? client.information( ) : "SERVER" }` );
 }
 
 QueueManager.statusCode = {
@@ -894,7 +958,7 @@ QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, sta
                         else
                             ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
 
-                        Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
+                        Logger.write( Logger.type.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
                     } )
                     .catch( function( err )
                     {
@@ -1045,7 +1109,7 @@ QueueManager._processRegisterKakaoTV = function( client, roomID, url, videoID, s
                         else
                             ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
 
-                        Logger.write( Logger.LogType.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
+                        Logger.write( Logger.type.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
                     } )
                     .catch( function( err )
                     {
@@ -1134,27 +1198,20 @@ QueueManager._processRegisterNiconico = async function( client, roomID, url, vid
 }
 
 // 오류 코드들 정리점;
-QueueManager._processRegisterTvple = function( client, roomID, url, videoID, startSec )
+QueueManager._processRegisterTvple = function( client, roomID, url, videoID, startPosition, callback )
 {
     var queueData = {};
-    var urlParsed = URL.parse( url );
 
     superagent.get( "http://tvple.com/" + videoID )
         .end( function( err, res )
         {
-            if ( err )
-                return registerFailed( client,
-                    "죄송합니다, 서버 처리 중 오류가 발생했습니다, 영상 목록에 추가할 수 없습니다. (API_ERROR_VARIOUS)",
-                    `${ url } -> ${ err }`,
-                    false
-                );
+            console.log( err );
+            console.log( res.status );
+            if ( res.status === 404 )
+                return callback( client, QueueManager.statusCode.failedToGetInformationError, url, err, true );
 
-            if ( res.statusCode !== 200 )
-                return registerFailed( client,
-                    `죄송합니다, 서버 처리 중 오류가 발생했습니다, 영상 목록에 추가할 수 없습니다.(SERVER_ERROR_CONNECTION)`,
-                    `${ url } -> ${ res.statusCode }`,
-                    false
-                );
+            if ( err )
+                return callback( client, QueueManager.statusCode.serverError, url, err, true );
 
             var $ = cheerio.load( res.text );
 
@@ -1195,84 +1252,55 @@ QueueManager._processRegisterTvple = function( client, roomID, url, videoID, sta
                     try
                     {
                         var jsonResult = JSON.parse( res2.text );
+                        var duration = jsonResult.stream.duration || 0;
 
-                        if ( jsonResult.status === 200 )
+                        if ( startPosition > duration )
+                            return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
+
+                        if ( Math.abs( duration - startPosition ) <= 10 )
+                            return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
+
+                        queueData.id = "tvple_" + videoID + "_" + Date.now( );
+                        queueData.videoName = videoName;
+                        queueData.videoProvider = "Tvple";
+                        queueData.videoThumbnail = videoThumbnail;
+                        queueData.videoLength = duration;
+                        queueData.videoDirectURL = jsonResult.stream.sources.a.urls.mp4_avc;
+                        queueData.soundDirectURL = null;
+                        queueData.videoProviderURL = url;
+                        queueData.startTime = startPosition;
+                        queueData.owner = client ? client.name : "채널 관리자";
+                        queueData.userID = client ? client.userID : "server";
+                        queueData.avatar = client ? client.getPassportField( "avatar", "/images/avatar/guest_64.png" ) : "/images/avatar/guest_64.png";
+                        queueData.videoConverted = true;
+
+                        _getCloud( jsonResult.cloud.read_url, function( cloud )
                         {
-                            var duration = jsonResult.stream.duration || 0;
+                            queueData.cloud = cloud;
 
-                            if ( duration < startSec )
+                            client.emit( "regu.queueRegisterReceive",
                             {
-                                registerFailed( client,
-                                    "죄송합니다, 입력한 시작 시간이 영상 길이보다 더 이후입니다.", // 안내문 수정 바람.
-                                    `${ url } -> StartLengthOver`,
-                                    true
-                                );
-
-                                return;
-                            }
-
-                            if ( startSec > 0 && Math.abs( duration - startSec ) <= 10 ) // *TODO; 길이 수정바람
-                            {
-                                registerFailed( client,
-                                    "죄송합니다, 입력한 시작 시간과 영상 길이간의 간격이 너무 짧습니다.", // *TODO; 안내문 수정 바람.
-                                    `${ url } -> StartLengthTooShort`,
-                                    true
-                                );
-
-                                return;
-                            }
-
-                            queueData.id = "tvple_" + videoID + "_" + Date.now( );
-                            queueData.videoName = videoName;
-                            queueData.videoProvider = "Tvple";
-                            queueData.videoThumbnail = videoThumbnail;
-                            queueData.videoLength = duration;
-                            queueData.videoDirectURL = jsonResult.stream.sources.a.urls.mp4_avc;
-                            queueData.soundDirectURL = null;
-                            queueData.videoProviderURL = url;
-                            queueData.startTime = startSec;
-                            queueData.owner = client ? client.name : "채널 관리자";
-                            queueData.userID = client ? client.userID : "server";
-                            queueData.avatar = client ? client.getPassportField( "avatar", "/images/avatar/guest_64.png" ) : "/images/avatar/guest_64.png";
-                            queueData.videoConverted = true;
-
-                            _getCloud( jsonResult.cloud.read_url, function( cloud )
-                            {
-                                queueData.cloud = cloud;
-
-                                client.emit( "regu.queueRegisterReceive",
-                                {
-                                    success: true
-                                } );
-
-                                Server.sendMessage( roomID, "RS.queueEvent",
-                                {
-                                    type: "register",
-                                    id: queueData.id,
-                                    videoName: queueData.videoName,
-                                    videoThumbnail: queueData.videoThumbnail,
-                                    videoLength: queueData.videoLength,
-                                    startTime: queueData.startTime,
-                                    owner: queueData.owner,
-                                    userID: queueData.userID,
-                                    avatar: queueData.avatar,
-                                    videoConverted: queueData.videoConverted
-                                } );
-
-                                ChatManager.saySystem( roomID, queueData.videoName + " 영상이 목록에 추가되었습니다. (by " + ( client ? ( client.name + "#" + client.userID ) : "서버" ) + ")", "glyphicon glyphicon-download" );
-
-                                QueueManager._queueList[ roomID ].push( queueData );
+                                success: true
                             } );
-                        }
-                        else
-                        {
-                            registerFailed( client,
-                                `죄송합니다, 서버 처리 중 오류가 발생했습니다, 영상 목록에 추가할 수 없습니다.(API_ERROR_CODE)`,
-                                `${ url } -> ${ jsonResult.status }`,
-                                false
-                            );
 
-                        }
+                            Server.sendMessage( roomID, "RS.queueEvent",
+                            {
+                                type: "register",
+                                id: queueData.id,
+                                videoName: queueData.videoName,
+                                videoThumbnail: queueData.videoThumbnail,
+                                videoLength: queueData.videoLength,
+                                startTime: queueData.startTime,
+                                owner: queueData.owner,
+                                userID: queueData.userID,
+                                avatar: queueData.avatar,
+                                videoConverted: queueData.videoConverted
+                            } );
+
+                            ChatManager.saySystem( roomID, queueData.videoName + " 영상이 목록에 추가되었습니다. (by " + ( client ? ( client.name + "#" + client.userID ) : "서버" ) + ")", "glyphicon glyphicon-download" );
+
+                            QueueManager._queueList[ roomID ].push( queueData );
+                        } );
                     }
                     catch ( exception2 )
                     {
@@ -1486,7 +1514,7 @@ QueueManager.play = function( roomID )
 {
     if ( QueueManager.isEmpty( roomID ) )
     {
-        Logger.write( Logger.LogType.Warning, `[Queue] [${ roomID }] Room queue is Empty!` );
+        Logger.write( Logger.type.Warning, `[Queue] [${ roomID }] Room queue is Empty!` );
         return;
     }
 
@@ -1522,7 +1550,7 @@ QueueManager.play = function( roomID )
     App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
     App.redisClient.set( "RS.QUEUE." + roomID + ".currentPlayingQueue", JSON.stringify( Server.QUEUE[ roomID ].currentPlayingQueue ) );
 
-    Logger.write( Logger.LogType.Event, `[Queue] [${ roomID }] Room playing ${ recentQueue.mediaName }-${ recentQueue.mediaProviderURL } by (${ ( recentQueue.user ? recentQueue.user.information : "SERVER" ) })` );
+    Logger.write( Logger.type.Event, `[Queue] [${ roomID }] Room playing ${ recentQueue.mediaName }-${ recentQueue.mediaProviderURL } by (${ ( recentQueue.user ? recentQueue.user.information : "SERVER" ) })` );
 
     hook.run( "PostPlayQueue", roomID, recentQueue );
 }
@@ -1741,7 +1769,7 @@ setInterval( function( )
         }
     );
 
-    Logger.write( Logger.LogType.Event, `[Queue] New Playlist refreshed. [${ roomID }]` );
+    Logger.write( Logger.type.Event, `[Queue] New Playlist refreshed. [${ roomID }]` );
 }, 1000 * 60 * 60 );*/
 
 QueueManager.isPlaying = function( roomID )
@@ -1764,7 +1792,7 @@ hook.register( "PostClientConnected", function( client, socket )
                 type: "number"
             } ) )
         {
-            Logger.write( Logger.LogType.Important, `[Queue] Client's queue register request has rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            Logger.write( Logger.type.Important, `[Queue] Client's queue register request has rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
             return;
         }
 
@@ -1825,7 +1853,7 @@ hook.register( "PostClientConnected", function( client, socket )
                 start: "number"
             } ) )
         {
-            Logger.write( Logger.LogType.Important, `[Queue] Client's queue register request has rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            Logger.write( Logger.type.Important, `[Queue] Client's queue register request has rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
             return;
         }
 
@@ -1837,7 +1865,7 @@ hook.register( "PostClientConnected", function( client, socket )
         {
             socket.emit( "regu.queueRegisterReceive", isAllowRegister );
 
-            Logger.write( Logger.LogType.Warning, `[Queue] Queue request rejected. (url:${ data.url }, code:${ isAllowRegister.code }) ${ client.information( ) }` );
+            Logger.write( Logger.type.Warning, `[Queue] Queue request rejected. (url:${ data.url }, code:${ isAllowRegister.code }) ${ client.information( ) }` );
             return;
         }
 

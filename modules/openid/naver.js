@@ -45,7 +45,7 @@ passport.use( new NaverStrategy(
 
         process.nextTick( function( )
         {
-            Logger.write( Logger.LogType.Info, `[Router] Login with NAVER ... ${ util.inspect( profile, false, 3 ) }` );
+            Logger.write( Logger.type.Info, `[Router] Login with NAVER ... ${ util.inspect( profile, false, 3 ) }` );
 
             profile.avatar = profile._json.profile_image;
             profile.avatarFull = profile._json.profile_image;

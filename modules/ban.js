@@ -33,7 +33,7 @@ BanManager.register = function( identifierArray, duration, reason )
 
     FileStorage.save( "ban", this._list );
 
-    Logger.write( Logger.LogType.Warning, `[Ban] Ban registered. -> ${ identifierArray } -> ${ duration } -> '${ reason }'` );
+    Logger.write( Logger.type.Warning, `[Ban] Ban registered. -> ${ identifierArray } -> ${ duration } -> '${ reason }'` );
 
     return id;
 }
@@ -72,7 +72,7 @@ BanManager.remove = function( identifier )
 
     FileStorage.save( "ban", this._list );
 
-    Logger.write( Logger.LogType.Warning, `[Ban] Ban removed. -> ${ temp }` );
+    Logger.write( Logger.type.Warning, `[Ban] Ban removed. -> ${ temp }` );
 }
 
 BanManager.getDataByID = function( id )

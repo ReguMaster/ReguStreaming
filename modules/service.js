@@ -13,6 +13,7 @@ const path = require( "path" );
 const fileStream = require( "fs" );
 const hook = require( "../hook" );
 const util = require( "../util" );
+const timer = require( "../timer" );
 const FileStorage = require( "../filestorage" );
 const Logger = require( "../modules/logger" );
 
@@ -72,7 +73,7 @@ ServiceManager.refreshBackground = function( )
     {
         if ( err )
         {
-            Logger.write( Logger.LogType.Error, `[Service] ERROR: Failed to refresh background. (error:${ err.stack })` );
+            Logger.write( Logger.type.Error, `[Service] ERROR: Failed to refresh background. (error:${ err.stack })` );
             return;
         }
 
@@ -80,7 +81,7 @@ ServiceManager.refreshBackground = function( )
 
         ServiceManager.background = path.join( location, newBackground );
 
-        Logger.write( Logger.LogType.Info, `[Service] Background refreshed. (newBG:${ newBackground })` );
+        Logger.write( Logger.type.Info, `[Service] Background refreshed. (newBG:${ newBackground })` );
     } );
 }
 
@@ -91,7 +92,7 @@ ServiceManager.registerNotification = function( id, type, title, message )
         if ( n.id === id )
         {
             this.notification.splice( i, 1 );
-            Logger.write( Logger.LogType.Warning, "[Service] Removed exists '" + n.id + "' notification!" );
+            Logger.write( Logger.type.Warning, "[Service] Removed exists '" + n.id + "' notification!" );
             return true;
         }
     } );
@@ -104,6 +105,8 @@ ServiceManager.registerNotification = function( id, type, title, message )
         message: message
     } );
 
+    // *TODO: sync 되지 않아서 문제 발생 가능성
+    // 2018-09-02 9:11:35 (! ERROR !) : [SERVER] Unhandled Exception: SyntaxError: Unexpected token { in JSON at position 118 at JSON.parse () at D:\NodeJS\ReguStreaming\regustreaming\filestorage.js:61:54 at FSReqWrap.readFileAfterClose [as oncomplete] (fs.js:511:3)
     FileStorage.save( "serviceNotification", "json", this.notification );
 }
 
@@ -199,13 +202,14 @@ ServiceManager.done = function( )
 }
 
 ServiceManager.setServiceStatus( 1 );
+ServiceManager.registerNotification( "SERVICE_UNAVAILABLE", ServiceManager.notificationType.danger, "서비스 문제", "서비스 업데이트 작업으로 인해 서비스 접근을 비활성화 했습니다, 불편을 드려 죄송합니다." );
 ServiceManager.registerNotification( "SNS_LOGIN_WARN", ServiceManager.notificationType.warning, "소셜 계정 로그인", "외부 서비스 접근에 문제가 발생하여 현재 스팀을 통한 로그인을 제외한 모든 소셜 계정 로그인이 불가능 합니다, 불편을 드려 죄송합니다." );
 ServiceManager.refreshBackground( );
 
-setInterval( function( )
-{
-    ServiceManager.refreshBackground( )
-}, 1000 * 60 );
+timer.create( "service.RefreshBackground", 1000 * 180, 0, function( ) // *NOTE: 2 minutes
+    {
+        ServiceManager.refreshBackground( )
+    } );
 
 hook.register( "PreClientConnect", function( ipAddress )
 {

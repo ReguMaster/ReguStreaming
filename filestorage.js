@@ -17,7 +17,7 @@ FileStorage.config = {
 fileStream.access( FileStorage.config.directory, fileStream.constants.F_OK, function( err )
 {
     if ( err )
-        Logger.write( Logger.LogType.Error, `[FileStorage] FileStorage directory missing! (directory:${ FileStorage.config.directory })` );
+        Logger.write( Logger.type.Error, `[FileStorage] FileStorage directory missing! (directory:${ FileStorage.config.directory })` );
 } );
 
 FileStorage.save = function( id, type, data )
@@ -26,11 +26,11 @@ FileStorage.save = function( id, type, data )
     {
         if ( err )
         {
-            Logger.write( Logger.LogType.Error, `[FileStorage] Failed to save '${ id }'! (err:${ err.stack })` );
+            Logger.write( Logger.type.Error, `[FileStorage] Failed to save '${ id }'! (err:${ err.stack })` );
         }
         else
         {
-            Logger.write( Logger.LogType.Event, `[FileStorage] FileStorage database ${ id } saved.` );
+            Logger.write( Logger.type.Event, `[FileStorage] FileStorage database ${ id } saved.` );
         }
     } );
 }
@@ -45,7 +45,7 @@ FileStorage.loadAsync = function( id, type, defaultValue = [ ], callback )
         if ( err )
         {
             callback( defaultValue );
-            Logger.write( Logger.LogType.Warning, `[FileStorage] FileStorage database '${ id }' not exist, will be default value. -> ${ defaultValue }` );
+            Logger.write( Logger.type.Warning, `[FileStorage] FileStorage database '${ id }' not exist, will be default value. -> ${ defaultValue }` );
         }
         else
         {
@@ -54,12 +54,12 @@ FileStorage.loadAsync = function( id, type, defaultValue = [ ], callback )
                 if ( err2 )
                 {
                     callback( defaultValue );
-                    Logger.write( Logger.LogType.Error, `[FileStorage] Failed to load '${ id }'! (err:${ err2.stack })` );
+                    Logger.write( Logger.type.Error, `[FileStorage] Failed to load '${ id }'! (err:${ err2.stack })` );
                 }
                 else
                 {
                     callback( type === "json" ? JSON.parse( data ) : data );
-                    Logger.write( Logger.LogType.Event, `[FileStorage] FileStorage database '${ id }' loaded.` );
+                    Logger.write( Logger.type.Event, `[FileStorage] FileStorage database '${ id }' loaded.` );
                 }
             } );
         }

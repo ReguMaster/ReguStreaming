@@ -37,7 +37,7 @@
 //     {
 //         process.nextTick( function( )
 //         {
-//             Logger.write( Logger.LogType.Info, `[Router] Login with INSTAGRAM ... ${ util.inspect( profile, false, 3 ) }` );
+//             Logger.write( Logger.type.Info, `[Router] Login with INSTAGRAM ... ${ util.inspect( profile, false, 3 ) }` );
 
 //             console.log(profile);
 

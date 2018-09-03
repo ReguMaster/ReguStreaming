@@ -649,7 +649,8 @@ socket.on( "RS.joinResult", function( data )
     $( window )
         .on( "beforeunload", function( e )
         {
-            socket.emit( "forceDisconnect" );
+            // socket.emit( "forceDisconnect" );
+            socket.disconnect( );
             // e = e || window.event;
 
             // if ( e )
@@ -712,7 +713,7 @@ socket.on( "regu.queueRegisterReceive", function( data )
                 reason = "영상 추가를 할 수 없습니다, 영상 시작 시간과 영상의 총 길이의 간격이 너무 짧습니다.";
                 break;
             case 10:
-                reason = "영상 추가를 할 수 없습니다, 이 영상의 정보를 불러올 수 없습니다.";
+                reason = "영상 추가를 할 수 없습니다, 이 영상의 정보를 불러올 수 없거나 존재하지 않습니다.";
                 break;
             case 11:
                 reason = "영상 추가를 할 수 없습니다, 알 수 없는 오류가 발생했습니다.";

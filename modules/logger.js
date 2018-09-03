@@ -8,89 +8,71 @@
 const Logger = {};
 
 const fileStream = require( "fs" );
-const path = require( "path" );
 const DateConverter = require( "dateformat" );
-const hook = require( "../hook" );
+// const hook = require( "../hook" );
+const dateEvents = require( "date-events" )( );
 
-Logger.currentDate = new Date( );
 Logger.config = {
-    directory: "./logs/regustreaming-log-" + DateConverter( Logger.currentDate, "yyyy-mm-dd" ) + ".log" // *오류: 날짜가 pass 되면 안댐
+    directory: "./logs/regustreaming-log-" + DateConverter( new Date( ), "yyyy-mm-dd" ) + ".log",
+    directoryI: "./logs/IMPORTANT_regustreaming-log-" + DateConverter( new Date( ), "yyyy-mm-dd" ) + ".log"
 };
 
-fileStream.access( Logger.config.directory, fileStream.constants.F_OK, function( err )
+fileStream.access( "./logs", fileStream.constants.F_OK, function( err )
 {
     if ( err )
         console.error( `[Logger] Logger directory missing! (directory:${ Logger.config.directory })` );
 } );
 
-// Logger.LogStream = FileStream.openSync( Logger.directory, "a+", 666 );
+dateEvents.on( "date", function( )
+{
+    var currentDate = new Date( );
+    Logger.config.directory = "./logs/regustreaming-log-" + DateConverter( currentDate, "yyyy-mm-dd" ) + ".log";
+    Logger.config.directoryI = "./logs/IMPORTANT_regustreaming-log-" + DateConverter( currentDate, "yyyy-mm-dd" ) + ".log";
+} );
 
-// 버그이쪄염;;
-// Logger.datePassedChecker = function( )
-// {
-// console.log(  Logger.currentDate.getDate( ), new Date( Date( ).now ).getDate( ) );
-// if ( Logger.currentDate.getDate( ) != new Date( Date( ).now ).getDate( ) )
-// {
-// Logger.currentDate = new Date( Date( ).now );
-// Logger.directory = "./logs/regustreaming-log-" + DateConverter( Logger.currentDate, "yyyy-mm-dd" ) + ".log";
-
-// console.log("Date CHANGED!");
-// }
-// else
-// {
-// console.log("SAME!");
-// }
-// }
-
-// setInterval( function( )
-// {
-//     Logger.write( 0, "test" );
-// }, 3000 );
-
-// const AdministratorSocket = App.socketIO.of( "/administrator" );
-
-Logger.LogType = {
+Logger.type = {
     Info: 0,
     Warning: 1,
     Error: 2,
     Event: 3,
-    Important: 99
+    Important: 4
 };
-Logger.write = function( logLevel, message )
+Logger.typeKey = Object.keys( Logger.type );
+Logger.typeString = [
+    "(INFO)",
+    "(!   WARNING   !)",
+    "(!    ERROR    !)",
+    "(EVENT)",
+    "(!    IMPOR    !)"
+]
+
+Logger.info = ( message ) => Logger.write( Logger.type.Info, message );
+Logger.warn = ( message ) => Logger.write( Logger.type.Warning, message );
+Logger.error = ( message ) => Logger.write( Logger.type.Error, message );
+Logger.event = ( message ) => Logger.write( Logger.type.Event, message );
+Logger.impor = ( message ) => Logger.write( Logger.type.Important, message );
+
+Logger.write = function( level, message )
 {
-    var messageFixed = `${ DateConverter( Logger.currentDate, "yyyy-mm-dd h:MM:ss" ) } (^level^) : ${ message }`;
+    var body = DateConverter( new Date( ), "yyyy-mm-dd h:MM:ss" ) + " ";
 
-    switch ( logLevel )
-    {
-        case Logger.LogType.Info:
-            messageFixed = messageFixed.replace( "^level^", "INFO" );
-            break;
-        case Logger.LogType.Event:
-            messageFixed = messageFixed.replace( "^level^", "EVENT" );
-            break;
-        case Logger.LogType.Warning:
-            messageFixed = messageFixed.replace( "^level^", "!   WARNING   !" );
-            break;
-        case Logger.LogType.Error:
-            messageFixed = messageFixed.replace( "^level^", "!    ERROR    !" );
-            break;
-        case Logger.LogType.Important:
-            messageFixed = messageFixed.replace( "^level^", "!    IMPOR    !" );
-            break;
-    }
+    if ( this.type[ this.typeKey[ level ] ] )
+        body += this.typeString[ level ];
+    else
+        body += "(INFO)";
 
-    // console.log( Logger.LogTypeKey[ logLevel ] + "^" + messageFixed );
+    body += " : " + message;
 
     process.send(
     {
         type: "log",
-        logLevel: logLevel,
-        message: messageFixed
+        logLevel: level,
+        message: body
     } );
 
-    if ( logLevel == Logger.LogType.Important )
+    if ( level == Logger.type.Important )
     {
-        fileStream.appendFile( "./logs/IMPORTANT_regustreaming-log-" + DateConverter( Logger.currentDate, "yyyy-mm-dd" ) + ".log", messageFixed + "\r\n", function( err )
+        fileStream.appendFile( this.config.directoryI, body + "\r\n", function( err )
         {
             if ( err )
                 console.error( `[Logger] Failed to save LOG! (err:${ err.stack })` );
@@ -98,14 +80,14 @@ Logger.write = function( logLevel, message )
     }
     else
     {
-        fileStream.appendFile( this.config.directory, messageFixed + "\r\n", function( err )
+        fileStream.appendFile( this.config.directory, body + "\r\n", function( err )
         {
             if ( err )
                 console.error( `[Logger] Failed to save LOG! (err:${ err.stack })` );
         } );
     }
 
-    // hook.run( "OnLog", logLevel, messageFixed );
+    // hook.run( "OnLog", level, body );
 }
 
 var legacyLog = console.log;

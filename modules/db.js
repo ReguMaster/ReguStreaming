@@ -24,17 +24,17 @@ Database.onConnect = function( err )
 
         setTimeout( function( )
         {
-            Logger.write( Logger.LogType.Warning, `[MySQL] Reconnecting to MySQL database ...` );
+            Logger.write( Logger.type.Warning, `[MySQL] Reconnecting to MySQL database ...` );
             Database.connect( );
         }, config.reconnectDelay );
 
-        Logger.write( Logger.LogType.Error, `[MySQL] Failed to connect to MySQL database! (error:${ err.message })` );
+        Logger.write( Logger.type.Error, `[MySQL] Failed to connect to MySQL database! (error:${ err.message })` );
         hook.run( "MySQLConnected", !!!err, err );
         return;
     }
 
     Database._connected = true;
-    Logger.write( Logger.LogType.Info, `[MySQL] MySQL database connected to ${ config.user }@${ config.host }:${ config.port }.` );
+    Logger.write( Logger.type.Info, `[MySQL] MySQL database connected to ${ config.user }@${ config.host }:${ config.port }.` );
     hook.run( "MySQLConnected", !!!err );
 }
 
@@ -51,11 +51,11 @@ Database.connect = function( )
     Database._connection.connect( Database.onConnect );
     Database._connection.on( "error", function( err )
     {
-        Logger.write( Logger.LogType.Error, `[MySQL] MySQL database error: ${ err.message }` );
+        Logger.write( Logger.type.Error, `[MySQL] MySQL database error: ${ err.message }` );
 
         setTimeout( function( )
         {
-            Logger.write( Logger.LogType.Warning, `[MySQL] Reconnecting to MySQL database ...` );
+            Logger.write( Logger.type.Warning, `[MySQL] Reconnecting to MySQL database ...` );
             Database.connect( );
         }, config.reconnectDelay );
     } );
@@ -70,7 +70,7 @@ Database.query = function( sql, onResult, onError )
             if ( onError )
                 onError( err );
 
-            Logger.write( Logger.LogType.Error, `[MySQL] Failed to process query!\n${ sql }\n-> ${ err }` );
+            Logger.write( Logger.type.Error, `[MySQL] Failed to process query!\n${ sql }\n-> ${ err }` );
             return;
         }
 
@@ -82,7 +82,7 @@ Database.query = function( sql, onResult, onError )
         if ( onResult )
             onResult( result.status, result, fields );
 
-        Logger.write( Logger.LogType.Info, `[MySQL] Query executed. '${ sql }' -> ${ result.status }` );
+        Logger.write( Logger.type.Info, `[MySQL] Query executed. '${ sql }' -> ${ result.status }` );
     } );
 }
 
@@ -95,7 +95,7 @@ Database.queryWithEscape = function( sql, escape, onResult, onError )
             if ( onError )
                 onError( err );
 
-            Logger.write( Logger.LogType.Error, `[MySQL] Failed to process query!\n${ sql }\n-> ${ err }` );
+            Logger.write( Logger.type.Error, `[MySQL] Failed to process query!\n${ sql }\n-> ${ err }` );
             return;
         }
 
@@ -107,7 +107,7 @@ Database.queryWithEscape = function( sql, escape, onResult, onError )
         if ( onResult )
             onResult( result.status, result, fields );
 
-        Logger.write( Logger.LogType.Info, `[MySQL] Query executed. '${ sql }' with ${ escape } ->` );
+        Logger.write( Logger.type.Info, `[MySQL] Query executed. '${ sql }' with ${ escape } ->` );
     } );
 }
 
@@ -122,7 +122,7 @@ Database.executeProcedure = function( id, args, onResult, onError )
 {
     if ( !this._storedProcedure[ id ] )
     {
-        Logger.write( Logger.LogType.Warning, `[MySQL] Failed to execute procedure '${ id }'. (reason:Not Exists!)` )
+        Logger.write( Logger.type.Warning, `[MySQL] Failed to execute procedure '${ id }'. (reason:Not Exists!)` )
         return;
     }
 

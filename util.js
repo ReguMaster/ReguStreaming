@@ -13,6 +13,8 @@ const xml2js = require( "xml2js" );
 const os = require( "os" );
 const merge = require( "merge" );
 
+util.test = "test";
+
 // *TODO: 코드 시스템 쓰는 logic 에 이 메소드 사용 적용
 util.getCodeID = function( codesObj, code )
 {
@@ -237,9 +239,7 @@ util.isValidSocketData = function( data, checkExpression )
         }
     }
     else if ( typeof checkExpression === "string" )
-    {
         return typeof data === checkExpression;
-    }
 
     return true;
 }
@@ -316,6 +316,6 @@ console.reset = function( )
     process.stdout.write( '\x1Bc' );
 }
 
-util = Object.assign( nodeUtil, util );
+util = Object.assign( util, nodeUtil );
 
 module.exports = util;

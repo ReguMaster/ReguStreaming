@@ -40,7 +40,7 @@ passport.use( new GoogleStrategy(
     {
         process.nextTick( function( )
         {
-            Logger.write( Logger.LogType.Info, `[Router] Login with GOOGLE ... ${ util.inspect( profile, false, 3 ) }` );
+            Logger.write( Logger.type.Info, `[Router] Login with GOOGLE ... ${ util.inspect( profile, false, 3 ) }` );
 
             profile.avatar = profile._json.image.url;
             profile.avatarFull = profile.avatar.replace( "?sz=50", "?sz=180" );

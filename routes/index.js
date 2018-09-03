@@ -205,7 +205,7 @@ router.get( "/logout", function( req, res )
 {
     if ( req.isAuthenticated( ) )
     {
-        Logger.write( Logger.LogType.Info, `[Router] Account logout. ${ util.inspect( req.user, false, 4 ) }` );
+        Logger.write( Logger.type.Info, `[Router] Account logout. ${ util.inspect( req.user, false, 4 ) }` );
 
         var client = Server.getClientBySessionID( req.sessionID );
 
@@ -337,7 +337,7 @@ router.post( "/login/guest", function( req, res )
                 return;
             }
 
-            Logger.write( Logger.LogType.Info, `[Router] Login with guest ... ${ ipAddress }` );
+            Logger.write( Logger.type.Info, `[Router] Login with guest ... ${ ipAddress }` );
 
             // 코드 좀 바꾸기 (Promise 패턴)
             Database.executeProcedure( "FIND_USER_BY_IPADDRESS", [ ipAddress ], function( status, data )
@@ -346,7 +346,7 @@ router.post( "/login/guest", function( req, res )
                     onSuccess( data[ 0 ] );
                 else if ( data.length >= 2 )
                 {
-                    Logger.write( Logger.LogType.Important, `[Router] WARNING : User account duplicated! this is not good!!! ${ ipAddress }` );
+                    Logger.write( Logger.type.Important, `[Router] WARNING : User account duplicated! this is not good!!! ${ ipAddress }` );
                     onError( );
                 }
                 else
@@ -365,7 +365,7 @@ router.post( "/login/guest", function( req, res )
                         }
                         else
                         {
-                            Logger.write( Logger.LogType.Important, `[Router] WARNING : Insert execute failed. ITS IGNORED ${ ipAddress }` );
+                            Logger.write( Logger.type.Important, `[Router] WARNING : Insert execute failed. ITS IGNORED ${ ipAddress }` );
                             onError( );
                         }
                     }, onError );
@@ -374,7 +374,7 @@ router.post( "/login/guest", function( req, res )
         } )
         .catch( function( err )
         {
-            Logger.write( Logger.LogType.Error, `[Router] Failed to login with GUEST: recaptcha error (err:${ recaptcha.translateErrors( err ) }) ${ ipAddress }` );
+            Logger.write( Logger.type.Error, `[Router] Failed to login with GUEST: recaptcha error (err:${ recaptcha.translateErrors( err ) }) ${ ipAddress }` );
 
             onError( );
         } );
@@ -456,7 +456,7 @@ router.get( "/login/naver/return",
         {
             if ( err )
             {
-                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                Logger.write( Logger.type.Error, `[Router] Failed to login! -> ${ err.stack }` );
                 return res.redirect( "/?loginFailedService" );
             }
 
@@ -488,7 +488,7 @@ router.get( "/login/kakao/return",
         {
             if ( err )
             {
-                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                Logger.write( Logger.type.Error, `[Router] Failed to login! -> ${ err.stack }` );
                 return res.redirect( "/?loginFailedService" );
             }
 
@@ -520,7 +520,7 @@ router.get( "/login/steam/return",
         {
             if ( err )
             {
-                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                Logger.write( Logger.type.Error, `[Router] Failed to login! -> ${ err.stack }` );
                 return res.redirect( "/?loginFailedService" );
             }
 
@@ -572,7 +572,7 @@ router.get( "/login/google/return",
         {
             if ( err )
             {
-                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                Logger.write( Logger.type.Error, `[Router] Failed to login! -> ${ err.stack }` );
                 return res.redirect( "/?loginFailedService" );
             }
 
@@ -604,7 +604,7 @@ router.get( "/login/twitter/return",
         {
             if ( err )
             {
-                Logger.write( Logger.LogType.Error, `[Router] Failed to login! -> ${ err.stack }` );
+                Logger.write( Logger.type.Error, `[Router] Failed to login! -> ${ err.stack }` );
                 return res.redirect( "/?loginFailedService" );
             }
 

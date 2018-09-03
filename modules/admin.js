@@ -12,38 +12,37 @@ const App = require( "../app" );
 const path = require( "path" );
 const FileStorage = require( "../filestorage" );
 const hook = require( "../hook" );
-const reguUtil = require( "../util" );
+const util = require( "../util" );
 const Logger = require( "./logger" );
-const Interact = require( "./interact" );
 
 App.socketIO.of( "/administrator" )
     .on( "connect", function( socket )
     {
         if ( socket.handshake.headers.referer === "https://regustreaming.oa.to/admin" )
         {
-            Logger.write( Logger.LogType.Important, `[Client] Administrator joined management console. ${ socket.handshake.address }` );
+            Logger.write( Logger.type.Important, `[Client] Administrator joined management console. ${ socket.handshake.address }` );
 
             Server.MANAGEMENT_CONSOLE.push( socket );
         }
         else
         {
             socket.disconnect( );
-            Logger.write( Logger.LogType.Important, `[Client] ERROR: Administrator rejected from management console. ${ socket.handshake.address }` );
+            Logger.write( Logger.type.Important, `[Client] ERROR: Administrator rejected from management console. ${ socket.handshake.address }` );
 
             return;
         }
 
         socket.on( "RS.administrator.executeCommand", function( data )
         {
-            Interact.process( data.command );
+            // Interact.process( data.command ); *NOTE: Deprecated;;
 
-            Logger.write( Logger.LogType.Important, `[Client] Administrator executed command. (${ data.command }) ${ socket.handshake.address }` );
+            Logger.write( Logger.type.Important, `[Client] Administrator executed command. (${ data.command }) ${ socket.handshake.address }` );
         } );
 
         socket.on( "disconnect", function( )
         {
             Server.MANAGEMENT_CONSOLE.splice( Server.MANAGEMENT_CONSOLE.indexOf( socket ), 1 );
-            Logger.write( Logger.LogType.Important, `[Client] Administrator leaved from management console. ${ socket.handshake.address }` );
+            Logger.write( Logger.type.Important, `[Client] Administrator leaved from management console. ${ socket.handshake.address }` );
         } )
 
         hook.run( "PostAdministratorConnected", socket );

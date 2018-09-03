@@ -17,11 +17,11 @@ DNS.refresh = function( callback )
 {
     if ( this.refreshing )
     {
-        Logger.write( Logger.LogType.Warning, `[DNS] Refresh blocked, already refreshing!` );
+        Logger.write( Logger.type.Warning, `[DNS] Refresh blocked, already refreshing!` );
         return;
     }
 
-    Logger.write( Logger.LogType.Info, `[DNS] DNS refreshing ...` );
+    Logger.write( Logger.type.Info, `[DNS] DNS refreshing ...` );
 
     this.refreshing = true;
     superagent.get( config.DNS_REFRESH_URL )
@@ -35,9 +35,9 @@ DNS.refresh = function( callback )
                 var isSuccess = text.length >= 7 && text.substring( 0, 7 ) === "success";
 
                 if ( isSuccess )
-                    Logger.write( Logger.LogType.Event, `[DNS] DNS refreshed. (API result:${ text })` );
+                    Logger.write( Logger.type.Event, `[DNS] DNS refreshed. (API result:${ text })` );
                 else
-                    Logger.write( Logger.LogType.Error, `[DNS] Failed to refreshing DNS. (API result:${ text })` );
+                    Logger.write( Logger.type.Error, `[DNS] Failed to refreshing DNS. (API result:${ text })` );
 
                 if ( callback )
                     callback( isSuccess );
@@ -46,7 +46,7 @@ DNS.refresh = function( callback )
             } )
         .catch( function( err )
         {
-            Logger.write( Logger.LogType.Error, `[DNS] Failed to process DNS.refresh -> (${ err.stack })` );
+            Logger.write( Logger.type.Error, `[DNS] Failed to process DNS.refresh -> (${ err.stack })` );
             DNS.refreshing = false;
         } );
 }

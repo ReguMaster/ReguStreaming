@@ -31,6 +31,18 @@ Server.discordChannelList = {
     "24hourjapan": "474608432867967006"
 }
 
+/*
+    *TODO: binary flag
+
+    Flag: ‘binary’
+
+    Specifies whether there is binary data in the emitted data. Increases performance when specified. Can be true or false.
+
+    io.binary(false).emit('an event', { some: 'data' });
+
+    https://socket.io/docs/server-api/#socket-use-fn
+*/
+
 Server.emitDiscord = function( channelType, message )
 {
     if ( !this.discordInitialized ) return;
@@ -102,11 +114,11 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
         try
         {
             Server.QUEUE[ roomID ].queueList = JSON.parse( result );
-            Logger.write( Logger.LogType.Info, `[Queue] [${ roomID }] queueList overridden from RedisDB.` );
+            Logger.write( Logger.type.Info, `[Queue] [${ roomID }] queueList overridden from RedisDB.` );
         }
         catch ( exception )
         {
-            Logger.write( Logger.LogType.Warning, `[Queue] Failed to fetch [${ roomID }] queueList from RedisDB! (err:${ err })` );
+            Logger.write( Logger.type.Warning, `[Queue] Failed to fetch [${ roomID }] queueList from RedisDB! (err:${ err })` );
         }
     } );
 
@@ -117,11 +129,11 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
         try
         {
             Server.QUEUE[ roomID ].currentPlayingQueue = JSON.parse( result );
-            Logger.write( Logger.LogType.Info, `[Queue] [${ roomID }] currentPlayingQueue overridden from RedisDB.` );
+            Logger.write( Logger.type.Info, `[Queue] [${ roomID }] currentPlayingQueue overridden from RedisDB.` );
         }
         catch ( exception )
         {
-            Logger.write( Logger.LogType.Warning, `[Queue] Failed to fetch [${ roomID }] currentPlayingQueue from RedisDB! (err:${ err })` );
+            Logger.write( Logger.type.Warning, `[Queue] Failed to fetch [${ roomID }] currentPlayingQueue from RedisDB! (err:${ err })` );
         }
     } );
 
@@ -132,11 +144,11 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
         try
         {
             Server.QUEUE[ roomID ].currentPlayingPos = Number( result ) || 0;
-            Logger.write( Logger.LogType.Info, `[Queue] [${ roomID }] currentPlayingPos overridden from RedisDB.` );
+            Logger.write( Logger.type.Info, `[Queue] [${ roomID }] currentPlayingPos overridden from RedisDB.` );
         }
         catch ( exception )
         {
-            Logger.write( Logger.LogType.Warning, `[Queue] Failed to fetch [${ roomID }] currentPlayingPos from RedisDB! (err:${ err })` );
+            Logger.write( Logger.type.Warning, `[Queue] Failed to fetch [${ roomID }] currentPlayingPos from RedisDB! (err:${ err })` );
         }
     } );
 }
@@ -174,7 +186,7 @@ hook.register( "Initialize", function( )
 
 Server.DiscordClient.on( "ready", function( )
 {
-    Logger.write( Logger.LogType.Info, `[Discord] Logged in as ${ Server.DiscordClient.user.tag }.` );
+    Logger.write( Logger.type.Info, `[Discord] Logged in as ${ Server.DiscordClient.user.tag }.` );
 
     hook.run( "PostReadyDiscordClient" );
 
@@ -364,7 +376,7 @@ Server.isAlreadyConnected = function( passportID, sessionID, ipAddress )
     return false;
 }
 
-Server.sendMessage = function( roomID, id, data )
+Server.sendMessage = function( roomID, id, data, except )
 {
     if ( roomID === null || roomID === undefined ) // 전부 전송
     {
@@ -372,13 +384,23 @@ Server.sendMessage = function( roomID, id, data )
         var keysLength = keys.length;
 
         for ( var i = 0; i < keysLength; i++ )
-            this.CLIENT[ keys[ i ] ].forEach( ( client ) => client.emit( id, data ) );
+            this.CLIENT[ keys[ i ] ].forEach( ( client ) =>
+            {
+                if ( except && client === except ) return;
+
+                client.emit( id, data );
+            } );
     }
     else
     {
         if ( !this.CLIENT[ roomID ] ) return;
 
-        this.CLIENT[ roomID ].forEach( ( client ) => client.emit( id, data ) );
+        this.CLIENT[ roomID ].forEach( ( client ) =>
+        {
+            if ( except && client === except ) return;
+
+            client.emit( id, data );
+        } );
     }
 }
 
@@ -504,7 +526,7 @@ Server.isConnectable = function( roomID, sessionID, userID, ipAddress, countryCo
 
     // if ( countryCode === "ERROR" ) // 데이터베이스 관련 오류로인해 일단 허용할경우.
     // {
-    //     Logger.write( Logger.LogType.Important, `[Client] Client login request -> Countrycode is error, but allow. ${ ipAddress } ${ countryCode }` );
+    //     Logger.write( Logger.type.Important, `[Client] Client login request -> Countrycode is error, but allow. ${ ipAddress } ${ countryCode }` );
     //     // socket.emit( "regu.notification",
     //     // {
     //     //     type: 1,
@@ -569,35 +591,36 @@ Server.onConnect = function( socket )
     var allClientCount = this.getAllCount( );
     var roomClientCount = this.getRoomClientCount( client.room );
 
-    Logger.write( Logger.LogType.Event, `[Client] New client connected to '${ client.room }' -> ${ client.information( false ) } ->>> room: ${ roomClientCount - 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
+    Logger.write( Logger.type.Event, `[Client] New client connected to '${ client.room }' -> ${ client.information( false ) } ->>> room: ${ roomClientCount - 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
 
     return client;
 }
 
 Server.onDisconnect = function( client )
 {
-    if ( client )
+    if ( !client ) return null;
+
+    var roomID = client.room;
+
+    this.removeAtConnList( client );
+    this.CLIENT[ roomID ].splice( this.CLIENT[ roomID ].indexOf( client ), 1 );
+    // this.CLIENT.splice( this.CLIENT.indexOf( client ), 1 );
+
+    // *TODO: 최적화 필요. clientCountUpdate
+    this.sendMessage( client.room, "regu.clientCountUpdate",
     {
-        var roomID = client.room;
+        count: this.getRoomClientCount( roomID ),
+        roomTitle: this.ROOM[ roomID ].title
+    } );
 
-        this.removeAtConnList( client );
-        this.CLIENT[ roomID ].splice( this.CLIENT[ roomID ].indexOf( client ), 1 );
-        // this.CLIENT.splice( this.CLIENT.indexOf( client ), 1 );
+    hook.run( "ClientDisconnected", client );
 
-        // *TODO: 최적화 필요. clientCountUpdate
-        this.sendMessage( client.room, "regu.clientCountUpdate",
-        {
-            count: this.getRoomClientCount( roomID ),
-            roomTitle: this.ROOM[ roomID ].title
-        } );
+    var allClientCount = this.getAllCount( );
+    var roomClientCount = this.getRoomClientCount( roomID );
 
-        hook.run( "ClientDisconnected", client );
+    Logger.write( Logger.type.Event, `[Client] Client disconnected from '${ client.room }' ${ client.information( false ) } ->>> room: ${ roomClientCount + 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
 
-        var allClientCount = this.getAllCount( );
-        var roomClientCount = this.getRoomClientCount( roomID );
-
-        Logger.write( Logger.LogType.Event, `[Client] Client disconnected from '${ client.room }' ${ client.information( false ) } ->>> room: ${ roomClientCount + 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
-    }
+    return null;
 }
 
 Server.joinRoom = function( roomID, req, res, ipAddress )
@@ -609,7 +632,7 @@ Server.joinRoom = function( roomID, req, res, ipAddress )
     if ( preClientConnect && preClientConnect.accept === false )
     {
         res.redirect( "/?error=" + preClientConnect.reason );
-        Logger.write( Logger.LogType.Warning, `[Client] Client pre rejected! -> (#${ preClientConnect.reason }) ${ ipAddress }` );
+        Logger.write( Logger.type.Warning, `[Client] Client pre rejected! -> (#${ preClientConnect.reason }) ${ ipAddress }` );
         return;
     }
 
@@ -620,7 +643,7 @@ Server.joinRoom = function( roomID, req, res, ipAddress )
         if ( !isConnectable.accept )
         {
             res.redirect( "/?error=" + isConnectable.reason );
-            Logger.write( Logger.LogType.Warning, `[Client] Client rejected! -> (#${ isConnectable.reason }) ${ ipAddress }` );
+            Logger.write( Logger.type.Warning, `[Client] Client rejected! -> (#${ isConnectable.reason }) ${ ipAddress }` );
             return;
         }
 
@@ -670,7 +693,13 @@ App.socketIO.on( "connect", function( socket )
 
     socket.on( "disconnect", function( data )
     {
-        Server.onDisconnect( client );
+        if ( client )
+            client = Server.onDisconnect( client );
+    } );
+
+    socket.on( "disconnecting", function( data )
+    {
+        client = Server.onDisconnect( client );
     } );
 
     socket.on( "forceDisconnect", function( data )
@@ -695,7 +724,7 @@ App.socketIO.on( "connect", function( socket )
                 userID: "string"
             } ) )
         {
-            Logger.write( Logger.LogType.Important, `[Client] UserInfo request rejected! -> (#DataIsNotValid) ${ client.information() }` );
+            Logger.write( Logger.type.Important, `[Client] UserInfo request rejected! -> (#DataIsNotValid) ${ client.information() }` );
             return;
         }
 
@@ -705,10 +734,10 @@ App.socketIO.on( "connect", function( socket )
         {
             if ( targetClient.room !== client.room )
             {
-                Logger.write( Logger.LogType.Important, `[Client] WARNING! : UserInfo request -> (#TargetClientRoomAndClientRoomMismatch) ${ client.information( ) }` );
+                Logger.write( Logger.type.Important, `[Client] WARNING! : UserInfo request -> (#TargetClientRoomAndClientRoomMismatch) ${ client.information( ) }` );
             }
 
-            Logger.write( Logger.LogType.Info, `[Client] Client requested another Client information. ${ client.information( ) } ---> ${ targetClient.information( ) }` );
+            Logger.write( Logger.type.Info, `[Client] Client requested another Client information. ${ client.information( ) } ---> ${ targetClient.information( ) }` );
 
             socket.emit( "regu.receiveUserInfo",
             {
@@ -755,7 +784,7 @@ require( "./modules/fileupload" );
 require( "./modules/admin" );
 
 hook.run( "Initialize" );
-Logger.write( Logger.LogType.Info, "Server initialized." );
+Logger.write( Logger.type.Info, "Server initialized." );
 
 // *NOTE: 명령어 추가시 주의 사항 - args[ 0 ] 은 명령어가 들어있으므로 사용하지 않는다. (인수는 1번 인덱스부터 있음.)
 // *TODO: 명령어가 실행하는 함수에 성공/실패 리턴 값 구현
@@ -879,7 +908,7 @@ Server.COMMAND = {
         if ( !args[ 1 ] )
             return "Argument[1] 채널 아이디를 입력하세요.";
 
-        if ( !args[ 2 ] || isNaN( Number( args[ 2 ] ) ) )
+        if ( !args[ 2 ] || !Number.isInteger( Number( args[ 2 ] ) ) )
             return "Argument[2] 재생 위치를 입력하시거나 올바르게 입력하세요.";
 
         if ( !Server.ROOM[ args[ 1 ] ] )

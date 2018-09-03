@@ -49,7 +49,7 @@ timer.remove = function( id, reason = "Not defined." )
 {
     if ( !timer._list[ id ] )
     {
-        Logger.write( Logger.LogType.Warning, `[Timer] Failed to remove timer '${ id }'. (reason:Not Exists!)` )
+        Logger.write( Logger.type.Warning, `[Timer] Failed to remove timer '${ id }'. (reason:Not Exists!)` )
         return;
     }
 
@@ -59,7 +59,7 @@ timer.remove = function( id, reason = "Not defined." )
     timer._list[ id ] = null;
     delete timer._list[ id ];
 
-    Logger.write( Logger.LogType.Info, `[Timer] Timer '${ id }' removed. (reason:${ reason })` )
+    Logger.write( Logger.type.Info, `[Timer] Timer '${ id }' removed. (reason:${ reason })` )
 }
 
 module.exports = timer;

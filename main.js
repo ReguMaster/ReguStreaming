@@ -25,6 +25,7 @@ const MAIN_MENU = [
         submenu: [
             {
                 label: "서비스 시작",
+                accelerator: "F3",
                 click: ( ) =>
                 {
                     if ( !Electron.mainProcess )
@@ -60,6 +61,7 @@ const MAIN_MENU = [
         },
             {
                 label: "서비스 중지",
+                accelerator: "F4",
                 click: ( ) =>
                 {
                     if ( Electron.mainProcess )

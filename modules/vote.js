@@ -91,7 +91,7 @@ VoteManager.register = function( client )
 
     ChatManager.saySystem( roomID, `영상 건너뛰기 투표가 시작되었습니다. (${ client.name })`, "glyphicon glyphicon-random" );
 
-    Logger.write( Logger.LogType.Event, `[Vote] Vote registered. -> ${ client.information( ) }` );
+    Logger.write( Logger.type.Event, `[Vote] Vote registered. -> ${ client.information( ) }` );
 
     return {
         accept: true
@@ -140,7 +140,7 @@ VoteManager.finished = function( roomID, voteData )
     }
 
     // 투표진행중 나가면 이거 어캐댐?
-    Logger.write( Logger.LogType.Event, `[Vote] Vote finished. -> ${ voteData.startUser.information( ) } -> ${ isAccept }` );
+    Logger.write( Logger.type.Event, `[Vote] Vote finished. -> ${ voteData.startUser.information( ) } -> ${ isAccept }` );
 
     VoteManager.remove( roomID );
 }
@@ -152,7 +152,7 @@ hook.register( "PostPlayQueue", function( roomID, queueData )
         VoteManager.remove( roomID );
         ChatManager.saySystem( roomID, `다음 영상이 재생되므로 영상 건너뛰기 투표가 취소되었습니다.`, "glyphicon glyphicon-exclamation-sign" );
 
-        Logger.write( Logger.LogType.Event, `[Vote] Vote canceled. -> (#NextVideoPlay)` );
+        Logger.write( Logger.type.Event, `[Vote] Vote canceled. -> (#NextVideoPlay)` );
     }
 } );
 
@@ -196,7 +196,7 @@ VoteManager.stackFlag = function( client, flag )
 
     voteData.votedUser[ client.userID ] = flag;
 
-    Logger.write( Logger.LogType.Event, `[Vote] Vote flag request. -> ${ client.information( ) } -> ${ flag }` );
+    Logger.write( Logger.type.Event, `[Vote] Vote flag request. -> ${ client.information( ) } -> ${ flag }` );
 
     return {
         success: true
@@ -249,7 +249,7 @@ hook.register( "PostClientConnected", function( client, socket )
                 reason: result.reason
             } );
 
-            Logger.write( Logger.LogType.Warning, `[Vote] Vote register request rejected! -> (#${ result.reason }) ${ client.information( ) }` );
+            Logger.write( Logger.type.Warning, `[Vote] Vote register request rejected! -> (#${ result.reason }) ${ client.information( ) }` );
         }
     } );
 
@@ -260,7 +260,7 @@ hook.register( "PostClientConnected", function( client, socket )
                 flag: "number"
             } ) )
         {
-            Logger.write( Logger.LogType.Important, `[Vote] Vote flag request rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            Logger.write( Logger.type.Important, `[Vote] Vote flag request rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
             return;
         }
 
@@ -274,7 +274,7 @@ hook.register( "PostClientConnected", function( client, socket )
                 reason: result.reason
             } );
 
-            Logger.write( Logger.LogType.Warning, `[Vote] Vote flag request rejected! -> (#${ result.reason }) ${ client.information( ) }` );
+            Logger.write( Logger.type.Warning, `[Vote] Vote flag request rejected! -> (#${ result.reason }) ${ client.information( ) }` );
         }
         else
         {

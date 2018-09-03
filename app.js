@@ -7,8 +7,7 @@
 
 const Main = {};
 
-require( "./util" ); // 기존 util 모듈 override
-const util = require( "util" );
+const util = require( "./util" ); // 기존 util 모듈 override
 const uniqid = require( "uniqid" );
 const path = require( "path" );
 const fileStream = require( "fs" );
@@ -32,15 +31,18 @@ const expressWebServerSSL = require( "https" )
     }, app );
 
 Main.config = {};
+Main.config.domain = "regustreaming.oa.to";
 Main.config.host = util.getLocalIP( )
     .ipAddress;
-Main.config.devMode = process.argv[ 2 ] === "-dev";
 Main.config.enableAutoQueue = false;
 
 Main.app = app;
 Main.redisClient = require( "redis" )
     .createClient( );
-Main.socketIO = require( "socket.io" )( expressWebServerSSL );
+Main.socketIO = require( "socket.io" )( expressWebServerSSL,
+{
+    pingInterval: 1000 * 10 // 10 seconds;
+} );
 
 const sessionMiddleware = session(
 {
@@ -66,27 +68,27 @@ const sessionMiddleware = session(
 
 Main.redisClient.on( "connect", function( )
 {
-    Logger.write( Logger.LogType.Info, `[Redis] Redis database connected.` );
+    Logger.write( Logger.type.Info, `[Redis] Redis database connected.` );
 } );
 
 Main.redisClient.on( "reconnecting", function( )
 {
-    Logger.write( Logger.LogType.Warning, `[Redis] Reconnecting ...` );
+    Logger.write( Logger.type.Warning, `[Redis] Reconnecting ...` );
 } );
 
 Main.redisClient.on( "error", function( err )
 {
-    Logger.write( Logger.LogType.Error, `[Redis] ERROR! : ${ err.message }` );
+    Logger.write( Logger.type.Error, `[Redis] ERROR! : ${ err.message }` );
 } );
 
 process.on( "exit", function( code )
 {
-    Logger.write( Logger.LogType.Info, `ReguStreaming is shutting down ... ${ code }` );
+    Logger.write( Logger.type.Info, `ReguStreaming is shutting down ... ${ code }` );
 } );
 
 process.on( "uncaughtException", function( err )
 {
-    Logger.write( Logger.LogType.Error, `[SERVER] Unhandled Exception: \n${ err.stack }` );
+    Logger.write( Logger.type.Error, `[SERVER] Unhandled Exception: \n${ err.stack }` );
 } );
 
 // *NOTE:
@@ -102,12 +104,12 @@ const onErrorAtWebServer = function( err )
 {
     if ( err.code === "EADDRNOTAVAIL" )
     {
-        Logger.write( Logger.LogType.Warning, `[SERVER] WARNING: DNS host mismatch. requesting refresh ... (code:${ err.code })` );
+        Logger.write( Logger.type.Warning, `[SERVER] WARNING: DNS host mismatch. requesting refresh ... (code:${ err.code })` );
         DNS.refresh( );
         // *TODO: dns 리프레쉬 이후 다시 listen 함수 호출하는 코드 작성
     }
     else
-        Logger.write( Logger.LogType.Error, `[SERVER] Unhandled WebServer error: \n${ err.stack }` );
+        Logger.write( Logger.type.Error, `[SERVER] Unhandled WebServer error: \n${ err.stack }` );
 }
 
 expressWebServer.on( "error", onErrorAtWebServer );
@@ -115,20 +117,20 @@ expressWebServerSSL.on( "error", onErrorAtWebServer );
 
 Main.Listen = function( )
 {
-    expressWebServer.listen( 80, "regustreaming.oa.to", function( )
+    expressWebServer.listen( 80, Main.config.domain, function( )
     {
-        Logger.write( Logger.LogType.Info, `[HTTP] Listening at ${ Main.config.host }:80` );
+        Logger.write( Logger.type.Info, `[HTTP] Listening at ${ Main.config.host }:80` );
     } );
 
-    expressWebServerSSL.listen( 443, "regustreaming.oa.to", function( )
+    expressWebServerSSL.listen( 443, Main.config.domain, function( )
     {
-        Logger.write( Logger.LogType.Info, `[HTTPS] Listening at ${ Main.config.host }:443` );
+        Logger.write( Logger.type.Info, `[HTTPS] Listening at ${ Main.config.host }:443` );
     } );
 }
 
 Main.InitializeServer = function( )
 {
-    Logger.write( Logger.LogType.Info, "Booting server ..." );
+    Logger.write( Logger.type.Info, "Booting server ..." );
 
     process.title = "ReguStreaming : Server";
 
@@ -203,7 +205,7 @@ hook.register( "Initialize", function( )
                 code: 404
             } );
 
-        Logger.write( Logger.LogType.Warning, `[SERVER] ${ req.ip || "Unknown" } requested non-exists file. -> ${ req.originalUrl }` );
+        Logger.write( Logger.type.Warning, `[SERVER] ${ req.ip || "Unknown" } requested non-exists file. -> ${ req.originalUrl }` );
     } );
 
     app.use( function( err, req, res, next )
@@ -214,7 +216,7 @@ hook.register( "Initialize", function( )
                 code: 500
             } );
 
-        Logger.write( Logger.LogType.Error, `[SERVER] ${ req.ip || "Unknown" } failed to processing. -> ${ req.originalUrl }\n${ err.stack }` );
+        Logger.write( Logger.type.Error, `[SERVER] ${ req.ip || "Unknown" } failed to processing. -> ${ req.originalUrl }\n${ err.stack }` );
     } );
 } );
 

@@ -63,7 +63,7 @@ Tracker.requestWHOIS = function( ipAddress, callback )
         .catch( function( err )
         {
             callback( false, null );
-            Logger.write( Logger.LogType.Error, `[Queue] Failed to process Tracker.requestWHOIS (error:${ err.stack })` );
+            Logger.write( Logger.type.Error, `[Queue] Failed to process Tracker.requestWHOIS (error:${ err.stack })` );
         } );
 }
 

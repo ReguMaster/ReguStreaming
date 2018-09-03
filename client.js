@@ -143,7 +143,7 @@ module.exports = class Client
             this._socket.emit( messageID, data );
         }
         else
-            Logger.write( Logger.LogType.Error, `[Client] Failed to emit data! -> ${ this.information( ) }` );
+            Logger.write( Logger.type.Error, `[Client] Failed to emit data! -> ${ this.information( ) }` );
     }
 
     // emitAll( messageID, data, filterArray )
@@ -153,7 +153,7 @@ module.exports = class Client
     //         ClientManager.sendMessageToAll( this.room, messageID, data, filterArray );
     //     }
     //     else
-    //         Logger.write( Logger.LogType.Error, `[Client] Failed to emit data! -> ${ this.information( ) }` );
+    //         Logger.write( Logger.type.Error, `[Client] Failed to emit data! -> ${ this.information( ) }` );
     // }
 
     sendError( code, extra )
@@ -183,7 +183,7 @@ module.exports = class Client
         this.disconnect( );
 
         hook.run( "OnKicked", this );
-        Logger.write( Logger.LogType.Warning, `[Client] Client kicked! -> ${ this.information( ) } -> '${ reason }'` );
+        Logger.write( Logger.type.Warning, `[Client] Client kicked! -> ${ this.information( ) } -> '${ reason }'` );
     }
 
     ban( reason, duration )

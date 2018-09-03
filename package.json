@@ -16,6 +16,7 @@
         "compression": "^1.7.2",
         "connect-redis": "^3.3.3",
         "cookie-parser": "^1.4.3",
+        "date-events": "^1.0.1",
         "dateformat": "^3.0.3",
         "debug": "~2.6.9",
         "decode-html": "^2.0.0",

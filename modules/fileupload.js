@@ -49,7 +49,7 @@ FileUploadHandler.checkAdultImage = function( client, fileLocation, callback )
         } )
         .catch( function( err )
         {
-            Logger.write( Logger.LogType.Error, `[FileUpload] Failed to process FileUploadHandler.checkAdultImage (error:${ err.stack }) ${ client.information( ) }` );
+            Logger.write( Logger.type.Error, `[FileUpload] Failed to process FileUploadHandler.checkAdultImage (error:${ err.stack }) ${ client.information( ) }` );
 
             callback( false );
         } );
@@ -86,7 +86,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
             if ( size.width > 2048 || size.height > 2048 )
             {
-                Logger.write( Logger.LogType.Warning, `[FileUpload] FileUpload rejected. (error:imageSizeError, width:${ size.width }, height:${ size.height }) ${ client.information( ) }` );
+                Logger.write( Logger.type.Warning, `[FileUpload] FileUpload rejected. (error:imageSizeError, width:${ size.width }, height:${ size.height }) ${ client.information( ) }` );
                 socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.imageSizeError );
 
                 return;
@@ -100,7 +100,7 @@ hook.register( "PostClientConnected", function( client, socket )
                     // 보안 로그 -> 사용자가 임의로 패킷을 정의했을 가능성이 있음.
                     if ( !magicNumberFileType || FileUploadHandler.allowFileList.indexOf( event.file.type ) === -1 || FileUploadHandler.allowFileList.indexOf( magicNumberFileType.ext ) === -1 )
                     {
-                        Logger.write( Logger.LogType.Important, `[FileUpload] FileUpload rejected. (error:typeNotAllowedError, extension:${ event.file.type }, magicNumber:${ magicNumberFileType ? magicNumberFileType.ext : "unknown" }) ${ client.information( ) }` );
+                        Logger.write( Logger.type.Important, `[FileUpload] FileUpload rejected. (error:typeNotAllowedError, extension:${ event.file.type }, magicNumber:${ magicNumberFileType ? magicNumberFileType.ext : "unknown" }) ${ client.information( ) }` );
                         socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.typeNotAllowedError );
 
                         // *TODO: 파일 확장자가 올바르지 않을 시 업로드 된 파일 삭제 추가
@@ -109,7 +109,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
                     // 파일 확장자와 매직넘버 불일치, 사용자가 임의로 확장자를 바꿈 -> 보안 로그는 남기되 업로드는 허가
                     if ( event.file.type !== magicNumberFileType.ext )
-                        Logger.write( Logger.LogType.Important, `[FileUpload] WARNING: File extension and magic number mismatch! (id:${ id }, extension:${ event.file.type }, magicNumber:${ magicNumberFileType.ext }) ${ client.information( ) }` );
+                        Logger.write( Logger.type.Important, `[FileUpload] WARNING: File extension and magic number mismatch! (id:${ id }, extension:${ event.file.type }, magicNumber:${ magicNumberFileType.ext }) ${ client.information( ) }` );
 
                     var onCheck = function( isAdult )
                     {
@@ -118,7 +118,7 @@ hook.register( "PostClientConnected", function( client, socket )
                             if ( status === "success" )
                             {
                                 ChatManager.emitImage( client, id, isAdult );
-                                Logger.write( Logger.LogType.Event, `[FileUpload] File uploaded. ${ client.information() } -> ${ event.file.name }:${ id }` );
+                                Logger.write( Logger.type.Event, `[FileUpload] File uploaded. ${ client.information() } -> ${ event.file.name }:${ id }` );
                             }
                         }, function( err )
                         {
@@ -138,7 +138,7 @@ hook.register( "PostClientConnected", function( client, socket )
                 } )
                 .catch( function( err )
                 {
-                    Logger.write( Logger.LogType.Error, `[FileUpload] Failed to upload file. (error:${ err.stack }) ${ client.information( ) }` );
+                    Logger.write( Logger.type.Error, `[FileUpload] Failed to upload file. (error:${ err.stack }) ${ client.information( ) }` );
                     socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.serverError );
                 } );
         } );
@@ -147,7 +147,7 @@ hook.register( "PostClientConnected", function( client, socket )
     {
         socket.emit( "RS.uploadFileError", FileUploadHandler.statusCode.serverError );
 
-        Logger.write( Logger.LogType.Error, `[FileUpload] Failed to upload file. (error:${ event.error.message }) ${ client.information( ) }` );
+        Logger.write( Logger.type.Error, `[FileUpload] Failed to upload file. (error:${ event.error.message }) ${ client.information( ) }` );
     } );
 
     socket.on( "RS.uploadFile", function( data )
@@ -159,7 +159,7 @@ hook.register( "PostClientConnected", function( client, socket )
                 lastModified: "number"
             } ) )
         {
-            Logger.write( Logger.LogType.Important, `[FileUpload] FileUpload rejected. (#DataIsNotValid) ${ client.information( ) }` );
+            Logger.write( Logger.type.Important, `[FileUpload] FileUpload rejected. (#DataIsNotValid) ${ client.information( ) }` );
             return;
         }
 

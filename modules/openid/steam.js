@@ -78,7 +78,7 @@ passport.use( new SteamStrategy(
             // to associate the Steam account with a user record in your database,
             // and return that user instead.
 
-            Logger.write( Logger.LogType.Info, `[Router] Login with STEAM ... ${ util.inspect( profile, false, 3 ) }` );
+            Logger.write( Logger.type.Info, `[Router] Login with STEAM ... ${ util.inspect( profile, false, 3 ) }` );
 
             profile.avatar = profile._json.avatar;
             profile.avatarFull = profile._json.avatarfull;
