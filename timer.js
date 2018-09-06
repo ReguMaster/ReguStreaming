@@ -9,6 +9,7 @@ const timer = {};
 const Logger = require( "./modules/logger" );
 
 timer._list = {};
+
 timer.create = function( id, interval, loopCount, callback )
 {
     var obj = {
@@ -36,30 +37,36 @@ timer.create = function( id, interval, loopCount, callback )
                 obj.callback( );
 
                 if ( obj.loopCount === 0 )
-                    timer.remove( obj.id, "Loop limit reached" );
+                    this.remove( obj.id, "Loop limit reached" );
             }
         }
 
     obj._intervalObj = setInterval( intervalFunc, interval );
 
-    timer._list[ id ] = obj;
+    this._list[ id ] = obj;
 }
 
-timer.remove = function( id, reason = "Not defined." )
+timer.exists = function( id )
 {
-    if ( !timer._list[ id ] )
+    console.log( this );
+    return !!this._list[ id ];
+}
+
+timer.remove = function( id, reason = "undefined" )
+{
+    if ( !this._list[ id ] )
     {
-        Logger.write( Logger.type.Warning, `[Timer] Failed to remove timer '${ id }'. (reason:Not Exists!)` )
+        Logger.warn( `[Timer] Failed to remove timer '${ id }'. (reason:Not Exists!)` )
         return;
     }
 
-    var timerObj = timer._list[ id ];
+    var timerObj = this._list[ id ];
 
     clearInterval( timerObj._intervalObj );
-    timer._list[ id ] = null;
-    delete timer._list[ id ];
+    this._list[ id ] = null;
+    delete this._list[ id ];
 
-    Logger.write( Logger.type.Info, `[Timer] Timer '${ id }' removed. (reason:${ reason })` )
+    Logger.info( `[Timer] Timer '${ id }' removed. (reason:${ reason })` )
 }
 
 module.exports = timer;
