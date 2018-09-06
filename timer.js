@@ -48,7 +48,6 @@ timer.create = function( id, interval, loopCount, callback )
 
 timer.exists = function( id )
 {
-    console.log( this );
     return !!this._list[ id ];
 }
 

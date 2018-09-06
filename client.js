@@ -242,7 +242,7 @@ module.exports = class Client
 
     toString( )
     {
-        return "fucker";
+        return "made in abyss";
     }
 
     // client toString 시 정보 반환

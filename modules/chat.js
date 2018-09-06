@@ -89,8 +89,8 @@ ChatManager.preChat = function( client, chatMessage )
 {
     // var PreChat = hook.run( "PreChat", client, chatMessage );
 
-    if ( client.provider === "guest" )
-        return this.statusCode.isGuestError;
+    // if ( client.provider === "guest" )
+    //     return this.statusCode.isGuestError;
 
     if ( chatMessage.length <= 0 || chatMessage.length > 200 )
         return this.statusCode.lengthError;

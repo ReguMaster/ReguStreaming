@@ -309,12 +309,15 @@ router.post( "/login/guest", function( req, res )
     var ipAddress = req.ip;
     var onSuccess = function( data )
     {
+        var displayName = data._name + "#" + data._tag.substring( 0, 8 );
+        var hash = util.md5( displayName.trim( ) );
+
         req.session.passport = {};
         req.session.passport.user = {
             id: data._tag,
-            displayName: data._name + "#" + data._tag.substring( 0, 8 ),
-            avatar: "/images/avatar/guest_64.png",
-            avatarFull: "/images/avatar/guest_184.png",
+            displayName: displayName,
+            avatar: `https://gravatar.com/avatar/${ hash }.png?d=retro&s=64`,
+            avatarFull: `https://gravatar.com/avatar/${ hash }.png?d=retro&s=184`,
             provider: "guest"
         }
 

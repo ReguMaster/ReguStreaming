@@ -9,6 +9,7 @@ const Database = {};
 const MySQL = require( "mysql" );
 const hook = require( "../hook" );
 const Logger = require( "./logger" );
+const timer = require( "../timer" );
 const config = require( "../const/config" )
     .MySQL;
 
@@ -18,24 +19,28 @@ Database._storedProcedure = {};
 
 Database.onConnect = function( err )
 {
+    Database._connected = !!!err;
+
     if ( err )
     {
-        Database._connected = false;
-
-        setTimeout( function( )
+        timer.create( "Database.reconnectTimer", config.reconnectDelay, 0, function( )
         {
-            Logger.write( Logger.type.Warning, `[MySQL] Reconnecting to MySQL database ...` );
+            Logger.warn( `[MySQL] Reconnecting to MySQL database ...` );
             Database.connect( );
-        }, config.reconnectDelay );
+        } );
 
-        Logger.write( Logger.type.Error, `[MySQL] Failed to connect to MySQL database! (error:${ err.message })` );
-        hook.run( "MySQLConnected", !!!err, err );
+        Logger.error( `[MySQL] Failed to connect to MySQL database! (error:${ err.message })` );
+        hook.run( "OnConnectMySQL", !!!err, err );
         return;
     }
+    else
+    {
+        if ( timer.exists( "Database.reconnectTimer" ) )
+            timer.remove( "Database.reconnectTimer" );
+    }
 
-    Database._connected = true;
-    Logger.write( Logger.type.Info, `[MySQL] MySQL database connected to ${ config.user }@${ config.host }:${ config.port }.` );
-    hook.run( "MySQLConnected", !!!err );
+    Logger.info( `[MySQL] MySQL database connected to ${ config.user }@${ config.host }:${ config.port }.` );
+    hook.run( "OnConnectMySQL", !!!err );
 }
 
 Database.connect = function( )
@@ -51,13 +56,13 @@ Database.connect = function( )
     Database._connection.connect( Database.onConnect );
     Database._connection.on( "error", function( err )
     {
-        Logger.write( Logger.type.Error, `[MySQL] MySQL database error: ${ err.message }` );
+        Logger.error( `[MySQL] MySQL database error: ${ err.message }` );
 
-        setTimeout( function( )
+        timer.create( "Database.reconnectTimer", config.reconnectDelay, 0, function( )
         {
-            Logger.write( Logger.type.Warning, `[MySQL] Reconnecting to MySQL database ...` );
+            Logger.warn( `[MySQL] Reconnecting to MySQL database ...` );
             Database.connect( );
-        }, config.reconnectDelay );
+        } );
     } );
 }
 
@@ -70,7 +75,7 @@ Database.query = function( sql, onResult, onError )
             if ( onError )
                 onError( err );
 
-            Logger.write( Logger.type.Error, `[MySQL] Failed to process query!\n${ sql }\n-> ${ err }` );
+            Logger.error( `[MySQL] Failed to process query!\n${ sql }\n-> ${ err }` );
             return;
         }
 
@@ -82,7 +87,7 @@ Database.query = function( sql, onResult, onError )
         if ( onResult )
             onResult( result.status, result, fields );
 
-        Logger.write( Logger.type.Info, `[MySQL] Query executed. '${ sql }' -> ${ result.status }` );
+        Logger.info( `[MySQL] Query executed. '${ sql }' -> ${ result.status }` );
     } );
 }
 
@@ -95,7 +100,7 @@ Database.queryWithEscape = function( sql, escape, onResult, onError )
             if ( onError )
                 onError( err );
 
-            Logger.write( Logger.type.Error, `[MySQL] Failed to process query!\n${ sql }\n-> ${ err }` );
+            Logger.error( `[MySQL] Failed to process query!\n${ sql }\n-> ${ err }` );
             return;
         }
 
@@ -107,7 +112,7 @@ Database.queryWithEscape = function( sql, escape, onResult, onError )
         if ( onResult )
             onResult( result.status, result, fields );
 
-        Logger.write( Logger.type.Info, `[MySQL] Query executed. '${ sql }' with ${ escape } ->` );
+        Logger.info( `[MySQL] Query executed. '${ sql }' with ${ escape } ->` );
     } );
 }
 
@@ -122,7 +127,7 @@ Database.executeProcedure = function( id, args, onResult, onError )
 {
     if ( !this._storedProcedure[ id ] )
     {
-        Logger.write( Logger.type.Warning, `[MySQL] Failed to execute procedure '${ id }'. (reason:Not Exists!)` )
+        Logger.warn( `[MySQL] Failed to execute procedure '${ id }'. (reason:Not Exists!)` )
         return;
     }
 

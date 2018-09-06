@@ -48,7 +48,7 @@
         <script src="//www.google.com/recaptcha/api.js"></script>
         <style type="text/css">
         .tooltipUI {
-            background-color: rgba( 235, 235, 235, 0.95);
+            background-color: rgba(235, 235, 235, 0.95);
         }
 
         .ui-tooltip {
@@ -93,7 +93,7 @@
 
     reguStreaming.afterLoad = function( )
     {
-        reguStreaming.discordRecommendModalContainerStatus( "<%=discordRecommend%>" === "1" );
+        // reguStreaming.discordRecommendModalContainerStatus( "<%=discordRecommend%>" === "1" );
     }
     </script>
 
@@ -133,6 +133,7 @@
             </div>
         </div>
 
+        <!--
         <div class="dialogModal" id="discordRecommendModal" style="display: none;">
             <div class="dialogModal-header">
                 <p class="dialogModal-header-title">
@@ -152,6 +153,7 @@
 
             <button type="button" class="btn btn-default discordRecommendModalClose" onclick="reguStreaming.discordRecommendModalContainerStatus( false );">닫기</button>
         </div>
+        -->
 
         <div class="header" id="header">
             <div class="header-serviceStatusFloating" id="headerServiceStatusFloating" style="display: none;" onclick="reguStreaming.toggleServiceNotificationStatus( );">
@@ -169,6 +171,9 @@
                 <p class="header-loginInformation-profileProvider" id="headerLoginInformationProfileProvider">계정으로 로그인됨</p>
                 <img class="header-loginInformation-profileImage" id="headerLoginInformationProfileImage" src="/images/avatar/guest_64.png" alt="Profile Image" />
                 <img class="header-loginInformation-logout" id="headerLoginInformationLogout" src="/images/icon/logout_64.png" alt="Logout" title="레그 스트리밍에서 로그아웃합니다." onclick="reguStreaming.logout( );" />
+
+
+
             </div>
 
             <div class="header-login" id="headerLogin">
