@@ -32,15 +32,31 @@ router.get( "/", function( req, res )
 {
     if ( req.query.room && req.query.room !== "" )
     {
-        if ( req.isAuthenticated( ) )
+        if ( !req.isAuthenticated( ) )
         {
-            res.setHeader( "Cache-Control", "no-cache, no-store" );
-            req.session.roomID = req.query.room;
+            var un = uniqid( );
 
-            Server.joinRoom( req.session.roomID, req, res, req.ip );
+            var displayName = "Unknown#" + un;
+            var hash = util.md5( displayName.trim( ) );
+
+            req.session.passport = {};
+            req.session.passport.user = {
+                id: un,
+                displayName: displayName,
+                avatar: `https://gravatar.com/avatar/${ hash }.png?d=retro&s=64`,
+                avatarFull: `https://gravatar.com/avatar/${ hash }.png?d=retro&s=184`,
+                provider: "guest"
+            }
         }
-        else
-            res.redirect( "/?loginRequired" );
+        // if ( req.isAuthenticated( ) )
+        // {
+        res.setHeader( "Cache-Control", "no-cache, no-store" );
+        req.session.roomID = req.query.room;
+
+        Server.joinRoom( req.session.roomID, req, res, req.ip );
+        // }
+        // else
+        //     res.redirect( "/?loginRequired" );
 
         return;
     }

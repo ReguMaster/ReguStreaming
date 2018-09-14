@@ -160,24 +160,36 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
 
 hook.register( "Initialize", function( )
 {
-    Server.createRoom( true, "center", "빅 홀 오스", "많은 사람들이 거주하는 마을입니다.", 5000, null,
+    Server.createRoom( true, "main", "메인", "메인 채널", 5000, null,
     {
         video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
         video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
     } );
-    Server.createRoom( true, "home", "벨 시에로 보육원", "안전하고 신성한 공간.", 15 );
-    Server.createRoom( true, "everync", "나이트코어 어비스", "모든 영상이 나이트코어 스타일로 재생됩니다.", 50, null,
+
+    Server.createRoom( true, "sub", "서브", "서브 채널", 1000, null,
     {
-        playbackRate: 1.15,
-        video_position_bar_color: "rgba( 49, 226, 79, 0.3 )",
-        video_position_bar_full_color: "rgba( 49, 226, 79, 1 )"
+        video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
+        video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
     } );
-    Server.createRoom( true, "24hourjapan", "24시간 일본곡", "24시간 동안 일본 노래가 재생됩니다.", 50, null,
-    {
-        disallow_queue_request: true,
-        video_position_bar_color: "rgba( 247, 247, 150, 0.3 )",
-        video_position_bar_full_color: "rgba( 247, 247, 150, 1 )"
-    } );
+
+    // Server.createRoom( true, "center", "빅 홀 오스", "많은 사람들이 거주하는 마을입니다.", 5000, null,
+    // {
+    //     video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
+    //     video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
+    // } );
+    // Server.createRoom( true, "home", "벨 시에로 보육원", "안전하고 신성한 공간.", 15 );
+    // Server.createRoom( true, "everync", "나이트코어 어비스", "모든 영상이 나이트코어 스타일로 재생됩니다.", 50, null,
+    // {
+    //     playbackRate: 1.15,
+    //     video_position_bar_color: "rgba( 49, 226, 79, 0.3 )",
+    //     video_position_bar_full_color: "rgba( 49, 226, 79, 1 )"
+    // } );
+    // Server.createRoom( true, "24hourjapan", "24시간 일본곡", "24시간 동안 일본 노래가 재생됩니다.", 50, null,
+    // {
+    //     disallow_queue_request: true,
+    //     video_position_bar_color: "rgba( 247, 247, 150, 0.3 )",
+    //     video_position_bar_full_color: "rgba( 247, 247, 150, 1 )"
+    // } );
 
     Server.roomCreated = true;
 
@@ -229,16 +241,6 @@ hook.register( "PostClientConnected", function( client, socket )
             message: "이 채널에서는 모든 영상이 나이트코어 스타일로 재생됩니다."
         } );
     }
-    // else if ( client.room === "karaoke" )
-    // {
-    //     client.emit( "RS.modal",
-    //     {
-    //         title: "채널 안내",
-    //         message: "이 채널에서는 영상을 신청한 사람이 노래를 부르고 다른 사람이 청취합니다."
-    //     } );
-
-    //     Server.executeClientJavascript( client.room, `window.open( "https://discord.gg/FwhwucD" )` );
-    // }
 } );
 
 Server.getAllClient = function( roomID )
@@ -363,13 +365,19 @@ Server.getRoomConfig = function( roomID, configName, defaultValue )
 
 Server.isAlreadyConnected = function( passportID, sessionID, ipAddress )
 {
+    return false;
+
+
     var length = this.CONN.length;
+
+    console.log( this.CONN );
 
     for ( var i = 0; i < length; i++ )
     {
         var data = this.CONN[ i ];
 
-        if ( data.sessionID === sessionID || data.passport.user.id === passportID || data.ipAddress === ipAddress )
+        // if ( data.sessionID === sessionID || data.passport.user.id === passportID || data.ipAddress === ipAddress )
+        if ( data.sessionID === sessionID || data.passport.user.id === passportID )
             return true;
     }
 
@@ -638,7 +646,9 @@ Server.joinRoom = function( roomID, req, res, ipAddress )
 
     Tracker.getCountryCode( ipAddress, function( countryCode )
     {
-        var isConnectable = Server.isConnectable( roomID, req.sessionID, req.user.id, ipAddress, countryCode );
+        console.log( countryCode );
+
+        var isConnectable = Server.isConnectable( roomID, req.sessionID, req.session.passport.user, ipAddress, countryCode ); // req.user.id
 
         if ( !isConnectable.accept )
         {
@@ -809,7 +819,7 @@ Server.COMMAND = {
         if ( isAllowRegister.code !== QueueManager.statusCode.success )
             return util.getCodeID( QueueManager.statusCode, isAllowRegister.code ) + " 코드가 반환되었습니다.";
 
-        QueueManager.register( isAllowRegister.type, null, args[ 1 ], isAllowRegister.newURL, isAllowRegister.videoID, data.start, true );
+        QueueManager.register( isAllowRegister.type, null, args[ 1 ], isAllowRegister.newURL, isAllowRegister.videoID, data.start, true, args[ 4 ] );
     },
     "/queue-register-direct": function( args )
     {
@@ -835,6 +845,16 @@ Server.COMMAND = {
             client.kick( args.chain( 2 ) );
         else
             return "Argument[2] 해당 아이피 주소의 사용자를 찾을 수 없습니다.";
+    },
+    "/execute-javascript": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !args[ 2 ] )
+            return "Argument[2] 코드를 입력하세요.";
+
+        Server.executeClientJavascript( args[ 1 ] !== "all" ? args[ 1 ] : null, args.chain( 2 ) );
     },
     "/kickall": function( args )
     {

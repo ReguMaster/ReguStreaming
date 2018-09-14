@@ -74,7 +74,8 @@ hook.register( "PostClientConnected", function( client, socket )
         var extension = path.extname( data.file.name );
         var fileName = util.sha256( path.basename( data.file.name ) + "_" + data.file.size ) + extension;
 
-        data.file.type = extension.substring( 1 );
+        data.file.type = extension.substring( 1 )
+            .toLowerCase( );
         data.file.originalName = data.file.name;
         data.file.name = fileName;
     } );

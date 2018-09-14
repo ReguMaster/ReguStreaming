@@ -5,7 +5,7 @@
 
 #topSettingButton {
     width: 54px;
-    background-color: rgb(50, 50, 50);
+    /* background-color: rgb(50, 50, 50); */
     /* background-image: url("/images/icon/setting.png");
     background-size: 24px;
     background-position: center center; */
@@ -16,12 +16,12 @@
     /* background-image: url("/images/icon/queueRegister.png");
     background-size: 24px;
     background-position: center center; */
-    background-color: rgb(52, 170, 204);
+    /* background-color: rgb(52, 170, 204); */
 }
 
 #queueSkipVoteButton {
     width: 82px;
-    background-color: rgb(140, 56, 56);
+    /* background-color: rgb(140, 56, 56); */
 }
 
 @keyframes serviceStatusIconInfoAnimate {
@@ -843,7 +843,7 @@
 
 #queueRegisterContainer {
     width: 600px;
-    height: 390px;
+    height: 310px;
     background-color: rgb(235, 235, 235);
     display: block;
     position: absolute;
@@ -1293,6 +1293,8 @@
     position: absolute;
     top: 46px;
     left: 0;
+
+    cursor: pointer;
 }
 
 .videoAutoPlayAgreeIcon {
@@ -1401,8 +1403,6 @@
     width: 100%;
     height: 2px;
     transition: all ease 0.5s;
-    border-top-right-radius: 50%;
-    border-bottom-right-radius: 50%;
 }
 
 .videoRequesterInformation {
@@ -1870,6 +1870,71 @@
     float: right;
     margin: 16px;
     margin-right: 16px;
+}
+
+.queueVideoInformation {
+    position: absolute;
+    left: 12px;
+    bottom: 82px;
+    background-image: linear-gradient(to right, rgba(40, 40, 40, 0.5), rgba(0, 0, 0, 0));
+    width: -webkit-calc(100% - 24px);
+    width: -moz-calc(100% - 24px);
+    width: calc(100% - 24px);
+    height: 72px;
+    z-index: 1;
+    overflow: hidden;
+}
+
+.queueVideoInformation-bg {
+    position: absolute;
+    background-image: url("/images/test.png");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    filter: blur(12px);
+}
+
+.queueVideoInformation-bgCover {
+    position: absolute;
+    /* border: 1px solid rgba(255, 255, 255, 0.3); */
+    background-color: rgba(0, 0, 0, 0.6);
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.queueVideoInformation-thumbnail {
+    position: relative;
+    background-image: url("/images/test.png");
+    background-repeat: no-repeat;
+    background-size: cover;
+    background-position: center center;
+    width: 142px;
+    height: 100%;
+}
+
+.queueVideoInformation-name {
+    position: absolute;
+    top: 0;
+    left: 142px;
+    margin: 12px;
+    color: white;
+    font-size: 20px;
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
+}
+
+.queueVideoInformation-timeleft {
+    position: absolute;
+    top: 32px;
+    left: 142px;
+    margin: 12px;
+    color: #cfcfcf;
+    font-size: 13px;
 }
 
 /* https://www.w3schools.com/howto/howto_js_rangeslider.asp */

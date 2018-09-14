@@ -101,6 +101,15 @@ util.startCSSAnimation = function( animationProprierties, targetElement, onEnd )
         } );
 }
 
+util.stopCSSAnimation = function( targetElement )
+{
+    if ( typeof targetElementClass == "string" )
+        targetElement = $( targetElement );
+
+    targetElement.css( "animation", "" );
+    targetElement.off( "animationend webkitAnimationEnd oanimationend MSAnimationEnd" );
+}
+
 util.notificationType = {
     info: 0,
     warning: 1,
@@ -336,6 +345,21 @@ String.prototype.toMMSS = function( )
         seconds = "0" + seconds;
     }
     return minutes + ':' + seconds;
+}
+
+Number.prototype.toSexyMMSS = function( )
+{
+    var hours = Math.floor( this / 3600 );
+    var minutes = Math.floor( ( this - ( hours * 3600 ) ) / 60 );
+    var seconds = this - ( hours * 3600 ) - ( minutes * 60 );
+
+    // if ( minutes < 10 )
+    //     minutes = "0" + minutes;
+
+    if ( seconds < 10 )
+        seconds = "0" + seconds;
+
+    return ( minutes > 0 ? minutes + '분 ' : '' ) + seconds + '초';
 }
 
 // function formatTime( numberofseconds )

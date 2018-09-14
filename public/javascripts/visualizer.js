@@ -177,7 +177,7 @@ reguStreaming.captionRender = function( )
     var alpha = Number( controls.videoContainer.css( "opacity" ) );
     var currentCaption = this._currentCaption;
 
-    this.canvas2D.font = "23px Jeju Gothic";
+    this.canvas2D.font = "20px Nanum Gothic";
 
     var textSize = this.canvas2D.measureText( currentCaption.val );
 

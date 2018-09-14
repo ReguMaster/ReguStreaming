@@ -81,6 +81,8 @@ Tracker.get = function( ipAddress, callback, onError )
 //countryCode
 Tracker.getCountryCode = function( ipAddress, callback )
 {
+    return callback( "KO" ); // TODO:
+
     Tracker.get( ipAddress, function( result )
     {
         if ( result )

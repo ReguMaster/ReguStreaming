@@ -201,8 +201,8 @@ ServiceManager.done = function( )
         } );
 }
 
-ServiceManager.setServiceStatus( 1 );
-ServiceManager.registerNotification( "SERVICE_UNAVAILABLE", ServiceManager.notificationType.danger, "서비스 문제", "서비스 업데이트 작업으로 인해 서비스 접근을 비활성화 했습니다, 불편을 드려 죄송합니다." );
+ServiceManager.setServiceStatus( 0 );
+// ServiceManager.registerNotification( "SERVICE_UNAVAILABLE", ServiceManager.notificationType.danger, "서비스 문제", "서비스 업데이트 작업으로 인해 서비스 접근을 비활성화 했습니다, 불편을 드려 죄송합니다." );
 ServiceManager.registerNotification( "SNS_LOGIN_WARN", ServiceManager.notificationType.warning, "소셜 계정 로그인", "외부 서비스 접근에 문제가 발생하여 현재 스팀을 통한 로그인을 제외한 모든 소셜 계정 로그인이 불가능 합니다, 불편을 드려 죄송합니다." );
 ServiceManager.refreshBackground( );
 

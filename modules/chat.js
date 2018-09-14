@@ -30,7 +30,7 @@ ChatManager.statusCode = {
 
 ChatManager.saySystem = function( roomID, message, icon, noDiscord )
 {
-    Server.sendMessage( roomID, "regu.chat",
+    Server.sendMessage( roomID, "RS.chat",
     {
         message: message,
         type: "system",

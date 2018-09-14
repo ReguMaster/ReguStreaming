@@ -659,7 +659,7 @@ QueueManager._onRegister = function( client, code, url, err, isError )
 }
 
 // *NOTE: 큐 데이터 정리 후 실제로 큐에 추가하는 함수 ( _processRegisterYoutube -> _appendQueue )
-QueueManager._appendQueue = function( client, roomID, queueData )
+QueueManager._appendQueue = function( client, roomID, queueData, forceIndex )
 {
     if ( !Server.QUEUE[ roomID ] )
     {
@@ -681,7 +681,13 @@ QueueManager._appendQueue = function( client, roomID, queueData )
 
     Server.sendMessage( roomID, "RS.queueEvent", newData );
 
-    Server.QUEUE[ roomID ].queueList.push( queueData );
+    if ( forceIndex )
+    {
+        if ( forceIndex >= 0 && forceIndex < Server.QUEUE[ roomID ].queueList.length )
+            Server.QUEUE[ roomID ].queueList.insert( 0, queueData );
+    }
+    else
+        Server.QUEUE[ roomID ].queueList.push( queueData );
 
     App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
 
@@ -717,7 +723,7 @@ QueueManager._appendQueue = function( client, roomID, queueData )
         // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
     }
 
-    Logger.write( Logger.type.Event, `[Queue] Queue registered. -> (${ queueData.mediaProviderURL }) ${ client ? client.information( ) : "SERVER" }` );
+    Logger.write( Logger.type.Event, `[Queue] Queue registered. -> (name:${ queueData.mediaName }, url:${ queueData.mediaProviderURL }) ${ client ? client.information( ) : "SERVER" }` );
 }
 
 QueueManager.statusCode = {
@@ -735,7 +741,7 @@ QueueManager.statusCode = {
     unknownError: 11,
     serviceBlockedError: 50
 };
-QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, startPosition, callback )
+QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, startPosition, callback, forceIndex )
 {
     var queueData = {};
 
@@ -823,11 +829,11 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
                     };
                 }
 
-                QueueManager._appendQueue( client, roomID, queueData );
+                QueueManager._appendQueue( client, roomID, queueData, forceIndex );
             } );
         }
         else
-            QueueManager._appendQueue( client, roomID, queueData );
+            QueueManager._appendQueue( client, roomID, queueData, forceIndex );
     } );
 }
 
@@ -840,7 +846,7 @@ QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, sta
 
     // yhtgrfd.top/ani_video/
     superagent.get( "http://a0000001114.site/ani_video/" + videoID + ".html" )
-        .set( "Referer", "https://ani24tv.com/ani_view/" + videoID + ".html" )
+        .set( "Referer", "https://ani24tv.com/ani_view/" + videoID + ".html" ) // *NOTE: Referer 체크 우회
         .then( function( res ) // .catch  이렇게 넣기
             {
                 if ( res.statusCode !== 200 )
@@ -1200,20 +1206,15 @@ QueueManager._processRegisterNiconico = async function( client, roomID, url, vid
 // 오류 코드들 정리점;
 QueueManager._processRegisterTvple = function( client, roomID, url, videoID, startPosition, callback )
 {
-    var queueData = {};
-
     superagent.get( "http://tvple.com/" + videoID )
-        .end( function( err, res )
+        .then( function( res )
         {
-            console.log( err );
             console.log( res.status );
+
             if ( res.status === 404 )
                 return callback( client, QueueManager.statusCode.failedToGetInformationError, url, err, true );
 
-            if ( err )
-                return callback( client, QueueManager.statusCode.serverError, url, err, true );
-
-            var $ = cheerio.load( res.text );
+            const $ = cheerio.load( res.text );
 
             var apiURL = $( "#video-player" )
                 .attr( "data-meta" );
@@ -1224,93 +1225,69 @@ QueueManager._processRegisterTvple = function( client, roomID, url, videoID, sta
                 .attr( "content" );
             // .replace( ".md-16x9", ".gif" );
 
+            console.log( apiURL );
+
             superagent.get( apiURL )
-                .end( function( err2, res2 )
+                .then( function( res2 )
                 {
-                    if ( err2 )
+                    if ( res2.status === 404 )
+                        return callback( client, QueueManager.statusCode.failedToGetInformationError, url, err2, true );
+
+                    // TODO: jsonException 테스트 바람!
+
+                    var jsonResult = JSON.parse( res2.text + "asdasd" );
+                    var duration = jsonResult.stream.duration || 0;
+
+                    if ( startPosition > duration )
+                        return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
+
+                    if ( Math.abs( duration - startPosition ) <= 10 )
+                        return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
+
+                    var queueData = {};
+                    queueData.id = `tvple_${ videoID }_${ Date.now( ) }`;
+                    queueData.mediaProvider = QueueManager.providerType.Tvple;
+                    queueData.mediaProviderURL = url;
+                    queueData.mediaContentURL = jsonResult.stream.sources.a.urls.mp4_avc;
+                    queueData.mediaName = videoName;
+                    queueData.mediaThumbnail = videoThumbnail;
+                    queueData.mediaDuration = duration;
+                    queueData.mediaPosition = startPosition;
+                    queueData.userVote = {};
+                    queueData.userVoteSum = {
+                        like: 0,
+                        unlike: 0
+                    };
+
+                    if ( client )
+                        queueData.user = {
+                            name: client.name,
+                            userID: client.userID,
+                            avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+                            information: client.information( )
+                        };
+
+                    _getCloud( jsonResult.cloud.read_url, function( cloud )
                     {
-                        registerFailed( client,
-                            "죄송합니다, 서버 처리 중 오류가 발생했습니다, 영상 목록에 추가할 수 없습니다. (API_ERROR_TVPLE)",
-                            `${ url } -> ${ err2 }`,
-                            false
-                        );
+                        queueData.cloud = cloud;
 
-                        return;
-                    }
+                        QueueManager._appendQueue( client, roomID, queueData );
+                    } );
+                } )
+                .catch( function( err2 )
+                {
+                    if ( err2.status === 404 )
+                        return callback( client, QueueManager.statusCode.failedToGetInformationError, url, err2, true );
 
-                    if ( res2.statusCode !== 200 )
-                    {
-                        registerFailed( client,
-                            `죄송합니다, 서버 처리 중 오류가 발생했습니다, 영상 목록에 추가할 수 없습니다.(SERVER_ERROR_CONNECTION)`,
-                            `${ url } -> ${ res2.statusCode }`,
-                            false
-                        );
-
-                        return;
-                    }
-
-                    try
-                    {
-                        var jsonResult = JSON.parse( res2.text );
-                        var duration = jsonResult.stream.duration || 0;
-
-                        if ( startPosition > duration )
-                            return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
-
-                        if ( Math.abs( duration - startPosition ) <= 10 )
-                            return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
-
-                        queueData.id = "tvple_" + videoID + "_" + Date.now( );
-                        queueData.videoName = videoName;
-                        queueData.videoProvider = "Tvple";
-                        queueData.videoThumbnail = videoThumbnail;
-                        queueData.videoLength = duration;
-                        queueData.videoDirectURL = jsonResult.stream.sources.a.urls.mp4_avc;
-                        queueData.soundDirectURL = null;
-                        queueData.videoProviderURL = url;
-                        queueData.startTime = startPosition;
-                        queueData.owner = client ? client.name : "채널 관리자";
-                        queueData.userID = client ? client.userID : "server";
-                        queueData.avatar = client ? client.getPassportField( "avatar", "/images/avatar/guest_64.png" ) : "/images/avatar/guest_64.png";
-                        queueData.videoConverted = true;
-
-                        _getCloud( jsonResult.cloud.read_url, function( cloud )
-                        {
-                            queueData.cloud = cloud;
-
-                            client.emit( "regu.queueRegisterReceive",
-                            {
-                                success: true
-                            } );
-
-                            Server.sendMessage( roomID, "RS.queueEvent",
-                            {
-                                type: "register",
-                                id: queueData.id,
-                                videoName: queueData.videoName,
-                                videoThumbnail: queueData.videoThumbnail,
-                                videoLength: queueData.videoLength,
-                                startTime: queueData.startTime,
-                                owner: queueData.owner,
-                                userID: queueData.userID,
-                                avatar: queueData.avatar,
-                                videoConverted: queueData.videoConverted
-                            } );
-
-                            ChatManager.saySystem( roomID, queueData.videoName + " 영상이 목록에 추가되었습니다. (by " + ( client ? ( client.name + "#" + client.userID ) : "서버" ) + ")", "glyphicon glyphicon-download" );
-
-                            QueueManager._queueList[ roomID ].push( queueData );
-                        } );
-                    }
-                    catch ( exception2 )
-                    {
-                        registerFailed( client,
-                            `죄송합니다, 서버 처리 중 오류가 발생했습니다, 영상 목록에 추가할 수 없습니다.(SERVER_ERROR_EXCEPTION)`,
-                            `${ url } -> ${ exception2.stack }`,
-                            false
-                        );
-                    }
+                    return callback( client, QueueManager.statusCode.serverError, url, err2, true );
                 } );
+        } )
+        .catch( function( err )
+        {
+            if ( err.status === 404 )
+                return callback( client, QueueManager.statusCode.failedToGetInformationError, url, err, true );
+
+            return callback( client, QueueManager.statusCode.serverError, url, err, true );
         } );
 }
 
@@ -1383,7 +1360,7 @@ QueueManager.getPlayingData = function( roomID )
 }
 
 // *TODO: 로직 에러 -> 다시 작성 바람.
-QueueManager.register = function( providerType, client, roomID, url, videoID, startPosition, force )
+QueueManager.register = function( providerType, client, roomID, url, videoID, startPosition, force, forceIndex )
 {
     var onRegisterQueue = force ?
     {
@@ -1403,7 +1380,7 @@ QueueManager.register = function( providerType, client, roomID, url, videoID, st
     var providers = Object.keys( QueueManager.providerType );
 
     if ( providers[ providerType ] ) // *TODO: else 작성하기
-        this[ "_processRegister" + providers[ providerType ] ]( client, roomID, url, videoID, startPosition, QueueManager._onRegister );
+        this[ "_processRegister" + providers[ providerType ] ]( client, roomID, url, videoID, startPosition, QueueManager._onRegister, forceIndex );
 }
 
 QueueManager.clear = function( roomID, alsoPlayingQueue )

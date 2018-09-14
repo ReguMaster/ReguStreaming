@@ -109,10 +109,12 @@ p {
     float: right;
 
     transition: all ease 0.2s;
+
+    background-color: transparent;
 }
 
 .reguSimpleButton:hover {
-    transform: translateY(-3px);
+    transform: scale(1.1);
 }
 
 .reguSimpleButton:active {}

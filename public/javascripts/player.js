@@ -63,7 +63,7 @@ reguStreaming.canUpload = function( fileData, callback )
 
     if ( fileData )
     {
-        if ( allowType.indexOf( fileData.type ) > -1 )
+        if ( allowType.indexOf( fileData.type.toLowerCase( ) ) > -1 )
         {
             var img = new Image( );
             img.src = URL.createObjectURL( fileData );
@@ -128,6 +128,12 @@ let controls = {
     queueRegisterStartTimeTextFieldMin: null,
     queueRegisterStartTimeTextFieldSec: null,
 
+    queueVideoInformation: null,
+    queueVideoInformationBG: null,
+    queueVideoInformationThumbnail: null,
+    queueVideoInformationName: null,
+    queueVideoInformationTimeleft: null,
+
     voteContainer: null,
     userInfoContainer: null,
     settingContainer: null,
@@ -167,6 +173,36 @@ $( window )
         controls.videoVolumeController.val( reguStreaming.getLocalStorageVolume( ) * 100 );
         // controls.chatInputContainer.hide( );
         controls.videoContainer.prop( "volume", reguStreaming.getLocalStorageVolume( ) );
+
+        controls.queueVideoInformation.on( "mouseenter", function( e )
+        {
+            if ( reguStreaming.queueInformationUITimeout )
+            {
+                clearTimeout( reguStreaming.queueInformationUITimeout );
+                reguStreaming.queueInformationUITimeout = null;
+            }
+
+            e.stopPropagation( );
+        } );
+
+        controls.queueVideoInformation.on( "mouseleave", function( e )
+        {
+            if ( !reguStreaming.queueInformationUITimeout )
+            {
+                if ( controls.queueVideoInformation.is( ":visible" ) )
+                {
+                    util.stopCSSAnimation( controls.queueVideoInformation );
+
+                    util.startCSSAnimation( "fadeOutDown 0.1s", controls.queueVideoInformation, function( )
+                    {
+                        controls.queueVideoInformation.hide( );
+                    } );
+                }
+
+                reguStreaming.queueInformationUITimeout = null;
+                // e.stopPropagation( );
+            }
+        } );
 
         // $( document )
         //     .keydown( function( event )
@@ -232,6 +268,31 @@ $( window )
             if ( video.paused ) return;
 
             controls.videoPositionFullBar.css( "width", ( ( video.currentTime / video.duration ) * 100 ) + "%" );
+
+            if ( controls.queueVideoInformation.is( ":visible" ) )
+            {
+                var thisIndex = reguStreaming.queueInformationCurrentShowingIndex;
+                var timeleft = 0;
+
+                // 0 >= 1
+                if ( thisIndex === 0 )
+                    timeleft = video.duration - video.currentTime;
+                else
+                {
+                    for ( var i = 0; i <= thisIndex; i++ )
+                    {
+                        var self = queueListClient[ i ];
+
+                        timeleft += self.data( "queueData" )
+                            .mediaDuration;
+                    }
+
+                    timeleft -= video.currentTime;
+                }
+
+                controls.queueVideoInformationTimeleft.text( "이 영상 재생까지 " + Math.floor( timeleft )
+                    .toSexyMMSS( ) + " 남았습니다." );
+            }
         } );
 
         $( document )
@@ -526,13 +587,13 @@ socket.on( "RS.uploadFileError", function( data )
     switch ( data )
     {
         case 0:
-            reason = "파일을 업로드할 수 없습니다, gif, png, jpg 형식의 이미지만 업로드할 수 있습니다.";
+            reason = "파일을 업로드할 수 없습니다, gif, png, jpg 파일 확장자의 이미지만 업로드할 수 있습니다.";
             break;
         case 1:
-            reason = "파일을 업로드할 수 없습니다, 데이터베이스 오류가 발생했습니다.";
+            reason = "파일 처리 중 서버 오류가 발생했습니다, 나중에 다시 시도해주세요.";
             break;
         case 2:
-            reason = "해당 파일을 서버에서 처리 중 오류가 발생했습니다, 나중에 다시 시도해주세요.";
+            reason = "파일 처리 중 서버 오류가 발생했습니다, 나중에 다시 시도해주세요.";
             break;
         case 3:
             reason = "파일을 업로드할 수 없습니다, 2048x2048 크기를 초과하는 이미지는 업로드할 수 없습니다.";
@@ -697,10 +758,10 @@ socket.on( "regu.queueRegisterReceive", function( data )
                 reason = "영상 추가를 할 수 없습니다, 영상 시작 시간이 올바르지 않습니다.";
                 break;
             case 5:
-                reason = "해당 영상을 서버에서 처리 중 오류가 발생했습니다, 나중에 다시 시도해주세요.";
+                reason = "영상 추가 중 서버 오류가 발생했습니다, 나중에 다시 시도해주세요.";
                 break;
             case 6:
-                reason = "영상 추가를 할 수 없습니다, 실시간 스트리밍 영상은 추가할 수 없습니다.";
+                reason = "영상 추가를 할 수 없습니다, Youtube 실시간 스트리밍 영상은 추가할 수 없습니다.";
                 break;
             case 7:
                 reason = "영상 추가를 할 수 없습니다, 올바르지 않은 영상입니다.";
@@ -718,7 +779,7 @@ socket.on( "regu.queueRegisterReceive", function( data )
                 reason = "영상 추가를 할 수 없습니다, 알 수 없는 오류가 발생했습니다.";
                 break;
             case 50:
-                reason = "영상 추가를 할 수 없습니다, 현재 서비스가 불가능합니다, 공지사항을 확인하세요.";
+                reason = "현재 영상 추가 서비스가 불가능합니다, 공지사항을 확인하세요.";
                 break;
             default:
                 reason = "영상 추가를 할 수 없습니다, 알 수 없는 오류가 발생했습니다.";
@@ -766,7 +827,40 @@ socket.on( "RS.queueEvent", function( data )
         // if ( titleElement )
         // textFit( titleElement );
 
+        newObj.on( "mouseenter", function( )
+        {
+            if ( !controls.queueVideoInformation.is( ":visible" ) )
+                controls.queueVideoInformation.show( );
+
+            controls.queueVideoInformationName.text( data.mediaName )
+                .closest( "a" )
+                .attr( "href", data.mediaProviderURL );
+            controls.queueVideoInformationBG.css( "background-image", "url( '" + data.mediaThumbnail + "' )" );
+            controls.queueVideoInformationThumbnail.css( "background-image", "url( '" + data.mediaThumbnail + "' )" );
+
+            var thisIndex = queueListClient.indexOf( newObj );
+            var timeleft = 0;
+
+            queueListClient.forEach( function( value, index )
+            {
+                if ( thisIndex > index ) return;
+
+                timeleft += value.mediaDuration;
+            } );
+
+            controls.queueVideoInformationTimeleft.text( "이 영상 재생까지 " + timeleft + "초 남았습니다." );
+        } );
+
+        newObj.on( "mouseleave", function( )
+        {
+            if ( controls.queueVideoInformation.is( ":visible" ) )
+                controls.queueVideoInformation.hide( );
+        } );
+
         queueListClient.push( newObj );
+
+        newObj.data( "queueData", data );
+        newObj.data( "index", queueListClient.length - 1 );
 
         queueCount = Math.clamp( queueCount + 1, 0, 1000 ); // 숫자 수정바람
     }
@@ -906,6 +1000,81 @@ socket.on( "RS.queueEvent", function( data )
 
                 util.startCSSAnimation( "zoomInUp 1s", newObj );
 
+                newObj.data( "queueData", thisData );
+                newObj.data( "index", i );
+
+                newObj.on( "mouseenter", function( )
+                {
+                    if ( reguStreaming.queueInformationUITimeout )
+                    {
+                        clearTimeout( reguStreaming.queueInformationUITimeout );
+                        reguStreaming.queueInformationUITimeout = null;
+                    }
+
+                    var localData = $( this )
+                        .data( "queueData" );
+
+                    util.stopCSSAnimation( controls.queueVideoInformation );
+
+                    if ( !controls.queueVideoInformation.is( ":visible" ) )
+                    {
+                        controls.queueVideoInformation.show( );
+                        util.startCSSAnimation( "fadeInUp 0.1s", controls.queueVideoInformation );
+                    }
+
+                    controls.queueVideoInformationName.text( localData.mediaName )
+                        .closest( "a" )
+                        .attr( "href", localData.mediaProviderURL );
+                    controls.queueVideoInformationBG.css( "background-image", "url( '" + localData.mediaThumbnail + "' )" );
+                    controls.queueVideoInformationThumbnail.css( "background-image", "url( '" + localData.mediaThumbnail + "' )" );
+
+                    var thisIndex = $( this )
+                        .data( "index" );
+                    var timeleft = 0;
+                    var video = controls.videoContainer.get( 0 );
+
+                    reguStreaming.queueInformationCurrentShowingIndex = thisIndex;
+
+                    if ( thisIndex === 0 )
+                        timeleft = video.duration - video.currentTime;
+                    else
+                    {
+                        for ( var i = 0; i <= thisIndex; i++ )
+                        {
+                            var self = queueListClient[ i ];
+
+                            timeleft += self.data( "queueData" )
+                                .mediaDuration;
+                        }
+
+                        timeleft -= video.currentTime;
+                    }
+
+                    controls.queueVideoInformationTimeleft.text( "이 영상 재생까지 " + Math.floor( timeleft )
+                        .toSexyMMSS( ) + " 남았습니다." );
+                } );
+
+                newObj.on( "mouseleave", function( )
+                {
+                    if ( reguStreaming.queueInformationUITimeout )
+                        clearTimeout( reguStreaming.queueInformationUITimeout );
+
+                    reguStreaming.queueInformationUITimeout = setTimeout( function( )
+                    {
+                        if ( controls.queueVideoInformation.is( ":visible" ) )
+                        {
+                            util.stopCSSAnimation( controls.queueVideoInformation );
+
+                            util.startCSSAnimation( "fadeOutDown 0.1s", controls.queueVideoInformation, function( )
+                            {
+                                controls.queueVideoInformation.hide( );
+                            } );
+                        }
+
+                        reguStreaming.queueInformationUITimeout = null;
+                    }, 1000 );
+                } );
+
                 queueListClient.push( newObj );
                 queueCount = Math.clamp( queueCount + 1, 0, 1000 ); // 숫자 수정바람
             }
@@ -1003,16 +1172,16 @@ socket.on( "RS.chat", function( data )
 
         setTimeout( function( obj )
         {
-            // if ( obj )
-            //     obj.animate(
-            //     {
-            //         opacity: "0"
-            //     }, 5000, function( )
-            //     {
-            //         $( this )
-            //             .remove( );
-            //     } );
-        }, 1000 * 20, newObj );
+            if ( obj )
+                obj.animate(
+                {
+                    opacity: "0"
+                }, 5000, function( )
+                {
+                    $( this )
+                        .remove( );
+                } );
+        }, 1000 * 25, newObj );
     }
     else if ( data.type == "system" )
     {
@@ -1080,7 +1249,7 @@ socket.on( "RS.chat", function( data )
                     $( this )
                         .remove( );
                 } );
-        }, 1000 * 20, newObj );
+        }, 1000 * 25, newObj );
     }
     else
     {

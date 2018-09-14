@@ -14,6 +14,8 @@ const os = require( "os" );
 const merge = require( "merge" );
 
 util.test = "test";
+JSON.empty = JSON.stringify(
+{} );
 
 // *TODO: 코드 시스템 쓰는 logic 에 이 메소드 사용 적용
 util.getCodeID = function( codesObj, code )
@@ -79,6 +81,12 @@ util.some = function( obj, inter )
 
 //     return result;
 // }
+
+// https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index
+Array.prototype.insert = function( index, item )
+{
+    this.splice( index, 0, item );
+};
 
 // same as http://wiki.garrysmod.com/page/table/concat
 Array.prototype.chain = function( startIndex, endIndex, concatenator = " " )
@@ -154,13 +162,12 @@ util.getLocalIP = function( )
 
 util.splitIP = function( ipAddress )
 {
-    ipAddress = ipAddress.split( "." )
+    // *TODO: 최적화 가능
+    return ipAddress.split( "." )
         .map( function( value )
         {
             return Number( value );
         } );
-
-    return ipAddress;
 }
 
 util.censorshipIP = function( ipAddress )

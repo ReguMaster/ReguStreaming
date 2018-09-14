@@ -23,11 +23,14 @@ Database.onConnect = function( err )
 
     if ( err )
     {
-        timer.create( "Database.reconnectTimer", config.reconnectDelay, 0, function( )
+        if ( !timer.exists( "Database.reconnectTimer" ) )
         {
-            Logger.warn( `[MySQL] Reconnecting to MySQL database ...` );
-            Database.connect( );
-        } );
+            timer.create( "Database.reconnectTimer", config.reconnectDelay, 0, function( )
+            {
+                Logger.warn( `[MySQL] Reconnecting to MySQL database ...` );
+                Database.connect( );
+            } );
+        }
 
         Logger.error( `[MySQL] Failed to connect to MySQL database! (error:${ err.message })` );
         hook.run( "OnConnectMySQL", !!!err, err );

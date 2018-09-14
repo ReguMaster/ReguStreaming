@@ -52,7 +52,7 @@
         <!-- <script src="/javascripts/external/socket.io-stream.js"></script> -->
 
         <script>
-        reguStreaming.setConfig( "roomID", "<%= roomID %>" );
+            reguStreaming.setConfig( "roomID", "<%= roomID %>" );
 
         </script>
 
@@ -60,7 +60,7 @@
         <script src="/javascripts/visualizer.js"></script>
         <style type="text/css">
         .tooltipUI {
-            background-color: rgba( 235, 235, 235, 0.95);
+            background-color: rgba(235, 235, 235, 0.95);
         }
 
         .ui-tooltip {
@@ -76,7 +76,6 @@
         body .ui-tooltip {
             border-width: 2px;
         }
-
         </style>
 
     </head>
@@ -92,7 +91,6 @@
             }
         } );
     } );
-
     </script>
 
     <body>
@@ -185,8 +183,8 @@
 
             <p class="currentRoomInformation" id="currentRoomInformation"></p>
 
-            <div class="videoUnLikeButton" id="videoUnLikeButton" title="싫어요 .." onclick="reguStreaming.queueUserVote( 0 );"></div>
-            <div class="videoLikeButton" id="videoLikeButton" title="좋아요!" onclick="reguStreaming.queueUserVote( 1 );"></div>
+            <!-- <div class="videoUnLikeButton" id="videoUnLikeButton" title="싫어요 .." onclick="reguStreaming.queueUserVote( 0 );"></div> -->
+            <!-- <div class="videoLikeButton" id="videoLikeButton" title="좋아요!" onclick="reguStreaming.queueUserVote( 1 );"></div> -->
 
 
             <div class="videoPositionBar" id="videoPositionBar">
@@ -214,8 +212,8 @@
             </div>
 
             <p class="containerMiddleText" style="margin-top: 56px">대기열에 추가할 영상 주소를 입력하세요.</p>
-            <p class="containerSmallText">- 대기열에 영상을 추가 후 1분 동안 새 영상 추가가 불가능합니다.</p>
-            <p class="containerSmallText" style="color: #005ec3; font-size: 15px;">- YouTube/티비플/Ani24 영상을 지원합니다.</p>
+            <p class="containerSmallText" style="color: #444444;">- 대기열에 영상을 추가 후 1분 동안 새 영상 추가가 불가능합니다.</p>
+            <p class="containerSmallText" style="color: #831fab; font-size: 15px;">- YouTube/티비플/Ani24 영상을 지원합니다.</p>
             <!-- <p class="containerSmallText">- 유튜브 영상의 경우 15분을 초과하는 영상 추가는 불가능합니다.</p> -->
             <!-- <p class="containerSmallText">- 채널 규칙에 맞는 영상을 추가하십시오.</p> -->
 
@@ -228,7 +226,7 @@
             <p id="queueRegisterStartTimeHelpText">초</p>
 
             <button type="button" class="btn btn-default" id="queueRegisterCancelButton" onclick="reguStreaming.queueContainerStatus( false );">취소</button>
-            <button type="button" class="btn btn-success" id="queueRegisterRunButton" title="영상을 대기열에 추가합니다." onclick="reguStreaming.queueRegister( );">대기열에 추가</button>
+            <button type="button" class="btn btn-success" id="queueRegisterRunButton" onclick="reguStreaming.queueRegister( );">대기열에 추가</button>
         </div>
 
         <div class="dialogContainer" id="settingContainer" style="display: none;">
@@ -265,14 +263,16 @@
         </div>
 
         <div class="queueVideoListContainer" id="queueVideoListContainer">
-            <div class="queueContainerVideoList" id="queueContainerVideoList">
-                <!-- <div class="queueContainerVideoListEmpty">
-                    <img src="/images/icon/empty.png" alt="Empty" class="queueContainerVideoListEmptyIcon" />
-                    <p class="queueContainerVideoListEmptyText">
-                        영상 목록이 비어있습니다!
-                    </p>
-                </div> -->
-            </div>
+            <div class="queueContainerVideoList" id="queueContainerVideoList"></div>
+        </div>
+
+        <div class="queueVideoInformation" id="queueVideoInformation" style="display: none;">
+            <div class="queueVideoInformation-bg" id="queueVideoInformationBG"></div>
+            <div class="queueVideoInformation-bgCover"></div>
+
+            <div class="queueVideoInformation-thumbnail" id="queueVideoInformationThumbnail"></div>
+            <a class="aRegu" target="_blank"><div class="queueVideoInformation-name" id="queueVideoInformationName">Media Name</div></a>
+            <div class="queueVideoInformation-timeleft" id="queueVideoInformationTimeleft">Media TimeLeft</div>
         </div>
 
         <div class="chatContainer" id="chatContainer">
@@ -296,8 +296,7 @@
             </div>
         </div>
 
-        <video width="100%" height="100%" id="videoContainer" type="video/mp4" poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7">
-        </video>
+        <video width="100%" height="100%" id="videoContainer" type="video/mp4" poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
 
         <div class="videoBuffering" id="videoBuffering"></div>>
         <div class="videoAutoPlayAgree" id="videoAutoPlayAgree">
