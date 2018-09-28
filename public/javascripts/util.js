@@ -262,28 +262,26 @@ util.getCookieByName = function( cookiename )
         .replace( /^[^=]+./, "" ) : "" );
 }
 
-util.htmlNotification = function( body, autoClose, autoCloseTime )
+util.htmlNotification = function( body, icon, autoClose, autoCloseTime )
 {
     if ( Notification.permission !== "granted" ) return;
 
     var notification = new Notification( "레그 스트리밍",
     {
-        icon: "/images/test.png",
-        body: body
+        icon: icon || "/images/icon/notification_default.png",
+        body: body,
+        tag: "RS.htmlNotification",
+        renotify: true
     } );
 
-    notification.onclick = function( )
+    notification.onclick = function( e )
     {
         this.close( );
+        e.preventDefault( );
     }
 
     if ( autoClose )
-    {
-        setTimeout( function( )
-        {
-            notification.close( );
-        }, autoCloseTime || 3000 );
-    }
+        setTimeout( notification.close.bind( notification ), autoCloseTime || 5000 );
 }
 
 util.getAMPM = function( hour )

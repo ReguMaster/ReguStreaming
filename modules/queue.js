@@ -649,12 +649,10 @@ QueueManager._onRegister = function( client, code, url, err, isError )
 
     if ( code !== QueueManager.statusCode.success )
     {
-        var keys = Object.keys( QueueManager.statusCode );
-
         if ( isError )
             Logger.write( Logger.type.Error, `[Queue] ERROR: Failed to register Queue. (url:${ url }, error:${ err.stack || err })\n${ ( client ? client.information( ) : "SERVER" ) }` );
         else
-            Logger.write( Logger.type.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ ( keys[ code ] || "unknown" ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
+            Logger.write( Logger.type.Warning, `[Queue] Queue register request rejected. (url:${ url }, code:${ util.getCodeID( QueueManager.statusCode, code ) }) ${ ( client ? client.information( ) : "SERVER" ) }` );
     }
 }
 
@@ -1842,7 +1840,7 @@ hook.register( "PostClientConnected", function( client, socket )
         {
             socket.emit( "regu.queueRegisterReceive", isAllowRegister );
 
-            Logger.write( Logger.type.Warning, `[Queue] Queue request rejected. (url:${ data.url }, code:${ isAllowRegister.code }) ${ client.information( ) }` );
+            Logger.write( Logger.type.Warning, `[Queue] Queue register request rejected. (url:${ data.url }, code:${ util.getCodeID( QueueManager.statusCode, isAllowRegister.code ) }) ${ client.information( ) }` );
             return;
         }
 

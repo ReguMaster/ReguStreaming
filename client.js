@@ -25,7 +25,7 @@ module.exports = class Client
         this._userName = this._passport.user.displayName;
         this._userID = this._passport.user.id.toString( );
         this._roomID = roomID;
-        this._rank = "guest";
+        this._rank = "admin";
         this._initialized = true;
 
         if ( roomConfig )

@@ -160,16 +160,29 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
 
 hook.register( "Initialize", function( )
 {
-    Server.createRoom( true, "main", "메인", "메인 채널", 5000, null,
+    Server.createRoom( true, "main", "비르요", "레그 스트리밍에 오신것을 환영합니다.", 3000, null,
     {
         video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
         video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
     } );
 
-    Server.createRoom( true, "sub", "서브", "서브 채널", 1000, null,
+    Server.createRoom( true, "everync", "나이트코어 어비스", "모든 영상이 나이트코어 스타일로 재생됩니다.", 50, null,
     {
-        video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
-        video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
+        playbackRate: 1.15, // 1.15
+        video_position_bar_color: "rgba( 49, 226, 79, 0.3 )",
+        video_position_bar_full_color: "rgba( 49, 226, 79, 1 )"
+    } );
+
+    Server.createRoom( true, "nsfw", "성인", "NSFW(Not Safe For Work) 후방을 조심하세요!!", 10, null,
+    {
+        video_position_bar_color: "rgba( 255, 150, 150, 0.3 )",
+        video_position_bar_full_color: "rgba( 255, 150, 150, 1 )"
+    } );
+
+    Server.createRoom( true, "admin", "관리원", "관리자 전용 채널입니다.", 0, null,
+    {
+        video_position_bar_color: "rgba( 255, 150, 150, 0.3 )",
+        video_position_bar_full_color: "rgba( 255, 150, 150, 1 )"
     } );
 
     // Server.createRoom( true, "center", "빅 홀 오스", "많은 사람들이 거주하는 마을입니다.", 5000, null,
@@ -178,12 +191,7 @@ hook.register( "Initialize", function( )
     //     video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
     // } );
     // Server.createRoom( true, "home", "벨 시에로 보육원", "안전하고 신성한 공간.", 15 );
-    // Server.createRoom( true, "everync", "나이트코어 어비스", "모든 영상이 나이트코어 스타일로 재생됩니다.", 50, null,
-    // {
-    //     playbackRate: 1.15,
-    //     video_position_bar_color: "rgba( 49, 226, 79, 0.3 )",
-    //     video_position_bar_full_color: "rgba( 49, 226, 79, 1 )"
-    // } );
+
     // Server.createRoom( true, "24hourjapan", "24시간 일본곡", "24시간 동안 일본 노래가 재생됩니다.", 50, null,
     // {
     //     disallow_queue_request: true,
@@ -455,7 +463,11 @@ Server.getAllCount = function( )
 
 Server.executeClientJavascript = function( roomID, code )
 {
-    this.sendMessage( roomID, "regu.executeJavascript", code );
+    this.sendMessage( roomID, "RS.executeJS",
+    {
+        code: code,
+        hidden: true // *NOTE: default option
+    } );
 }
 
 Server.getRoomClientCount = function( roomID )
@@ -592,7 +604,10 @@ Server.onConnect = function( socket )
     } );
 
     socket.reguClient = client;
-    socket.emit( "RS.joinResult" );
+    socket.emit( "RS.joinResult",
+    {
+        rank: client.rank
+    } );
 
     hook.run( "PostClientConnected", client, socket );
 
@@ -727,7 +742,38 @@ App.socketIO.on( "connect", function( socket )
         // } );
     } );
 
-    socket.on( "regu.requestUserInfo", function( data )
+    socket.on( "RS.admin.kickRequest", function( data )
+    {
+        if ( !client )
+        {
+            Logger.write( Logger.type.Important, `[Client] Kick request rejected! -> (#ClientIsNotValid) ${ socket.handshake.address }` );
+            socket.disconnect( );
+            return;
+        }
+
+        if ( !util.isValidSocketData( data,
+            {
+                userID: "string"
+            } ) )
+        {
+            Logger.write( Logger.type.Important, `[Client] Kick request rejected! -> (#DataIsNotValid) ${ client.information() }` );
+            return;
+        }
+
+        if ( client.rank === "admin" )
+        {
+            var user = Server.getClientByUserID( data.userID );
+
+            if ( user )
+                user.kick( );
+        }
+        else
+        {
+
+        }
+    } );
+
+    socket.on( "RS.requestUserInformation", function( data )
     {
         if ( !util.isValidSocketData( data,
             {
@@ -749,7 +795,7 @@ App.socketIO.on( "connect", function( socket )
 
             Logger.write( Logger.type.Info, `[Client] Client requested another Client information. ${ client.information( ) } ---> ${ targetClient.information( ) }` );
 
-            socket.emit( "regu.receiveUserInfo",
+            socket.emit( "RS.receiveUserInformation",
             {
                 success: true,
                 name: targetClient.name,
@@ -761,7 +807,7 @@ App.socketIO.on( "connect", function( socket )
         }
         else
         {
-            socket.emit( "regu.receiveUserInfo",
+            socket.emit( "RS.receiveUserInformation",
             {
                 success: false
             } );

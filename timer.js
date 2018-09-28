@@ -18,13 +18,12 @@ timer.create = function( id, interval, loopCount, callback )
         interval: interval,
         loopCount: loopCount,
         callback: callback,
-        _unlimitedLoop: loopCount === 0,
         _intervalObj: null
     }
 
     var intervalFunc;
 
-    if ( obj._unlimitedLoop )
+    if ( loopCount === 0 )
         intervalFunc = function( )
         {
             obj.callback( );

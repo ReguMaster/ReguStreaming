@@ -249,24 +249,24 @@
     height: 100%;
     width: 6px;
     display: inline-block;
-    animation: stretch 1s infinite;
+    animation: stretch 0.5s infinite;
     animation-delay: 0s;
 }
 
 .processBackgroundSpinner .rect2 {
-    animation-delay: -0.8s;
-}
-
-.processBackgroundSpinner .rect3 {
-    animation-delay: -0.6s;
-}
-
-.processBackgroundSpinner .rect4 {
     animation-delay: -0.4s;
 }
 
-.processBackgroundSpinner .rect5 {
+.processBackgroundSpinner .rect3 {
+    animation-delay: -0.3s;
+}
+
+.processBackgroundSpinner .rect4 {
     animation-delay: -0.2s;
+}
+
+.processBackgroundSpinner .rect5 {
+    animation-delay: -0.1s;
 }
 
 .innerHeader {
@@ -274,7 +274,6 @@
     height: 46px;
     min-width: 900px;
     display: block;
-    display: none;
     top: 0;
     left: 0;
     position: absolute;
@@ -287,6 +286,31 @@
     box-shadow: 0 0 12px rgb(50, 50, 50);
 }
 
+.innerHeader-mainImage {
+    margin-left: 8px;
+    margin-top: 8px;
+    width: 28px;
+    height: 28px;
+    cursor: pointer;
+}
+
+.innerHeader-roomPlayersContainer {
+    float: right;
+    display: inline-block;
+    margin-top: 10px;
+}
+
+.innerHeader-roomPlayersContainer-item {
+    width: 24px;
+    height: 24px;
+}
+
+.innerHeader-roomPlayersContainer-item-avatar {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+}
+
 #canvas {
     display: block;
     display: none;
@@ -294,14 +318,6 @@
     top: 46px;
     left: 0px;
     z-index: 0
-}
-
-#innerHeaderImage {
-    margin-left: 8px;
-    margin-top: 8px;
-    width: 28px;
-    height: 28px;
-    cursor: pointer;
 }
 
 .btn-blue {
@@ -408,6 +424,25 @@
     /* opacity: 0.3;
     transition: all ease 0.2s; */
     z-index: 3;
+}
+
+.chatContainer-extraButtonContainer {
+    position: fixed;
+    right: 350px;
+    bottom: 15px;
+    padding-right: 6px;
+}
+
+.chatContainer-extraButtonContainer-button {
+    width: 32px;
+    height: 32px;
+    cursor: pointer;
+    margin-left: 6px;
+    transition: all ease 0.3s;
+}
+
+.chatContainer-extraButtonContainer-button:hover {
+    transform: scale(1.15);
 }
 
 /* .chatContainer:focus {
@@ -735,7 +770,7 @@
     border-radius: 10px;
 }
 
-.dialogTitleBar {
+.dialogContainer-titleBar {
     top: 0;
     display: block;
     width: 100%;
@@ -744,7 +779,7 @@
     background-color: rgba(73, 161, 255, 1);
 }
 
-.dialogTitleText {
+.dialogContainer-titleBar-title {
     margin: 12px;
     font-size: 15px;
     color: white;
@@ -786,7 +821,7 @@
     display: inline-block;
     bottom: 54px;
     margin: 0;
-    font-size: 25px;
+    font-size: 20px;
     color: rgb(30, 30, 30);
 }
 
@@ -1155,7 +1190,6 @@
     /* float: left; */
     /* display: none; */
     float: right;
-    opacity: 0;
     margin-top: 14px;
     margin-right: 14px;
     top: 0;
@@ -1407,6 +1441,7 @@
 
 .videoRequesterInformation {
     display: inline-block;
+    opacity: 0;
 }
 
 .videoRequesterProfileImage {

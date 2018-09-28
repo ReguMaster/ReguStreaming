@@ -65,12 +65,15 @@ reguStreaming.canUpload = function( fileData, callback )
     {
         if ( allowType.indexOf( fileData.type.toLowerCase( ) ) > -1 )
         {
+            console.log( fileData );
             var img = new Image( );
             img.src = URL.createObjectURL( fileData );
             img.onload = function( )
             {
                 var width = this.naturalWidth,
                     height = this.naturalHeight;
+
+                //  reguStreaming.uploadedImageSizeCache
 
                 URL.revokeObjectURL( this.src );
 
@@ -102,6 +105,7 @@ let controls = {
     background: null,
 
     innerHeader: null,
+    innerHeaderRoomPlayersContainer: null,
 
     chatContainer: null,
     chatInputContainer: null,
@@ -122,7 +126,8 @@ let controls = {
     voteContainerTime: null,
     voteContainerStartUser: null,
 
-    queueRegisterButton: null,
+    chatContainerQueueRegisterButton: null,
+    chatContainerQueueRegisterButtonDelayRemain: null,
     queueRegisterContainer: null,
     queueRegisterURLTextField: null,
     queueRegisterStartTimeTextFieldMin: null,
@@ -140,8 +145,6 @@ let controls = {
 
     welcomeClientCount: null,
     chatBoxInner: null,
-
-    currentRoomInformation: null,
 
     queueVideoListContainer: null,
 
@@ -364,6 +367,24 @@ $( window )
                             case "userRightMenu-userInfo":
                                 reguStreaming.userInfoContainerStatus( true, reguStreaming.clickedChatMessageTemp.parentElement );
                                 break;
+                            case "userRightMenu-kick":
+                                //reguStreaming.clickedChatMessageTemp.parentElement
+
+                                console.log( "this" );
+                                console.log( reguStreaming.clickedChatMessageTemp.parentElement );
+                                socket.emit( "RS.admin.kickRequest",
+                                {
+                                    userID: $( reguStreaming.clickedChatMessageTemp.parentElement )
+                                        .data( "userID" )
+                                } );
+                                break;
+                            case "userRightMenu-ban":
+                                socket.emit( "RS.admin.banRequest",
+                                {
+                                    userID: $( reguStreaming.clickedChatMessageTemp.parentElement )
+                                        .data( "userID" )
+                                } );
+                                break;
                         }
 
                         reguStreaming.clickedChatMessageTemp = null;
@@ -430,13 +451,10 @@ $( window )
         $( "#queueRegisterURLTextField" )
             .keydown( function( event )
             {
-                if ( event.keyCode == 13 )
+                if ( event.keyCode == 13 ) // Enter
                 {
                     $( "#queueRegisterRunButton" )
                         .trigger( "click" );
-
-                    controlDisableTemp( $( this ) );
-                    controlDisableTemp( $( "#queueRegisterRunButton" ) );
 
                     return false;
                 }
@@ -445,7 +463,7 @@ $( window )
         $( "#chatTextField" )
             .keydown( function( event )
             {
-                if ( event.keyCode == 13 ) // 엔터
+                if ( event.keyCode == 13 ) // Enter
                 {
                     var chatMessage = $( this )
                         .val( )
@@ -648,6 +666,27 @@ socket.on( "RS.joinResult", function( data )
     }, 0 ); // 1000
 
     reguStreaming.setConfig( "lastLoginSuccess", true );
+    reguStreaming.setConfig( "localUserInfo", data );
+
+    if ( data.rank !== "admin" )
+    {
+        $( "#userRightMenu-kick" )
+            .hide( );
+        $( "#userRightMenu-ban" )
+            .hide( );
+    }
+    else
+    {
+        $( "#userRightMenu-kick" )
+            .on( "click", function( ) {
+
+            } );
+
+        $( "#userRightMenu-ban" )
+            .on( "click", function( ) {
+
+            } );
+    }
     // reguStreaming.onLoginSuccess( true );
 
     var roomID = reguStreaming.getConfig( "roomID", null );
@@ -668,23 +707,23 @@ socket.on( "RS.joinResult", function( data )
     //         }, 1000 );
     // }
 
-    if ( !controls.videoContainer.is( ":visible" ) )
-        controls.videoContainer.css( "opacity", "0" )
-        .show( )
-        .stop( )
-        .animate(
-        {
-            opacity: "1"
-        }, 1000 );
+    // if ( !controls.videoContainer.is( ":visible" ) )
+    //     controls.videoContainer.css( "opacity", "0" )
+    //     .show( )
+    //     .stop( )
+    //     .animate(
+    //     {
+    //         opacity: "1"
+    //     }, 1000 );
 
-    if ( !controls.innerHeader.is( ":visible" ) )
-        controls.innerHeader.css( "opacity", "0" )
-        .show( )
-        .stop( )
-        .animate(
-        {
-            opacity: "1"
-        }, 1000 );
+    // if ( !controls.innerHeader.is( ":visible" ) )
+    //     controls.innerHeader.css( "opacity", "0" )
+    //     .show( )
+    //     .stop( )
+    //     .animate(
+    //     {
+    //         opacity: "1"
+    //     }, 1000 );
 
     if ( !controls.chatContainer.is( ":visible" ) )
         controls.chatContainer.css( "opacity", "0" )
@@ -735,6 +774,38 @@ socket.on( "regu.queueRegisterReceive", function( data )
         util.notification( util.notificationType.info, "영상 추가", "귀하가 요청한 영상을 대기열에 추가했습니다.", 2500 );
 
         reguStreaming.queueContainerStatus( false );
+
+        controls.chatContainerQueueRegisterButton.attr( "src", "images/icon/circle_32.png" )
+            .attr( "title", "대기열에 영상을 추가하시려면 잠시 기다리세요." );
+
+        controls.chatContainerQueueRegisterButtonDelayRemain.stop( )
+            .css( "opacity", 0 )
+            .show( )
+            .animate(
+            {
+                opacity: "1"
+            }, 1000 )
+            .text( Math.floor( ( reguStreaming.queueRegisterDelay - Date.now( ) ) / 1000 ) );
+
+        reguStreaming.queueRegisterDelay = Date.now( ) + ( 1000 * 60 );
+
+        reguStreaming.queueRegisterDelayIntervalObj = setInterval( function( )
+        {
+            if ( Date.now( ) < reguStreaming.queueRegisterDelay )
+            {
+                controls.chatContainerQueueRegisterButtonDelayRemain.text( Math.floor( ( reguStreaming.queueRegisterDelay - Date.now( ) ) / 1000 ) );
+            }
+            else
+            {
+                controls.chatContainerQueueRegisterButton.attr( "src", "images/icon/queue_register_32.png" )
+                    .attr( "title", "대기열에 영상 추가" );
+                controls.chatContainerQueueRegisterButtonDelayRemain.hide( );
+
+                clearInterval( reguStreaming.queueRegisterDelayIntervalObj );
+                reguStreaming.queueRegisterDelayIntervalObj = null;
+                reguStreaming.queueRegisterDelay = null;
+            }
+        }, 500 );
     }
     else
     {
@@ -1394,15 +1465,31 @@ socket.on( "serverNotification", function( data )
     );
 } );
 
+reguStreaming.roomPlayerFormatBase = '';
+
 socket.on( "regu.clientCountUpdate", function( data )
 {
-    controls.currentRoomInformation.html( data.roomTitle + " 채널 : " + data.count + "명" );
+    // controls.currentRoomInformation.html( data.roomTitle + " 채널 : " + data.count + "명" );
 
-    controls.currentRoomInformation.css( "opacity", "0" );
-    controls.currentRoomInformation.animate(
+
+    if ( data.type === "new" )
     {
-        opacity: "1"
-    }, 1000 );
+        var newObj = $( String.format(
+                reguStreaming.roomPlayerFormatBase,
+                ""
+            ) )
+            .appendTo( controls.innerHeaderRoomPlayersContainer );
+    }
+    else if ( data.type === "remove" )
+    {
+
+    }
+
+    // controls.currentRoomInformation.css( "opacity", "0" );
+    // controls.currentRoomInformation.animate(
+    // {
+    //     opacity: "1"
+    // }, 1000 );
 } );
 
 socket.on( "disconnect", function( data )
@@ -1428,13 +1515,6 @@ socket.on( "reconnect", function( attemptNumber )
     if ( reguStreaming.getConfig( "lastLoginSuccess", false ) )
         socket.emit( "RS.join" );
 
-    util.notification( util.notificationType.success,
-        "서버 연결 :",
-        "서버에 다시 접속되었습니다.",
-        2000,
-        false
-    );
-
     console.log( "[ReguStreaming] Reconnected!" );
 } );
 
@@ -1443,13 +1523,21 @@ reguStreaming.providerType = {
     Youtube: 0,
     Ani24: 1,
     Tvple: 2,
-    Direct: 3
+    Direct: 3,
+    KakaoTV: 4,
+    Niconico: 5
 };
 reguStreaming.mediaProvider = reguStreaming.providerType.Null;
 
 reguStreaming.getLocalStorageVolume = function( )
 {
-    return Number( localStorage.getItem( "regustreaming.audio_volume" ) || "0.2" );
+    return Number( localStorage.getItem( "RS.audioVolume" ) || "0.2" );
+}
+
+reguStreaming.setVolume = function( volume )
+{
+    controls.videoContainer.prop( "volume", volume / 100 );
+    localStorage.setItem( "RS.audioVolume", volume / 100 );
 }
 
 // reguStreaming.fadeInVolume = function( )
@@ -1560,38 +1648,43 @@ socket.on( "RS.mediaPlay", function( data )
 
         // videoTitle
         if ( controls.videoTitle.is( ":visible" ) )
+        {
             controls.videoTitle.stop( )
-            .animate(
-            {
-                opacity: "0"
-            }, 1000, function( )
-            {
-                $( this )
-                    .text( data.mediaName )
-                    .stop( )
-                    .animate(
-                    {
-                        opacity: "1"
-                    }, 1000 );
-            } )
-            .off( "click" )
-            .on( "click", function( )
-            {
-                window.open( data.mediaProviderURL, "_blank" );
-            } );
+                .animate(
+                {
+                    opacity: "0"
+                }, 1000, function( )
+                {
+                    $( this )
+                        .text( data.mediaName )
+                        .stop( )
+                        .animate(
+                        {
+                            opacity: "1"
+                        }, 1000 );
+                } )
+                .off( "click" )
+                .on( "click", function( )
+                {
+                    window.open( data.mediaProviderURL, "_blank" );
+                } );
+        }
         else
+        {
             controls.videoTitle.text( data.mediaName )
-            .show( )
-            .stop( )
-            .animate(
-            {
-                opacity: "1"
-            }, 1000 )
-            .off( "click" )
-            .on( "click", function( )
-            {
-                window.open( data.mediaProviderURL, "_blank" );
-            } );
+                .css( "opacity", 0 )
+                .show( )
+                .stop( )
+                .animate(
+                {
+                    opacity: "1"
+                }, 1000 )
+                .off( "click" )
+                .on( "click", function( )
+                {
+                    window.open( data.mediaProviderURL, "_blank" );
+                } );
+        }
 
         if ( data.user )
         {
@@ -1626,7 +1719,9 @@ socket.on( "RS.mediaPlay", function( data )
                 controls.videoRequesterProfileImage.attr( "src", data.user.avatar );
                 controls.videoRequesterProfileName.text( data.user.name );
 
-                controls.videoRequesterInformation.show( )
+                controls.videoRequesterInformation
+                    .css( "opacity", 0 )
+                    .show( )
                     .stop( )
                     .animate(
                     {
@@ -1670,7 +1765,7 @@ socket.on( "RS.mediaPlay", function( data )
                 opacity: "1"
             }, 1000 );
 
-        util.htmlNotification( "현재 재생 중 : " + data.mediaName, true );
+        util.htmlNotification( "현재 재생 중 : " + data.mediaName, data.mediaThumbnail, true, 10 * 1000 );
 
         controls.videoContainer.prop( "muted", false );
         controls.videoContainer.load( );
@@ -1715,15 +1810,6 @@ socket.on( "RS.mediaPlay", function( data )
             break;
         case reguStreaming.providerType.Tvple:
             reguStreaming.cloudInitialize( data.cloud );
-            break;
-        case "Soundcloud":
-            // TODO;
-            break;
-        case "Baykoreans":
-            // TODO;
-            break;
-        case "Dongyoungsang":
-            // TODO;
             break;
     }
 } );
@@ -1784,12 +1870,6 @@ socket.on( "RS.setMediaPos", function( data )
     controls.videoContainer.get( 0 )
         .currentTime = Number( data ) || 0;
 } );
-
-reguStreaming.setVolume = function( volume )
-{
-    controls.videoContainer.prop( "volume", volume / 100 );
-    localStorage.setItem( "regustreaming.audio_volume", volume / 100 );
-}
 
 function controlDisableTemp( element, delay )
 {
@@ -1904,7 +1984,7 @@ reguStreaming.settingContainerStatus = function( status )
     }
 }
 
-socket.on( "regu.receiveUserInfo", function( data )
+socket.on( "RS.receiveUserInformation", function( data )
 {
     var e = controls.userInfoContainer;
 
@@ -1937,7 +2017,7 @@ socket.on( "regu.receiveUserInfo", function( data )
 
             break;
         default:
-            rankElement.text( "유저" );
+            rankElement.text( "알 수 없음" );
             break;
     }
 
@@ -1948,10 +2028,8 @@ socket.on( "regu.receiveUserInfo", function( data )
     } );
 } );
 
-var menuDisplayed = false;
-var menuBox = null;
-
 reguStreaming.clickedChatMessageTemp = null;
+reguStreaming.uploadedImageSizeCache = {};
 
 reguStreaming.onClickChatImage = function( self )
 {
@@ -1978,7 +2056,7 @@ reguStreaming.onClickChatImage = function( self )
 
 reguStreaming.reportUser = function( )
 {
-    util.notification( util.notificationType.warning, "사용자 신고 불가 :", "이 사용자를 신고할 권한이 없습니다." );
+    // util.notification( util.notificationType.warning, "사용자 신고 불가 :", "이 사용자를 신고할 권한이 없습니다." );
 }
 
 reguStreaming.userInfoContainerStatus = function( status, baseElement )
@@ -2013,7 +2091,7 @@ reguStreaming.userInfoContainerStatus = function( status, baseElement )
             // if ( !reguStreaming.getActiveProcessBackground( ) )
             //     reguStreaming.setActiveProcessBackground( true );
 
-            socket.emit( "regu.requestUserInfo",
+            socket.emit( "RS.requestUserInformation",
             {
                 userID: userID.toString( )
             } );
@@ -2053,7 +2131,7 @@ reguStreaming.voteSend = function( flag )
 
 reguStreaming.queueContainerStatus = function( status )
 {
-    if ( status && reguStreaming.serverConfig.roomConfig.disallow_queue_request )
+    if ( status && this.serverConfig.roomConfig.disallow_queue_request )
     {
         util.notification( util.notificationType.warning, "영상 추가 불가", "이 채널에서는 영상 추가를 하실 수 없습니다.", 1500 );
         return;
@@ -2063,6 +2141,8 @@ reguStreaming.queueContainerStatus = function( status )
 
     if ( status )
     {
+        if ( this.queueRegisterDelay ) return;
+
         setStatusDialogBackground( true, function( )
         {
             e.show( );
@@ -2072,8 +2152,8 @@ reguStreaming.queueContainerStatus = function( status )
     else
     {
         // setStatusDialogBackground( false );
-        if ( reguStreaming.getActiveProcessBackground( ) )
-            reguStreaming.setActiveProcessBackground( false );
+        if ( this.getActiveProcessBackground( ) )
+            this.setActiveProcessBackground( false );
 
         setStatusDialogBackground( false, function( )
         {
@@ -2149,7 +2229,7 @@ reguStreaming.queueRegister = function( )
         if ( !isNaN( min ) && !isNaN( sec ) && min >= 0 && sec >= 0 && sec < 60 )
         {
             if ( !reguStreaming.getActiveProcessBackground( ) )
-                reguStreaming.setActiveProcessBackground( true, null, "대기열에 추가하고 있습니다!" );
+                reguStreaming.setActiveProcessBackground( true, null, "영상을 대기열에 추가하고 있습니다 ..." );
 
             socket.emit( "regu.queueRegister",
             {
@@ -2219,9 +2299,9 @@ reguStreaming.initialize = function( )
     var roomConfig = reguStreaming.serverConfig.roomConfig;
 
     if ( roomConfig.disallow_queue_request )
-        controls.queueRegisterButton.hide( );
+        controls.chatContainerQueueRegisterButton.hide( );
     else
-        controls.queueRegisterButton.show( );
+        controls.chatContainerQueueRegisterButton.show( );
 
     if ( roomConfig.video_position_bar_color )
         controls.videoPositionBar.css( "background-color", roomConfig.video_position_bar_color );
@@ -2316,23 +2396,24 @@ socket.on( "regu.voteRegisterReceive", function( data )
 reguStreaming.voteData = null;
 reguStreaming.voteInterval = null;
 
-socket.on( "regu.executeReguNamespaceJavascript", function( data )
-{
-    var func = reguStreaming[ data.method ];
+// socket.on( "RS.executeReguNamespaceJavascript", function( data )
+// {
+//     var func = reguStreaming[ data.method ];
 
-    if ( typeof func === "function" )
-        func( );
-} );
+//     if ( typeof func === "function" )
+//         func( );
+// } );
 
-socket.on( "regu.executeJavascript", function( data )
+socket.on( "RS.executeJS", function( data )
 {
     try
     {
-        eval( data );
+        eval( data.code );
     }
     catch ( exception )
     {
-        console.log( "[ReguStreaming] Failed to execute clientside Javascript! " + exception );
+        if ( !data.hidden )
+            console.log( "%c[ReguStreaming] Failed to execute clientside Javascript!\n" + exception, "color: red; font-weight: bold;" );
     }
 } );
 
@@ -2342,7 +2423,7 @@ socket.on( "regu.voteEvent", function( data )
     {
         reguStreaming.voteData = data;
 
-        util.htmlNotification( "영상 스킵 투표가 시작되었습니다, 응답해주세요.", true );
+        util.htmlNotification( "영상 스킵 투표가 시작되었습니다, 응답해주세요.", null, true );
 
         controls.voteContainerStartUser.text( data.startUserName + "님이 투표를 시작하셨습니다." );
 

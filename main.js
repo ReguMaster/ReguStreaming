@@ -97,10 +97,12 @@ const MAIN_MENU = [
                 }
             },
             {
-                label: "서비스 중지 (ActiveMode)",
+                label: "Refresh",
+                accelerator: "F5",
                 click: ( ) =>
                 {
-
+                    Electron.stopMainProcess( );
+                    setTimeout( ( ) => Electron.startMainProcess( ) );
                 }
         },
             {
@@ -137,16 +139,16 @@ const MAIN_MENU = [
                 accelerator: "F12",
                 role: "toggledevtools"
         },
-            {
-                label: "재시작",
-                accelerator: "F5",
-                click: ( ) =>
-                {
-                    Electron.stopMainProcess( );
-                    child_process.execSync( "regustreaming-server-start.vbs" );
-                    app.exit( 0 );
-                }
-    }
+    //         {
+    //             label: "재시작",
+    //             accelerator: "F5",
+    //             click: ( ) =>
+    //             {
+    //                 Electron.stopMainProcess( );
+    //                 child_process.execSync( "regustreaming-server-start.vbs" );
+    //                 app.exit( 0 );
+    //             }
+    // }
 		]
     },
     {
