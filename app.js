@@ -18,6 +18,9 @@ const express = require( "express" );
 const session = require( "express-session" );
 const RedisStore = require( "connect-redis" )( session );
 const app = express( );
+const ipFilter = require( "ip-filter" );
+const config = require( "./const/config.json" );
+const FileStorage = require( "./filestorage" );
 
 const expressWebServer = require( "http" )
     .createServer( app );
@@ -31,10 +34,10 @@ const expressWebServerSSL = require( "https" )
     }, app );
 
 Main.config = {};
-Main.config.domain = "regustreaming.oa.to";
-Main.config.host = util.getLocalIP( )
+Main.config.ipFilter = [ ];
+Main.config.domain = config.Server.DOMAIN; //"regustreaming.oa.to";
+Main.config.host = util.getLocalNetworkInterface( )
     .ipAddress;
-Main.config.enableAutoQueue = false;
 
 Main.app = app;
 Main.redisClient = require( "redis" )
@@ -42,6 +45,11 @@ Main.redisClient = require( "redis" )
 Main.socketIO = require( "socket.io" )( expressWebServerSSL,
 {
     pingInterval: 1000 * 10 // 10 seconds;
+} );
+
+FileStorage.loadAsync( "ipfilter", "json", [ ], ( data ) =>
+{
+    Main.config.ipFilter = data;
 } );
 
 const sessionMiddleware = session(
@@ -128,6 +136,7 @@ Main.Listen = function( )
     } );
 }
 
+
 Main.InitializeServer = function( )
 {
     Logger.write( Logger.type.Info, "Booting server ..." );
@@ -144,15 +153,19 @@ Main.InitializeServer = function( )
         } ) );
     app.use( require( "compression" )( ) ); // gzip 압축 미들웨어 사용
     app.use( require( "cookie-parser" )( ) ); // cookie 지원 미들웨어 사용
-    app.use( require( "socketio-file-upload" )
-        .router );
+    // app.use( require( "socketio-file-upload" )
+    //     .router );
 
     // Global 헤더 설정
     app.use( function( req, res, next )
     {
         // https://www.npmjs.com/package/cache-headers
 
+        res.setHeader( "X-UA-Compatible", "IE=edge" );
+        // res.setHeader( "X-Frame-Options", "ALLOW-FROM https://www.youtube.com/" );
         res.setHeader( "X-Powered-By", "Doshigatai" );
+
+        // res.setHeader( "Access-Control-Allow-Origin", "*" );
 
         // res.setHeader( "Cache-Control", "no-cache, no-store" );
         // res.header( "Access-Control-Allow-Headers", "*" );
@@ -189,6 +202,29 @@ setInterval( function( )
 
 hook.register( "Initialize", function( )
 {
+    app.use( function( req, res, next )
+    {
+        let ip = req.ip;
+        var length = Main.config.ipFilter.length;
+
+        for ( var i = 0; i < length; i++ )
+        {
+            if ( ipFilter( ip, Main.config.ipFilter[ i ],
+                {
+                    strict: true
+                } ) !== null )
+            {
+                Logger.impor( `[Server] WARNING: [${ ip || "Unknown" }] blocked by IP Filter! (req: ${ req.originalUrl })` );
+
+                res.status( 403 )
+                    .send( "403 Error, Blocked by IP Filter." )
+
+                return;
+            }
+        }
+
+        next( );
+    } );
     app.use( "/", function( req, res, next )
     {
         if ( req.secure )
@@ -205,7 +241,7 @@ hook.register( "Initialize", function( )
                 code: 404
             } );
 
-        Logger.write( Logger.type.Warning, `[SERVER] ${ req.ip || "Unknown" } requested non-exists file. -> ${ req.originalUrl }` );
+        Logger.warn( `[Server] [${ req.ip || "Unknown" }] requested non-exists file. -> ${ req.originalUrl }` );
     } );
 
     app.use( function( err, req, res, next )
@@ -216,7 +252,7 @@ hook.register( "Initialize", function( )
                 code: 500
             } );
 
-        Logger.write( Logger.type.Error, `[SERVER] ${ req.ip || "Unknown" } failed to processing. -> ${ req.originalUrl }\n${ err.stack }` );
+        Logger.error( `[Server] [${ req.ip || "Unknown" }] failed to processing. -> ${ req.originalUrl }\n${ err.stack }` );
     } );
 } );
 

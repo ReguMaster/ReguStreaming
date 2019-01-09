@@ -35,15 +35,19 @@ Logger.type = {
     Warning: 1,
     Error: 2,
     Event: 3,
-    Important: 4
+    Important: 4,
+    Connect: 5,
+    Disconnect: 6
 };
 Logger.typeKey = Object.keys( Logger.type );
 Logger.typeString = [
     "(INFO)",
-    "(!   WARNING   !)",
-    "(!    ERROR    !)",
+    "(!    WARNING    !)",
+    "(!     ERROR     !)",
     "(EVENT)",
-    "(!    IMPOR    !)"
+    "(!~    IMPOR    ~!)",
+    "(!      CON     !)",
+    "(!      DIC     !)"
 ]
 
 Logger.info = ( message ) => Logger.write( Logger.type.Info, message );
@@ -51,6 +55,8 @@ Logger.warn = ( message ) => Logger.write( Logger.type.Warning, message );
 Logger.error = ( message ) => Logger.write( Logger.type.Error, message );
 Logger.event = ( message ) => Logger.write( Logger.type.Event, message );
 Logger.impor = ( message ) => Logger.write( Logger.type.Important, message );
+Logger.conn = ( message ) => Logger.write( Logger.type.Connect, message );
+Logger.disconn = ( message ) => Logger.write( Logger.type.Disconnect, message );
 
 Logger.write = function( level, message )
 {
@@ -93,13 +99,20 @@ Logger.write = function( level, message )
 var legacyLog = console.log;
 console.log = function( ...message )
 {
-    legacyLog( ...message );
-
-    process.send(
+    try
     {
-        type: "log",
-        message: message
-    } );
+        legacyLog( ...message );
+
+        process.send(
+        {
+            type: "log",
+            message: message
+        } );
+    }
+    catch ( err )
+    {
+        legacyLog( "(!    ERROR    !) Logger IPC send Failure! : " + err.message );
+    }
 }
 
 module.exports = Logger;

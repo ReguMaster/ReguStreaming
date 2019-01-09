@@ -17,21 +17,20 @@ const timer = require( "../timer" );
 const FileStorage = require( "../filestorage" );
 const Logger = require( "../modules/logger" );
 
+ServiceManager.vars = {};
+
 ServiceManager.notification = [ ];
 ServiceManager.serviceStatus = 0;
 
 // *NOTE: guest 포함 불가
 ServiceManager.loginDisallowList = [
     // "steam",
-    "naver",
-    "google",
-    "twitter",
-    "kakao"
+    "google"
+    // "twitter"
+    // "kakao"
 ]
 
-ServiceManager.joinDisallowList = [
-    "home"
-];
+ServiceManager.joinDisallowList = [ ];
 
 FileStorage.loadAsync( "serviceNotification", "json", [ ], ( data ) =>
 {
@@ -61,6 +60,8 @@ ServiceManager.isQueueRegisterAllowed = function( roomID, provider )
 {
     return true;
 
+    return provider === 0 || provider === 1;
+
     return "made in abyss";
 }
 
@@ -81,7 +82,8 @@ ServiceManager.refreshBackground = function( )
 
         ServiceManager.background = path.join( location, newBackground );
 
-        Logger.write( Logger.type.Info, `[Service] Background refreshed. (newBG:${ newBackground })` );
+        // *TODO: wow.png
+        Logger.write( Logger.type.Info, `[Service] Background refreshed. (newBG:${ newBackground }) <img src="/wow.png" />` );
     } );
 }
 
@@ -110,6 +112,23 @@ ServiceManager.registerNotification = function( id, type, title, message )
     FileStorage.save( "serviceNotification", "json", this.notification );
 }
 
+ServiceManager.removeNotification = function( id )
+{
+    this.notification.some( ( n, i ) =>
+    {
+        if ( n.id === id )
+        {
+            this.notification.splice( i, 1 );
+            Logger.write( Logger.type.Warning, "[Service] Removed exists '" + n.id + "' notification!" );
+            return true;
+        }
+    } );
+
+    // *TODO: sync 되지 않아서 문제 발생 가능성
+    // 2018-09-02 9:11:35 (! ERROR !) : [SERVER] Unhandled Exception: SyntaxError: Unexpected token { in JSON at position 118 at JSON.parse () at D:\NodeJS\ReguStreaming\regustreaming\filestorage.js:61:54 at FSReqWrap.readFileAfterClose [as oncomplete] (fs.js:511:3)
+    FileStorage.save( "serviceNotification", "json", this.notification );
+}
+
 ServiceManager.registerServersideLiveCode = function( id, url )
 {
     this.liveCode.server.push(
@@ -122,17 +141,78 @@ ServiceManager.registerServersideLiveCode = function( id, url )
 ServiceManager.getClientAjaxData = function( )
 {
     return {
-        notification: this.notification,
-        serviceStatus: this.serviceStatus,
-        loginDisallowList: this.loginDisallowList
+        notification: Server.getGlobalVar( "SERVER.NOTIFICATIONS", [ ] ),
+        serviceStatus: Server.getGlobalVar( "SERVER.SERVICE_STATUS", 0 ),
+        loginDisallowList: Server.getGlobalVar( "SERVER.LOGIN_DISALLOW_PROVIDER", [ ] )
     }
 }
 
-ServiceManager.setServiceStatus = function( status )
+ServiceManager.reloadIPFilter = function( )
 {
-    this.serviceStatus = status
+    FileStorage.loadAsync( "ipfilter", "json", [ ], ( data ) =>
+    {
+        App.config.ipFilter = data;
+    } );
+}
 
-    FileStorage.save( "serviceStatus", "text", this.serviceStatus );
+ServiceManager.initializeLiveCode = function( )
+{
+    fileStream.readFile( "./service/live.js", "utf8", function( err, data )
+    {
+        if ( err )
+        {
+            Logger.error( `[Service] Failed to load LiveService file! (err:${ err })` );
+            return;
+        }
+
+        try
+        {
+            eval( data );
+            Logger.event( `[Service] LiveService file successfully executed.` );
+        }
+        catch ( e )
+        {
+            Logger.error( `[Service] Failed to execute LiveService file! (exception:${ e.stack })` );
+        }
+    } );
+
+    var watchTwiceEventBlocker = false;
+
+    fileStream.watch( "./service/live.js",
+    {
+        encoding: "utf8"
+    }, function( eventType, fileName )
+    {
+        if ( !watchTwiceEventBlocker && eventType === "change" && fileName === "live.js" )
+        {
+            watchTwiceEventBlocker = true;
+
+            fileStream.readFile( "./service/live.js", "utf8", function( err, data )
+            {
+                if ( err )
+                {
+                    Logger.error( `[Service] Failed to load LiveService file! (err:${ err })` );
+                    return;
+                }
+
+                try
+                {
+                    eval( data );
+
+                    Logger.event( `[Service] LiveService file successfully AutoRefreshed.` );
+                }
+                catch ( e )
+                {
+                    Logger.error( `[Service] Failed to AutoRefresh LiveService file! (exception:${ e.stack })` );
+                }
+            } );
+
+            setTimeout( function( )
+            {
+                watchTwiceEventBlocker = false;
+            }, 1500 );
+        }
+    } );
 }
 
 ServiceManager.done = function( )
@@ -201,19 +281,17 @@ ServiceManager.done = function( )
         } );
 }
 
-ServiceManager.setServiceStatus( 0 );
-// ServiceManager.registerNotification( "SERVICE_UNAVAILABLE", ServiceManager.notificationType.danger, "서비스 문제", "서비스 업데이트 작업으로 인해 서비스 접근을 비활성화 했습니다, 불편을 드려 죄송합니다." );
-ServiceManager.registerNotification( "SNS_LOGIN_WARN", ServiceManager.notificationType.warning, "소셜 계정 로그인", "외부 서비스 접근에 문제가 발생하여 현재 스팀을 통한 로그인을 제외한 모든 소셜 계정 로그인이 불가능 합니다, 불편을 드려 죄송합니다." );
 ServiceManager.refreshBackground( );
 
-timer.create( "service.RefreshBackground", 1000 * 180, 0, function( ) // *NOTE: 2 minutes
+timer.create( "service.RefreshBackground", 60 * 60 * 5 * 1000, 0, function( ) // *NOTE: 5분
     {
         ServiceManager.refreshBackground( )
     } );
 
 hook.register( "PreClientConnect", function( ipAddress )
 {
-    if ( ServiceManager.serviceStatus === 1 && ipAddress !== App.config.host )
+    if ( Server.getGlobalVar( "SERVER.SERVICE_STATUS", 0 ) === 1 && Server.getGlobalVar( "SERVER.SERVICE_DISALLOW_CONNECTABLE_IP_LIST", [ ] )
+        .indexOf( roomID ) === -1 )
     {
         return {
             accept: false,
@@ -224,7 +302,8 @@ hook.register( "PreClientConnect", function( ipAddress )
 
 hook.register( "OnClientConnect", function( ipAddress, userID, roomID )
 {
-    if ( ServiceManager.joinDisallowList.indexOf( roomID ) !== -1 )
+    if ( Server.getGlobalVar( "SERVER.JOIN_DISALLOW_ROOM", [ ] )
+        .indexOf( roomID ) !== -1 )
     {
         return {
             accept: false,
@@ -232,7 +311,8 @@ hook.register( "OnClientConnect", function( ipAddress, userID, roomID )
         }
     }
 
-    if ( ServiceManager.serviceStatus === 1 && ipAddress !== App.config.host )
+    if ( Server.getGlobalVar( "SERVER.SERVICE_STATUS", 0 ) && Server.getGlobalVar( "SERVER.SERVICE_DISALLOW_CONNECTABLE_IP_LIST", [ ] )
+        .indexOf( roomID ) === -1 )
     {
         return {
             accept: false,
@@ -255,6 +335,11 @@ hook.register( "PostReadyDiscordClient", function( )
     {
         consoleChannel.send( log );
     } );
+} );
+
+hook.register( "Initialize", function( )
+{
+    ServiceManager.initializeLiveCode( );
 } );
 
 module.exports = ServiceManager;

@@ -3,6 +3,7 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
+const App = require( "../app" );
 const router = require( "express" )
     .Router( );
 const apiConfig = require( "../const/config" );
@@ -11,11 +12,13 @@ const path = require( "path" );
 const passport = require( "passport" );
 const BanManager = require( "../modules/ban" );
 const Database = require( "../modules/db" );
+const DatabaseCache = require( "../modules/dbcache" );
 const Logger = require( "../modules/logger" );
 const util = require( "../util" );
 const uniqid = require( "uniqid" );
 const QueueManager = require( "../modules/queue" );
 const ServiceManager = require( "../modules/service" );
+const CallSystem = require( "../modules/call" );
 const hook = require( "../hook" );
 // const superagent = require( "superagent" );
 const Server = require( "../server" );
@@ -48,15 +51,24 @@ router.get( "/", function( req, res )
                 provider: "guest"
             }
         }
-        // if ( req.isAuthenticated( ) )
-        // {
+
         res.setHeader( "Cache-Control", "no-cache, no-store" );
         req.session.roomID = req.query.room;
 
         Server.joinRoom( req.session.roomID, req, res, req.ip );
+
+        // if ( req.isAuthenticated( ) )
+        // {
+        //     // *NOTE: 보안 취약 위험성 있음.
+        //     res.setHeader( "Cache-Control", "no-cache, no-store" );
+        //     req.session.roomID = req.query.room;
+
+        //     Server.joinRoom( req.session.roomID, req, res, req.ip );
         // }
         // else
         //     res.redirect( "/?loginRequired" );
+
+        // return;
 
         return;
     }
@@ -71,12 +83,40 @@ router.get( "/", function( req, res )
     } );
 } );
 
-router.post( "/api/discordRecommend", function( req, res )
+router.get( "/video/search", function( req, res )
 {
-    req.session.discordRecommend = 2;
-    res.status( 200 )
-        .send( "Success" );
+    if ( !req.isAuthenticated( ) )
+    {
+        res.redirect( "/?loginRequired" );
+
+        return;
+    }
+
+    res.render( "video_search" );
 } );
+
+/*
+router.get( "/api/call", function( req, res )
+{
+    var
+    {
+        result,
+        reason
+    } = CallSystem.call( req.session.roomID, req, res ); //req.session.roomID, req.user.displayName + "(" + req.user.id + ") 님이 관리자를 호출하셨습니다.", "glyphicon glyphicon-eye-open" );
+
+    res.send( JSON.stringify(
+    {
+        result: result,
+        reason: reason
+    } ) );
+} );*/
+
+// router.post( "/api/discordRecommend", function( req, res )
+// {
+//     req.session.discordRecommend = 2;
+//     res.status( 200 )
+//         .send( "Success" );
+// } );
 
 router.get( "/extra/:room", function( req, res )
 {
@@ -90,6 +130,18 @@ router.get( "/extra/:room", function( req, res )
 
         return;
     }
+
+    if ( ServiceManager.serviceStatus === 1 && req.ip !== App.config.host )
+    {
+        res.status( 403 )
+            .render( "error",
+            {
+                code: 403
+            } );
+
+        return;
+    }
+
 
     if ( req.params.room )
     {
@@ -117,7 +169,66 @@ router.get( "/extra/:room", function( req, res )
 
 router.get( "/media/:room", function( req, res )
 {
-    if ( !req.isAuthenticated( ) )
+    // if ( !req.isAuthenticated( ) )
+    // {
+    //     res.status( 403 )
+    //         .render( "error",
+    //         {
+    //             code: 403
+    //         } );
+
+    //     return;
+    // }
+
+    if ( ServiceManager.serviceStatus === 1 && req.ip !== App.config.host )
+    {
+        res.status( 403 )
+            .render( "error",
+            {
+                code: 403
+            } );
+
+        return;
+    }
+
+    if ( req.params.room )
+    {
+        var playingData = QueueManager.getPlayingData( req.params.room );
+
+        console.log( playingData );
+
+        if ( util.isEmpty( playingData ) )
+        {
+            res.status( 204 )
+                .send( "" );
+
+            return;
+        }
+
+        res.redirect( 302, playingData.mediaContentURL );
+    }
+    else
+        res.status( 403 )
+        .render( "error",
+        {
+            code: 403
+        } );
+} );
+
+router.get( "/sound/:room", function( req, res )
+{
+    // if ( !req.isAuthenticated( ) )
+    // {
+    //     res.status( 403 )
+    //         .render( "error",
+    //         {
+    //             code: 403
+    //         } );
+
+    //     return;
+    // }
+
+    if ( ServiceManager.serviceStatus === 1 && req.ip !== App.config.host )
     {
         res.status( 403 )
             .render( "error",
@@ -140,7 +251,7 @@ router.get( "/media/:room", function( req, res )
             return;
         }
 
-        res.redirect( 302, playingData.mediaContentURL );
+        res.redirect( 302, playingData.mediaSoundContentURL );
     }
     else
         res.status( 403 )
@@ -221,8 +332,6 @@ router.get( "/logout", function( req, res )
 {
     if ( req.isAuthenticated( ) )
     {
-        Logger.write( Logger.type.Info, `[Router] Account logout. ${ util.inspect( req.user, false, 4 ) }` );
-
         var client = Server.getClientBySessionID( req.sessionID );
 
         if ( client )
@@ -230,6 +339,8 @@ router.get( "/logout", function( req, res )
 
         req.session.destroy( );
         req.logOut( );
+
+        Logger.info( `[Router] Account logout. ${ util.inspect( req.user, false, 4 ) }` );
     }
 
     res.redirect( "/" );
@@ -252,40 +363,57 @@ router.get( "/files/:id", function( req, res )
 {
     if ( req.params.id )
     {
-        if ( !req.isAuthenticated( ) )
-        {
-            res.status( 403 )
-                .render( "error",
-                {
-                    code: 403
-                } );
-            return;
-        }
+        // if ( !req.isAuthenticated( ) )
+        // {
+        //     res.status( 403 )
+        //         .render( "error",
+        //         {
+        //             code: 403
+        //         } );
+        //     return;
+        // }
 
-        Database.queryWithEscape( `SELECT _file, _type from userfile WHERE _id = ?`, [ req.params.id ], function( status, result )
+        if ( DatabaseCache.exists( `USERFILE.${ req.params.id }` ) )
         {
-            if ( status === "success" )
+            var result = DatabaseCache.fetch( `USERFILE.${ req.params.id }` );
+
+            res.sendFile( path.join( __dirname, "/../", "files", result._id + "." + result._extension ) );
+
+            // res.setHeader( "Content-type", result._mimeType );
+            // res.download( path.join( __dirname, "/../", "files", result._id + "." + result._extension ), result._originalFileName );
+        }
+        else
+        {
+            Database.executeProcedure( "FIND_USERFILE", [ req.params.id ], function( status, result )
             {
-                result = result[ 0 ];
-                res.type( "image/" + result._type )
-                    .sendFile( path.join( __dirname, "/../", "userfiles", result._file + "." + result._type ) );
-            }
-            else
+                if ( status === "success" )
+                {
+                    result = result[ 0 ];
+
+                    res.sendFile( path.join( __dirname, "/../", "files", result._id + "." + result._extension ) );
+
+                    // res.setHeader( "Content-type", result._mimeType );
+                    // res.download( path.join( __dirname, "/../", "files", result._id + "." + result._extension ), result._originalFileName );
+
+                    DatabaseCache.register( `USERFILE.${ req.params.id }`, 1000 * 60, result );
+                }
+                else
+                {
+                    res.status( 404 )
+                        .render( "error",
+                        {
+                            code: 404
+                        } );
+                }
+            }, function( err )
             {
                 res.status( 404 )
                     .render( "error",
                     {
                         code: 404
                     } );
-            }
-        }, function( err )
-        {
-            res.status( 404 )
-                .render( "error",
-                {
-                    code: 404
-                } );
-        } );
+            } );
+        }
     }
     else
     {
@@ -641,6 +769,8 @@ router.get( "/login/twitter/return",
             } );
         } )( req, res, next );
     } );
+
+hook.run( "OnRouter", router );
 
 require( "../modules/openid/steam" );
 require( "../modules/openid/naver" );

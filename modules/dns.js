@@ -5,6 +5,7 @@
 
 'use strict';
 
+
 const DNS = {};
 const superagent = require( "superagent" );
 const hook = require( "../hook" );
@@ -51,15 +52,11 @@ DNS.refresh = function( callback )
         } );
 }
 
-timer.create( "DNS.refresh", 1000 * 60 * 60, 0, function( )
-{
-    DNS.refresh( );
-} );
-
-// hook.register( "Initialize", function( )
+// timer.create( "DNS.refresh", 1000 * 60 * 60, 0, function( )
 // {
-// DNS.refresh( );
+//     DNS.refresh( );
 // } );
-DNS.refresh( );
+
+// DNS.refresh( );
 
 module.exports = DNS;

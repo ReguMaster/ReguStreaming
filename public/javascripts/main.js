@@ -8,6 +8,8 @@ let controls = {
     roomListContainer: null,
     roomListContainerList: null,
     roomListContainerLoginRequired: null,
+    roomListContainerRefreshHelp: null,
+    roomListContainerRefreshHelpText: null,
 
     headerLogin: null,
     headerLoginGuestText: null,
@@ -51,8 +53,9 @@ reguStreaming.discordRecommendModalContainerStatus = function( status )
 reguStreaming.defineControls = function( )
 {
     var keys = Object.keys( controls );
+    var length = keys.length;
 
-    for ( var i = 0; i < keys.length; i++ )
+    for ( var i = 0; i < length; i++ )
     {
         controls[ keys[ i ] ] = $( "#" + keys[ i ] );
     }
@@ -113,186 +116,284 @@ reguStreaming.processMainQueryString = function( )
     }
 }
 
-window.onload = function( )
-{
-    reguStreaming.defineControls( );
-    reguStreaming.AjaxLoginStatus( );
-    reguStreaming.AjaxServiceStatus( );
-    reguStreaming.processMainQueryString( );
-
-    // if ( util.getCookieByName( "discordRecommend" ) === "1" )
-
-
-    if ( util.getQueryByName( "loginRequired" ) != null )
+/*
+$( window )
+    .mousemove( function( e )
     {
-        util.showModal( "로그인 필요", "로그인이 필요한 서비스입니다.", "닫기", null, null, null, true );
-        util.removeAllQueryParameters( );
-    }
+        var movementStrength = 25;
+        var w = $( window )
+            .width( );
+        var h = $( window )
+            .height( );
 
-    if ( util.getQueryByName( "forceDisconnect" ) != null )
+        var pageX = ( e.pageX - w / 2 ) / w / 2;
+        var pageY = ( e.pageY - h / 2 ) / h / 2;
+        var newvalueX = pageX * movementStrength;
+        var newvalueY = pageY * movementStrength;
+        $( 'video' )
+            .css(
+            {
+                left: newvalueX + 'px',
+                // width: '-webkit-calc( 100% + ' + Math.abs( newvalueX * 2 ) + 'px )',
+                top: newvalueY + 'px',
+                // height: '-webkit-calc( 100% + ' + Math.abs( newvalueY * 2 ) + 'px )'
+            } );
+    } );
+*/
+
+$( window )
+    .on( "load", function( )
     {
-        var reason = localStorage.getItem( "regustreaming.forceDisconnectReason" );
-
-        localStorage.removeItem( "regustreaming.forceDisconnectReason" );
-
-        util.showModal( "서비스 안내", reason, "닫기", null, null, null, true );
-        util.removeAllQueryParameters( );
-    }
-
-    if ( util.getQueryByName( "banDataError" ) != null )
-    {
-        util.showModal( "데이터 오류", "서비스 정지된 계정이 아닙니다.", "닫기", null, null, null, true );
-        util.removeAllQueryParameters( );
-    }
-
-    if ( util.getQueryByName( "banInfo" ) != null )
-    {
-        util.showModal( "서비스 정지", "죄송합니다, 귀하는 '" + util.getQueryByName( "banInfo" ) + "' 으로 인해 서비스가 영구적으로 정지되었습니다.", "닫기", null, null, null, true );
-        util.removeAllQueryParameters( );
-    }
-
-    if ( util.getQueryByName( "banned" ) != null )
-    {
-        util.notification( util.notificationType.danger, "접속 불가", "귀하의 계정에 서비스 약관 위반 내역이 있습니다. 그 결과로 계정이 정지되었으며 더 이상 서비스를 이용할 수 없습니다. <br />자세한 정보는 다음 <a class='aRegu' target='_blank' href='https://regustreaming.oa.to/ban/" + util.getQueryByName( "id" ) + "'>페이지</a>를 참고하세요.", 0 );
-        util.removeAllQueryParameters( );
-    }
-
-    controls.roomListContainer.css( "opacity", "0" )
-        .show( )
-        .animate(
+        if ( util.isIE( ) )
         {
-            opacity: "1"
+            util.notification( util.notificationType.warning, "호환성 알림 :", "해당 브라우저에서 호환성 문제가 확인되었습니다, 다른 브라우저로 이용해주세요.", 0 );
+        }
+
+        reguStreaming.defineControls( );
+        reguStreaming.ajaxLoginStatus( );
+        reguStreaming.ajaxServiceStatus( );
+        reguStreaming.processMainQueryString( );
+
+
+
+        // if ( util.getCookieByName( "discordRecommend" ) === "1" )
+
+
+        if ( util.getQueryByName( "loginRequired" ) != null )
+        {
+            util.showModal( "로그인 필요", "로그인이 필요한 서비스입니다.", "닫기", null, null, null, true );
+            util.removeAllQueryParameters( );
+        }
+
+        if ( util.getQueryByName( "forceDisconnect" ) != null )
+        {
+            var reason = localStorage.getItem( "regustreaming.forceDisconnectReason" );
+
+            localStorage.removeItem( "regustreaming.forceDisconnectReason" );
+
+            util.showModal( "서비스 안내", reason, "닫기", null, null, null, true );
+            util.removeAllQueryParameters( );
+        }
+
+        if ( util.getQueryByName( "banDataError" ) != null )
+        {
+            util.showModal( "데이터 오류", "서비스 정지된 계정이 아닙니다.", "닫기", null, null, null, true );
+            util.removeAllQueryParameters( );
+        }
+
+        if ( util.getQueryByName( "banInfo" ) != null )
+        {
+            util.showModal( "서비스 정지", "죄송합니다, 귀하는 '" + util.getQueryByName( "banInfo" ) + "' 으로 인해 서비스가 영구적으로 정지되었습니다.", "닫기", null, null, null, true );
+            util.removeAllQueryParameters( );
+        }
+
+        if ( util.getQueryByName( "banned" ) != null )
+        {
+            util.notification( util.notificationType.danger, "접속 불가", "귀하의 계정에 서비스 약관 위반 내역이 있습니다. 그 결과로 계정이 정지되었으며 더 이상 서비스를 이용할 수 없습니다. <br />자세한 정보는 다음 <a class='aRegu' target='_blank' href='https://regustreaming.oa.to/ban/" + util.getQueryByName( "id" ) + "'>페이지</a>를 참고하세요.", 0 );
+            util.removeAllQueryParameters( );
+        }
+
+        controls.roomListContainer.css( "opacity", "0" )
+            .show( )
+            .animate(
+            {
+                opacity: "1"
+            }, 1000 );
+
+        controls.headerServiceStatus.on( "click", function( e )
+        {
+            e.stopPropagation( );
+        } );
+
+        controls.headerServiceNotification.on( "click", function( e )
+        {
+            e.stopPropagation( );
+        } );
+
+        controls.headerServiceStatusFloating.on( "click", function( e )
+        {
+            e.stopPropagation( );
+        } );
+
+        reguStreaming.documentLoaded = true;
+
+        setInterval( function( )
+        {
+            reguStreaming.ajaxServiceStatus( );
+        }, 60 * 1000 );
+
+        reguStreaming.roomRefreshTime = 30;
+
+        setInterval( function( )
+        {
+            if ( --reguStreaming.roomRefreshTime <= 0 )
+            {
+                reguStreaming.roomRefreshTime = 30;
+                reguStreaming.ajaxOnlyRoom( true );
+            }
+
+            controls.roomListContainerRefreshHelpText.text( reguStreaming.roomRefreshTime + "초 후에 다시 불러옵니다." );
         }, 1000 );
 
-    controls.headerServiceStatus.on( "click", function( e )
-    {
-        e.stopPropagation( );
+        reguStreaming.afterLoad( );
     } );
-
-    controls.headerServiceNotification.on( "click", function( e )
-    {
-        e.stopPropagation( );
-    } );
-
-    controls.headerServiceStatusFloating.on( "click", function( e )
-    {
-        e.stopPropagation( );
-    } );
-
-
-    if ( util.isIE( ) )
-    {
-        util.notification( util.notificationType.warning, "호환성 알림 :", "해당 브라우저에서 호환성 문제가 확인되었습니다, 다른 브라우저로 이용해주세요.", 0 );
-    }
-
-    reguStreaming.documentLoaded = true;
-
-    setInterval( function( )
-    {
-        reguStreaming.AjaxServiceStatus( );
-    }, 60 * 1000 );
-
-    setInterval( function( )
-    {
-        reguStreaming.AjaxOnlyRoom( );
-    }, 30 * 1000 );
-
-    reguStreaming.afterLoad( );
-}
 
 // <p class="roomChildTitleSmall"> \
 // 			채널 \
 // 		</p> \
 // <button type="button" class="btn btn-blue" id="roomChildConnectButton" onclick="connectToServer( {5} );">접속</button> \
-const roomChildHTML = '<div class="roomChild hvr-float" id="roomChild_{0}" onclick="reguStreaming.connectToServer( {1} );"> \
-				<p class="roomChildTitle">{2}</p> \
-                <p class="roomChildDesc">{3}</p> \
-                <p class="roomChildCurrentPlaying">{4}</p> \
-				<p class="roomChildCount">{5}/{6}</p> \
+reguStreaming.roomItemFormatBase = '<div class="roomItem hvr-float" id="roomItem_{0}"> \
+                <img class="roomItem-icon" src="{1}" /> \
+				<p class="roomItem-title">{2}</p> \
+                <p class="roomItem-desc">{3}</p> \
+                <p class="roomItem-currentPlaying">{4}</p> \
+				<p class="roomItem-count">{5}/{6}</p> \
 			</div>';
 reguStreaming.roomCount = 0;
 
-reguStreaming.connectToServer = function( roomID )
-{
-    window.location = "/?room=" + roomID;
-}
-
-reguStreaming.initializeRoom = function( rooms )
+reguStreaming.initializeRoom = function( rooms, redraw )
 {
     var waitInitialize = setInterval( function( )
     {
         if ( reguStreaming.controlInitialized )
         {
-            var keys = Object.keys( rooms );
-            var keysLength = keys.length;
-
-            controls.roomListContainerList.empty( );
-
-            for ( var i = 0; i < keysLength; i++ )
+            var onDraw = function( )
             {
-                var roomData = rooms[ keys[ i ] ];
+                var keys = Object.keys( rooms );
+                var keyLength = keys.length;
 
-                var newObj = $( String.format(
-                        roomChildHTML,
-                        reguStreaming.roomCount++,
-                        "'" + roomData.roomID + "'",
-                        roomData.title,
-                        roomData.desc,
-                        roomData.currentPlaying ? ( "재생 중 : " + roomData.currentPlaying ) : "재생 중인 영상이 없습니다.",
-                        roomData.count,
-                        roomData.maxConnectable
-                    ) )
-                    .appendTo( controls.roomListContainerList )
+                reguStreaming.roomCount = 0;
+                controls.roomListContainerList.empty( );
+                controls.roomListContainerRefreshHelp.hide( );
 
-                newObj.css( "opacity", "0" );
-
-                setTimeout( function( obj )
+                for ( var i = 0; i < keyLength; i++ )
                 {
-                    util.startCSSAnimation( "flipInX 1s", obj );
-                    obj.css( "opacity", "1" );
-                }, 100 + ( 150 * i ), newObj );
-            }
+                    var roomData = rooms[ keys[ i ] ];
 
-            if ( reguStreaming.isAuthenticated )
-            {
-                if ( controls.roomListContainerLoginRequired.is( ":visible" ) )
-                {
-                    controls.roomListContainerLoginRequired.stop( )
-                        .animate(
+                    var newObj = $( String.format(
+                            reguStreaming.roomItemFormatBase,
+                            reguStreaming.roomCount++,
+                            roomData.iconData.image,
+                            roomData.title,
+                            roomData.desc,
+                            roomData.currentPlaying ? ( "재생 중 : " + roomData.currentPlaying ) : "재생 중인 영상이 없습니다.",
+                            roomData.count,
+                            roomData.maxConnectable
+                        ) )
+                        .appendTo( controls.roomListContainerList )
+
+                    if ( roomData.iconData.shadow )
+                    {
+                        newObj.find( ".roomItem-icon" )
+                            .css( "box-shadow", roomData.iconData.shadow );
+                    }
+
+                    newObj.css( "opacity", "0" )
+                        .on( "click",
                         {
-                            opacity: "0"
-                        }, 1000, function( )
+                            roomID: roomData.roomID
+                        }, function( e )
                         {
-                            $( this )
-                                .hide( );
+                            window.location = "/?room=" + e.data.roomID;
                         } );
+
+                    setTimeout( function( obj )
+                    {
+                        if ( obj )
+                            obj.startAnimation( "bounceInUp 1s" )
+                            .opacityTo( "1", 1000 );
+                    }, 100 + ( 150 * i ), newObj );
                 }
 
-                controls.roomListContainerList.css( "filter", "" );
-                controls.roomListContainerList.css( "-webkit-filter", "" );
+                setTimeout( function( )
+                {
+                    controls.roomListContainerRefreshHelp.show( )
+                        .stop( )
+                        .startAnimation( "bounceInLeft 1s" )
+                        .opacityTo( "1", 1000 );
+                }, 100 + ( 150 * keyLength ) );
+
+                if ( reguStreaming.isAuthenticated )
+                {
+                    if ( controls.roomListContainerLoginRequired.is( ":visible" ) )
+                    {
+                        controls.roomListContainerLoginRequired.stop( )
+                            .animate(
+                            {
+                                opacity: "0"
+                            }, 1000, function( )
+                            {
+                                $( this )
+                                    .hide( );
+                            } );
+                    }
+
+                    controls.roomListContainerList.css( "filter", "" );
+                    controls.roomListContainerList.css( "-webkit-filter", "" );
+                }
+                else
+                {
+                    if ( !controls.roomListContainerLoginRequired.is( ":visible" ) )
+                    {
+                        controls.roomListContainerLoginRequired.show( )
+                            .stop( )
+                            .animate(
+                            {
+                                opacity: "1"
+                            }, 1000 );
+                    }
+
+                    controls.roomListContainerList.css( "filter", "blur( 2px )" );
+                    controls.roomListContainerList.css( "-webkit-filter", "blur( 2px )" );
+                }
+            }
+
+            if ( redraw )
+            {
+                var length = controls.roomListContainerList.children( )
+                    .length;
+
+                if ( length > 0 )
+                {
+                    controls.roomListContainerRefreshHelp.startAnimation( "bounceOutLeft 1s" )
+                        .stop( )
+                        .opacityTo( "0", 1000 );
+
+                    for ( var i = length - 1; i >= 0; i-- )
+                    {
+                        var item = controls.roomListContainerList.children( )
+                            .eq( i );
+
+                        setTimeout( function( obj )
+                        {
+                            if ( obj )
+                            {
+                                obj.startAnimation( "bounceOutDown 1s" )
+                                    .opacityTo( "0", 1000 );
+                            }
+                        }, 100 + ( 150 * i ), item );
+                    }
+
+                    setTimeout( function( )
+                    {
+                        onDraw( );
+
+                    }, ( 250 * length ) + 100 );
+                }
+                else
+                    onDraw( );
             }
             else
-            {
-                if ( !controls.roomListContainerLoginRequired.is( ":visible" ) )
-                {
-                    controls.roomListContainerLoginRequired.show( )
-                        .stop( )
-                        .animate(
-                        {
-                            opacity: "1"
-                        }, 1000 );
-                }
+                onDraw( );
 
-                controls.roomListContainerList.css( "filter", "blur( 2px )" );
-                controls.roomListContainerList.css( "-webkit-filter", "blur( 2px )" );
-            }
+
 
             clearInterval( waitInitialize );
         }
     }, 100 );
 }
 
-reguStreaming.AjaxServiceStatus = function( )
+reguStreaming.ajaxServiceStatus = function( )
 {
     $.ajax(
     {
@@ -371,6 +472,11 @@ reguStreaming.buildServiceNotification = function( data )
     var length = data.length;
     var typeHighest = 0;
 
+    data.sort( function( a, b )
+    {
+        return a.type > b.type ? -1 : a.type < b.type ? 1 : 0;
+    } );
+
     for ( var i = 0; i < length; i++ )
     {
         var newObj = $( String.format(
@@ -416,18 +522,25 @@ reguStreaming.buildServiceNotification = function( data )
         case 0:
             controls.headerServiceStatus.attr( "src", "images/service/info.png" );
             controls.headerServiceStatus.css( "animation", "headerServiceStatusInfo 1s infinite" );
+
+            controls.headerServiceNotification.attr( "data-highesttype", "info" );
             break;
         case 1:
             controls.headerServiceStatus.attr( "src", "images/service/warning.png" );
             controls.headerServiceStatus.css( "animation", "headerServiceStatusWarning 1s infinite" );
+
+            controls.headerServiceNotification.attr( "data-highesttype", "warning" );
             break;
         case 2:
             controls.headerServiceStatus.attr( "src", "images/service/danger.png" );
             controls.headerServiceStatus.css( "animation", "headerServiceStatusDanger 1s infinite" );
+
+            controls.headerServiceNotification.attr( "data-highesttype", "danger" );
             break;
     }
 
-    controls.headerServiceStatus.show( )
+    if ( !controls.headerServiceStatus.is( ":visible" ) )
+        controls.headerServiceStatus.show( )
         .css( "opacity", "0" )
         .animate(
         {
@@ -463,7 +576,7 @@ reguStreaming.toggleServiceNotificationStatus = function( )
     }
 }
 
-reguStreaming.AjaxLoginStatus = function( )
+reguStreaming.ajaxLoginStatus = function( )
 {
     $.ajax(
     {
@@ -473,7 +586,7 @@ reguStreaming.AjaxLoginStatus = function( )
         success: function( data )
         {
             reguStreaming.accountInformation = data;
-            reguStreaming.isAuthenticated = true; // data.isAuthenticated;
+            reguStreaming.isAuthenticated = data.isAuthenticated;
 
             if ( data.isAuthenticated )
             {
@@ -589,7 +702,7 @@ reguStreaming.AjaxLoginStatus = function( )
     } );
 }
 
-reguStreaming.AjaxOnlyRoom = function( )
+reguStreaming.ajaxOnlyRoom = function( redraw )
 {
     $.ajax(
     {
@@ -598,7 +711,7 @@ reguStreaming.AjaxOnlyRoom = function( )
         dataType: "json",
         success: function( data )
         {
-            reguStreaming.initializeRoom( data );
+            reguStreaming.initializeRoom( data, redraw );
         },
         error: function( err )
         {
@@ -634,7 +747,8 @@ onRecaptcha = function( key )
         },
         error: function( err )
         {
-            util.notification( util.notificationType.error, "reCAPTCHA 오류", "알 수 없는 reCAPTCHA 오류가 발생했습니다.", 4000 );
+            console.log( "%c[ReguStreaming]" )
+            util.notification( util.notificationType.error, "reCAPTCHA 오류", "reCAPTCHA 요청 중 오류가 발생했습니다.", 4000, true );
         }
     } );
 }

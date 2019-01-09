@@ -21,6 +21,8 @@ const cheerio = require( "cheerio" );
 const getDuration = require( "get-video-duration" );
 const ServiceManager = require( "./service" );
 const decodeHTML = require( "decode-html" );
+const imageAverageColor = require( "image-average-color" );
+const config = require( "../const/config.json" );
 
 QueueManager.providerType = {
     Youtube: 0,
@@ -75,7 +77,7 @@ QueueManager.urlValidChecker = [
             var p = urlParsed.pathname.split( "/" );
             var id = Number( p[ p.length - 1 ] );
 
-            if ( id && !isNaN( id ) )
+            if ( id && Number.isInteger( id ) )
             {
                 return urlParsed.href;
             }
@@ -121,14 +123,14 @@ QueueManager.urlValidChecker = [
     },
     {
         type: QueueManager.providerType.Ani24,
-        host: [ "ani24.co", "ani24tv.com" ],
-        validFormat: "http://ani24tv.com/ani_view/32363.html",
+        host: [ "ani24.co", "ani24tv.com", "ani24view.com", "ani24suki.com", "ani24zoa.com" ],
+        validFormat: "http://ani24view.com/ani_view/32363.html",
         checker: function( urlParsed, query )
         {
             var p = urlParsed.pathname.split( "/" );
             var id = Number( p[ p.length - 1 ].replace( ".html", "" ) );
 
-            if ( urlParsed.pathname.indexOf( "/ani_view/" ) === 0 && id && !isNaN( id ) )
+            if ( urlParsed.pathname.indexOf( "/ani_view/" ) === 0 && id && Number.isInteger( id ) )
             {
                 return urlParsed.href;
             }
@@ -140,7 +142,7 @@ QueueManager.urlValidChecker = [
             var p = urlParsed.pathname.split( "/" );
             var id = Number( p[ p.length - 1 ].replace( ".html", "" ) );
 
-            if ( id && !isNaN( id ) )
+            if ( id && Number.isInteger( id ) )
                 return id.toString( );
         }
     },
@@ -170,9 +172,9 @@ QueueManager.urlValidChecker = [
                 //     "other"
                 // ];
 
-                console.log( urlParsed );
-                console.log( p );
-                console.log( id );
+                // console.log( urlParsed );
+                // console.log( p );
+                // console.log( id );
 
                 if ( Number.isInteger( id ) )
                     return urlParsed.href;
@@ -194,6 +196,7 @@ QueueManager.urlValidChecker = [
     }
 ];
 
+// *NOTE: 사용하지 않음.
 QueueManager.getProviderExtrasByURL = function( url )
 {
     var urlParsed = URL.parse( url );
@@ -264,7 +267,7 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
                 code: this.statusCode.delayError
             };
 
-        if ( Server.getRoomConfig( roomID, "disallow_queue_request", false ) )
+        if ( Server.getRoomVar( roomID, "disallow_queue_request", false ) )
             return {
                 code: this.statusCode.roomConfigDisallowError
             };
@@ -275,7 +278,7 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
             code: this.statusCode.urlError
         };
 
-    if ( isNaN( data.start ) )
+    if ( !Number.isInteger( data.start ) )
         return {
             code: this.statusCode.startTimeError
         };
@@ -313,7 +316,7 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
                             }
                             else if ( typeof checkResult === "string" )
                             {
-                                if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                                if ( !force && !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
                                     return {
                                         code: this.statusCode.serviceBlockedError
                                     };
@@ -327,7 +330,7 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
                             }
                             else if ( typeof checkResult === "boolean" )
                             {
-                                if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                                if ( !force && !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
                                     return {
                                         code: this.statusCode.serviceBlockedError
                                     };
@@ -357,7 +360,7 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
                         }
                         else if ( typeof checkResult === "string" )
                         {
-                            if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                            if ( !force && !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
                                 return {
                                     code: this.statusCode.serviceBlockedError
                                 };
@@ -371,7 +374,7 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
                         }
                         else if ( typeof checkResult === "boolean" )
                         {
-                            if ( !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
+                            if ( !force && !ServiceManager.isQueueRegisterAllowed( roomID, checkerData.type ) )
                                 return {
                                     code: this.statusCode.serviceBlockedError
                                 };
@@ -404,20 +407,6 @@ QueueManager.isAllowRegister = function( client, roomID, data, force = false )
 
 QueueManager._recentClientList = [ ];
 QueueManager._randomVideos = [ ];
-QueueManager.config = {
-    DELAY: 1000 * 60,
-    LANGUAGE_CODE: "ko",
-    randomPlayList:
-    {
-        _24hournc: [
-            "https://www.youtube.com/playlist?list=PLckeMyCaCCIN_JU1V4oADW50DlGOREoLj"
-        ],
-        _24hourjapan: [
-            "https://www.youtube.com/playlist?list=PLwe1-DOXcLUYoY-3Crzq1f2ay-bnIOhOT"
-        ]
-    }
-    // MAX_DURATION: 420, // 420
-}
 
 // hook.register( "OnRegisterQueue", function( providerType, client, roomID, url, videoID )
 // {
@@ -445,46 +434,65 @@ QueueManager.getYoutubeHighestQualityResource = function( data )
         var highQualityValue = 0;
         var highQualityIndexValue;
 
-        data.videoFormats.forEach( ( value, index, ar ) =>
-        {
-            if ( value.quality_label && value.audioEncoding )
-            {
-                if ( highQualityValue < Number( value.quality_label.replace( "p", "" ) ) )
-                {
-                    highQualityValue = Number( value.quality_label.replace( "p", "" ) );
-                    highQualityIndexValue = value;
-                }
-            }
-        } );
+        var hqVideoValue = 0;
+        var hqSoundValue = 0;
+
+        var hqVideoIndexValue = 0;
+        var hqSoundIndexValue = 0;
+
+        fileStream.writeFileSync( "./sexy.json", JSON.stringify( data ) );
+
+        // data.videoFormats.forEach( ( value, index, ar ) =>
+        // {
+        //     if ( value.quality_label && value.audioEncoding )
+        //     {
+        //         if ( highQualityValue < Number( value.quality_label.replace( "p", "" ) ) )
+        //         {
+        //             highQualityValue = Number( value.quality_label.replace( "p", "" ) );
+        //             highQualityIndexValue = value;
+        //         }
+        //     }
+        // } );
 
         // *해결*
         // 가끔 url 없어서 가버렷..
         // https://www.youtube.com/watch?v=UpxX86eXQtI&list=FLqSiujw1tboyUDWc50UKrkA&t=0s&index=2
-        if ( highQualityIndexValue == null )
+        // *TODO: 대대적인 개선이 필요함.
+        data.videoFormats.forEach( ( value, index, ar ) =>
         {
-            highQualityValue = 0;
-
-            data.videoFormats.forEach( ( value, index, ar ) =>
+            if ( value.resolution && ( value.container === "mp4" ) )
             {
-                if ( value.resolution && value.audioEncoding )
+                if ( hqVideoValue < Number( value.resolution.replace( "p", "" ) ) )
                 {
-                    if ( highQualityValue < Number( value.resolution.replace( "p", "" ) ) )
-                    {
-                        highQualityValue = Number( value.resolution.replace( "p", "" ) );
-                        highQualityIndexValue = value;
-                    }
+                    hqVideoValue = Number( value.resolution.replace( "p", "" ) );
+                    hqVideoIndexValue = value;
                 }
-            } );
-        }
+            }
+        } );
+
+        data.videoFormats.forEach( ( value, index, ar ) =>
+        {
+            if ( value.type && value.type.toString( )
+                .indexOf( "audio/" ) !== -1 && value.container )
+            {
+                if ( hqSoundValue < Number( value.audio_sample_rate ) )
+                {
+                    hqSoundValue = Number( value.audio_sample_rate );
+                    hqSoundIndexValue = value;
+                }
+            }
+        } );
 
         return {
             videoThumbnail: data.videoThumbList[ data.videoThumbList.length - 1 ].url,
-            videoDirectURL: highQualityIndexValue.url
+            videoDirectURL: hqVideoIndexValue.url,
+            soundDirectURL: hqSoundIndexValue.url
         }
     }
-    catch ( exception )
+    catch ( err )
     {
-        Logger.write( Logger.type.Error, `[Queue] ERROR: Unknown server process error. -> (Error: ${ exception.stack })'` );
+        // 수정바람..
+        Logger.write( Logger.type.Error, `[Queue] ERROR: Unknown server process error. -> (error: ${ err.stack })'` );
 
         return {
             videoThumbnail: "images/chito.jpg",
@@ -541,6 +549,7 @@ QueueManager.getYoutubeCaption = function( languageCode, vssId, captionList, cal
                             {
                                 return {
                                     val: source.val ? decodeHTML( source.val ) : "",
+                                    // val: source.val,
                                     attr:
                                     {
                                         start: Number( source.attr.start ),
@@ -563,33 +572,6 @@ QueueManager.getYoutubeCaption = function( languageCode, vssId, captionList, cal
             callback( false, null );
             Logger.write( Logger.type.Error, `[Queue] Failed to process QueueManager.getYoutubeCaption (error:${ err.stack })` );
         } );
-}
-
-// *TODO;
-// 여기다가 클라가 요청한 url 관련 기록도 넣기 (Logger에 해당) -> 썩쎽스
-// 이상한 주소 넣었을때 처리바람 (Ani24) -> 썩쎽스
-function registerFailed( client, reason, logErrorMessage, isRejected )
-{
-    if ( client )
-    {
-        client.emit( "regu.queueRegisterReceive",
-        {
-            success: false,
-            reason: reason
-        } );
-
-        if ( isRejected )
-            Logger.write( Logger.type.Warning, `[Queue] Client's queue register request has rejected! -> (${ logErrorMessage }) ${ client.information( ) }` );
-        else
-            Logger.write( Logger.type.Error, `[Queue] Failed to register Queue! -> (${ logErrorMessage }) ${ client.information( ) }` );
-    }
-    else
-    {
-        if ( isRejected )
-            Logger.write( Logger.type.Warning, `[Queue] Client's queue register request has rejected! -> (${ logErrorMessage }) SERVER` );
-        else
-            Logger.write( Logger.type.Error, `[Queue] Failed to register Queue! -> (${ logErrorMessage }) SERVER` );
-    }
 }
 
 QueueManager.userVote = function( client, type )
@@ -642,7 +624,7 @@ QueueManager.userVote = function( client, type )
 QueueManager._onRegister = function( client, code, url, err, isError )
 {
     if ( client )
-        client.emit( "regu.queueRegisterReceive",
+        client.emit( "RS.queueRegisterReceive",
         {
             code: code
         } );
@@ -656,13 +638,21 @@ QueueManager._onRegister = function( client, code, url, err, isError )
     }
 }
 
+QueueManager.registerRecentQueue = function( roomID, queueData )
+{
+    if ( !Server.RECENT_QUEUE_REQUEST[ roomID ] ) return;
+    var newData = {};
+
+    Server.RECENT_QUEUE_REQUEST[ roomID ].insert( 0, )
+}
+
 // *NOTE: 큐 데이터 정리 후 실제로 큐에 추가하는 함수 ( _processRegisterYoutube -> _appendQueue )
 QueueManager._appendQueue = function( client, roomID, queueData, forceIndex )
 {
     if ( !Server.QUEUE[ roomID ] )
     {
         if ( client )
-            client.emit( "regu.queueRegisterReceive", this.statusCode.unknownError );
+            client.emit( "RS.queueRegisterReceive", this.statusCode.unknownError );
 
         console.log( "room boombed..." )
         return;
@@ -671,57 +661,170 @@ QueueManager._appendQueue = function( client, roomID, queueData, forceIndex )
     var newData = util.deepCopy( queueData );
     newData.type = "register";
 
-    if ( client )
-        client.emit( "regu.queueRegisterReceive",
+    // *TODO: await 사용바람
+    superagent.get( newData.mediaThumbnail )
+        .then( function( e )
         {
-            code: this.statusCode.success
-        } );
-
-    Server.sendMessage( roomID, "RS.queueEvent", newData );
-
-    if ( forceIndex )
-    {
-        if ( forceIndex >= 0 && forceIndex < Server.QUEUE[ roomID ].queueList.length )
-            Server.QUEUE[ roomID ].queueList.insert( 0, queueData );
-    }
-    else
-        Server.QUEUE[ roomID ].queueList.push( queueData );
-
-    App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
-
-    if ( client )
-    {
-        ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
-        Server.emitDiscord( roomID,
-        {
-            embed:
+            imageAverageColor( e.body, ( err, color ) =>
             {
-                color: 10181046,
-                image:
+                if ( err ) throw err;
+                var [ red, green, blue, alpha ] = color;
+
+                newData.colorTheme = {
+                    r: red,
+                    g: green,
+                    b: blue
+                };
+
+                if ( forceIndex )
                 {
-                    url: queueData.mediaThumbnail
-                },
-                description: `'${ queueData.mediaName }' 영상이 대기열에 추가되었습니다.`,
-                author:
+                    forceIndex = Number( forceIndex );
+
+                    if ( Number.isInteger( forceIndex ) && forceIndex >= 0 && forceIndex < Server.QUEUE[ roomID ].queueList.length )
+                    {
+                        // console.log( "insert" );
+                        // console.log( );
+                        // console.log( );
+                        // console.log( );
+                        // console.log( Server.QUEUE[ roomID ].queueList );
+                        Server.QUEUE[ roomID ].queueList.insert( forceIndex, newData );
+
+                        newData.forceIndex = forceIndex;
+                    }
+                    else
+                    {
+                        Logger.warn( `[Queue] WARNING! : ForceIndex option ignored! -> (name:${ newData.mediaName }, url:${ newData.mediaProviderURL }, forceIndex:${ forceIndex }) ${ client ? client.information( ) : "SERVER" }` );
+                        Server.QUEUE[ roomID ].queueList.push( newData );
+                    }
+                }
+                else
+                    Server.QUEUE[ roomID ].queueList.push( newData );
+
+                // *TODO: this 버그 있음.
+                if ( client )
+                    client.emit( "RS.queueRegisterReceive",
+                    {
+                        code: QueueManager.statusCode.success
+                    } );
+
+                Server.sendMessage( roomID, "RS.queueEvent", newData );
+
+                // QueueManager.registerRecentQueue( roomID, queueData );
+
+                App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+
+                if ( client )
                 {
-                    name: "대기열 추가"
-                },
-                url: "https://regustreaming.oa.to",
-                timestamp: new Date( ),
-                footer:
+                    ChatManager.saySystem( roomID, `'${ newData.mediaName }' 영상이 목록에 추가되었습니다. (${ newData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
+                    Server.emitDiscord( roomID,
+                    {
+                        embed:
+                        {
+                            color: 10181046,
+                            image:
+                            {
+                                url: newData.mediaThumbnail
+                            },
+                            description: `'${ newData.mediaName }' 영상이 대기열에 추가되었습니다.`,
+                            author:
+                            {
+                                name: "대기열 추가"
+                            },
+                            url: config.Server.DOMAIN,
+                            timestamp: new Date( ),
+                            footer:
+                            {
+                                text: newData.user.name + "님이 추가함"
+                            }
+                        }
+                    } );
+                }
+                else
                 {
-                    text: queueData.user.name + "님이 추가함"
+                    ChatManager.saySystem( roomID, `'${ newData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
+                    // Server.emitDiscord( Server.discordChannelType.Queue, `'${ newData.mediaName }' 영상이 목록에 추가되었습니다.` );
+                }
+
+                Logger.event( `[Queue] Queue registered. -> (name:${ newData.mediaName }, url:${ newData.mediaProviderURL }) ${ client ? client.information( ) : "SERVER" }` );
+
+            } );
+        } )
+        .catch( function( err )
+        {
+            Logger.warn( `[Queue] WARNING: failed to get average color from Thumbnail file -> (name:${ newData.mediaName }, url:${ newData.mediaProviderURL }, err: ${ err.message }) ${ client ? client.information( ) : "SERVER" }` );
+
+            if ( forceIndex )
+            {
+                forceIndex = Number( forceIndex );
+
+                if ( Number.isInteger( forceIndex ) && forceIndex >= 0 && forceIndex < Server.QUEUE[ roomID ].queueList.length )
+                {
+                    // console.log( "insert" );
+                    // console.log( );
+                    // console.log( );
+                    // console.log( );
+                    // console.log( Server.QUEUE[ roomID ].queueList );
+                    Server.QUEUE[ roomID ].queueList.insert( forceIndex, newData );
+
+                    newData.forceIndex = forceIndex;
+                }
+                else
+                {
+                    Logger.warn( `[Queue] WARNING! : ForceIndex option ignored! -> (name:${ newData.mediaName }, url:${ newData.mediaProviderURL }, forceIndex:${ forceIndex }) ${ client ? client.information( ) : "SERVER" }` );
+                    Server.QUEUE[ roomID ].queueList.push( newData );
                 }
             }
-        } );
-    }
-    else
-    {
-        ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
-        // Server.emitDiscord( Server.discordChannelType.Queue, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.` );
-    }
+            else
+                Server.QUEUE[ roomID ].queueList.push( newData );
 
-    Logger.write( Logger.type.Event, `[Queue] Queue registered. -> (name:${ queueData.mediaName }, url:${ queueData.mediaProviderURL }) ${ client ? client.information( ) : "SERVER" }` );
+            // *TODO: this 버그 있음.
+            if ( client )
+                client.emit( "RS.queueRegisterReceive",
+                {
+                    code: QueueManager.statusCode.success
+                } );
+
+            Server.sendMessage( roomID, "RS.queueEvent", newData );
+
+            // QueueManager.registerRecentQueue( roomID, queueData );
+
+            App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+
+            if ( client )
+            {
+                ChatManager.saySystem( roomID, `'${ newData.mediaName }' 영상이 목록에 추가되었습니다. (${ newData.user.name }님이 추가함)`, "glyphicon glyphicon-download", true );
+                Server.emitDiscord( roomID,
+                {
+                    embed:
+                    {
+                        color: 10181046,
+                        image:
+                        {
+                            url: newData.mediaThumbnail
+                        },
+                        description: `'${ newData.mediaName }' 영상이 대기열에 추가되었습니다.`,
+                        author:
+                        {
+                            name: "대기열 추가"
+                        },
+                        url: config.Server.DOMAIN,
+                        timestamp: new Date( ),
+                        footer:
+                        {
+                            text: newData.user.name + "님이 추가함"
+                        }
+                    }
+                } );
+            }
+            else
+            {
+                ChatManager.saySystem( roomID, `'${ newData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
+                // Server.emitDiscord( Server.discordChannelType.Queue, `'${ newData.mediaName }' 영상이 목록에 추가되었습니다.` );
+            }
+
+            Logger.event( `[Queue] Queue registered. -> (name:${ newData.mediaName }, url:${ newData.mediaProviderURL }) ${ client ? client.information( ) : "SERVER" }` );
+        } );
+
 }
 
 QueueManager.statusCode = {
@@ -737,6 +840,9 @@ QueueManager.statusCode = {
     startPositionTooShortThanLengthError: 9,
     failedToGetInformationError: 10,
     unknownError: 11,
+
+    queueContinueTimeLeftError: 12,
+
     serviceBlockedError: 50
 };
 QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, startPosition, callback, forceIndex )
@@ -745,7 +851,7 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
 
     YoutubeConverter.getInfo( url,
     {
-        lang: QueueManager.config.LANGUAGE_CODE
+        lang: Server.getGlobalVar( "Queue.CAPTION_LANGUAGE_CODE", "ko" )
     }, function( err, data )
     {
         if ( err )
@@ -770,17 +876,6 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
 
         var videoLengthSec = Number( data.videoTimeSec || 10 );
 
-        // if ( videoLengthSec > QueueManager.config.MAX_DURATION )
-        // {
-        //     registerFailed( client,
-        //         "죄송합니다, 영상이 최대 허용 길이를 초과했습니다, 영상 목록에 추가할 수 없습니다.",
-        //         `${ url } -> OverTime`,
-        //         true
-        //     );
-
-        //     return;
-        // }
-
         if ( startPosition > videoLengthSec )
             return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
 
@@ -789,12 +884,13 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
 
         var highQualityResources = QueueManager.getYoutubeHighestQualityResource( data );
 
-        queueData.id = `youtube_${ videoID }_${ Date.now( ) }`;
+        queueData.id = `youtube_${ videoID }_${ client ? client.userID : "SERVER" }_${ Date.now( ) }_${ Math.randomNumber( 1111, 9999 ) }`;
         queueData.mediaName = data.videoName || "알 수 없음";
         queueData.mediaProvider = QueueManager.providerType.Youtube;
         queueData.mediaProviderURL = url;
         queueData.mediaThumbnail = highQualityResources.videoThumbnail;
         queueData.mediaContentURL = highQualityResources.videoDirectURL;
+        queueData.mediaSoundContentURL = highQualityResources.soundDirectURL;
         queueData.mediaDuration = videoLengthSec;
         queueData.mediaPosition = startPosition;
         queueData.userVote = {};
@@ -811,6 +907,8 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
                 information: client.information( )
             };
 
+        fileStream.writeFileSync( "./sexy-output.json", JSON.stringify( queueData ) );
+
         var newQueueData = hook.run( "ModifyQueueData", roomID, queueData );
 
         if ( newQueueData )
@@ -818,7 +916,7 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
 
         if ( data.videoCaptions )
         {
-            QueueManager.getYoutubeCaption( QueueManager.config.LANGUAGE_CODE, "." + QueueManager.config.LANGUAGE_CODE, data.videoCaptions, function( success, result )
+            QueueManager.getYoutubeCaption( Server.getGlobalVar( "Queue.CAPTION_LANGUAGE_CODE", "ko" ), "." + Server.getGlobalVar( "Queue.CAPTION_LANGUAGE_CODE", "ko" ), data.videoCaptions, function( success, result )
             {
                 if ( success )
                 {
@@ -835,7 +933,7 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
     } );
 }
 
-QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, startPosition, callback )
+QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, startPosition, callback, forceIndex )
 {
     var queueData = {};
     var urlParsed = URL.parse( url );
@@ -875,7 +973,7 @@ QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, sta
                         if ( Math.abs( duration - startPosition ) <= 60 )
                             return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
 
-                        queueData.id = `ani24_${ videoID }_${ Date.now( ) }`;
+                        queueData.id = `ani24_${ videoID }_${ client ? client.userID : "SERVER" }_${ Date.now( ) }_${ Math.randomNumber( 1111, 9999 ) }`;
                         queueData.mediaName = title || "알 수 없음";
                         queueData.mediaProvider = QueueManager.providerType.Ani24;
                         queueData.mediaProviderURL = url;
@@ -903,66 +1001,7 @@ QueueManager._processRegisterAni24 = function( client, roomID, url, videoID, sta
                         if ( newQueueData )
                             queueData = newQueueData;
 
-
-                        // queueData.id = "ani24_" + videoID + "_" + Date.now( );
-                        // queueData.videoName = title;
-                        // queueData.videoProvider = "Ani24";
-                        // queueData.videoThumbnail = `http://a0000001114.site/img/ani/${ videoID }.jpg`;
-                        // queueData.videoLength = Number( duration || 10 );
-                        // queueData.videoDirectURL = file;
-                        // queueData.soundDirectURL = null;
-                        // queueData.videoProviderURL = url;
-                        // queueData.startTime = startSec;
-                        // queueData.owner = client ? client.name : "채널 관리자";
-                        // queueData.userID = client ? client.userID : "server";
-                        // queueData.avatar = client ? client.getPassportField( "avatar", "/images/avatar/guest_64.png" ) : "/images/avatar/guest_64.png";
-                        // queueData.videoConverted = true;
-
-                        // client.emit( "regu.queueRegisterReceive",
-                        // {
-                        //     success: true
-                        // } );
-
-                        // // 여기서부터 해야함.
-                        // // 2018-06-22
-
-                        // Server.sendMessage( roomID, "RS.queueEvent",
-                        // {
-                        //     type: "register",
-                        //     id: queueData.id,
-                        //     videoName: queueData.videoName,
-                        //     videoThumbnail: queueData.videoThumbnail,
-                        //     videoLength: queueData.videoLength,
-                        //     startTime: queueData.startTime,
-                        //     owner: queueData.owner,
-                        //     userID: queueData.userID,
-                        //     avatar: queueData.avatar,
-                        //     videoConverted: queueData.videoConverted
-                        // } );
-
-                        var newData = util.deepCopy( queueData );
-                        newData.type = "register";
-
-                        // if ( client ) // client가 있을경우.
-                        // {
-                        //     client.emit( "regu.queueRegisterReceive",
-                        //     {
-                        //         code: QueueManager.statusCode.success
-                        //     } );
-                        // }
-
-                        callback( client, QueueManager.statusCode.success );
-
-                        Server.sendMessage( roomID, "RS.queueEvent", newData );
-
-                        Server.QUEUE[ roomID ].queueList.push( queueData );
-
-                        if ( client )
-                            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다. (${ queueData.user.name }님이 추가함)`, "glyphicon glyphicon-download" );
-                        else
-                            ChatManager.saySystem( roomID, `'${ queueData.mediaName }' 영상이 목록에 추가되었습니다.`, "glyphicon glyphicon-download" );
-
-                        Logger.write( Logger.type.Event, `[Queue] Queue registered. -> (${ url }) ${ client ? client.information( ) : "SERVER" }` );
+                        QueueManager._appendQueue( client, roomID, queueData, forceIndex );
                     } )
                     .catch( function( err )
                     {
@@ -1233,7 +1272,9 @@ QueueManager._processRegisterTvple = function( client, roomID, url, videoID, sta
 
                     // TODO: jsonException 테스트 바람!
 
-                    var jsonResult = JSON.parse( res2.text + "asdasd" );
+                    console.log( res2.status );
+
+                    var jsonResult = JSON.parse( res2.text );
                     var duration = jsonResult.stream.duration || 0;
 
                     if ( startPosition > duration )
@@ -1243,12 +1284,12 @@ QueueManager._processRegisterTvple = function( client, roomID, url, videoID, sta
                         return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
 
                     var queueData = {};
-                    queueData.id = `tvple_${ videoID }_${ Date.now( ) }`;
+                    queueData.id = `tvple_${ videoID }_${ client ? client.userID : "SERVER" }_${ Date.now( ) }_${ Math.randomNumber( 1111, 9999 ) }`;
                     queueData.mediaProvider = QueueManager.providerType.Tvple;
                     queueData.mediaProviderURL = url;
                     queueData.mediaContentURL = jsonResult.stream.sources.a.urls.mp4_avc;
                     queueData.mediaName = videoName;
-                    queueData.mediaThumbnail = videoThumbnail;
+                    queueData.mediaThumbnail = videoThumbnail
                     queueData.mediaDuration = duration;
                     queueData.mediaPosition = startPosition;
                     queueData.userVote = {};
@@ -1264,6 +1305,8 @@ QueueManager._processRegisterTvple = function( client, roomID, url, videoID, sta
                             avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
                             information: client.information( )
                         };
+
+                    console.log( "this" )
 
                     _getCloud( jsonResult.cloud.read_url, function( cloud )
                     {
@@ -1291,55 +1334,51 @@ QueueManager._processRegisterTvple = function( client, roomID, url, videoID, sta
 
 QueueManager._processRegisterDirect = async function( client, roomID, url, videoID, startPosition, callback )
 {
-    var queueData = {};
-    var duration = await getDuration( url );
-    var videoLengthSec = Number( duration || 10 );
+    try
+    {
+        var queueData = {};
+        var duration = await getDuration( url );
+        var videoLengthSec = Number( duration || 10 );
 
-    // if ( videoLengthSec > QueueManager.config.MAX_DURATION )
-    // {
-    //     registerFailed( client,
-    //         "죄송합니다, 영상이 최대 허용 길이를 초과했습니다, 영상 목록에 추가할 수 없습니다.",
-    //         `${ url } -> OverTime`,
-    //         true
-    //     );
+        if ( startPosition > videoLengthSec )
+            return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
 
-    //     return;
-    // }
+        // if ( Math.abs( videoLengthSec - startPosition ) <= 10 ) // *TODO: 10초 제한 수정하기
+        //     return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
 
-    if ( startPosition > videoLengthSec )
-        return callback( client, QueueManager.statusCode.startPositionOverThanLengthError, url, null, false );
-
-    // if ( Math.abs( videoLengthSec - startPosition ) <= 10 ) // *TODO: 10초 제한 수정하기
-    //     return callback( client, QueueManager.statusCode.startPositionTooShortThanLengthError, url, null, false );
-
-    queueData.id = `direct_${ videoID }_${ Date.now( ) }`;
-    queueData.mediaName = decodeURI( path.basename( url ) ) || "알 수 없음";
-    queueData.mediaProvider = QueueManager.providerType.Direct;
-    queueData.mediaProviderURL = url;
-    queueData.mediaThumbnail = "";
-    queueData.mediaContentURL = url;
-    queueData.mediaDuration = videoLengthSec;
-    queueData.mediaPosition = startPosition;
-    queueData.userVote = {};
-    queueData.userVoteSum = {
-        like: 0,
-        unlike: 0
-    };
-
-    if ( client )
-        queueData.user = {
-            name: client.name,
-            userID: client.userID,
-            avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
-            information: client.information( )
+        queueData.id = `direct_${ videoID }_${ Date.now( ) }`;
+        queueData.mediaName = decodeURI( path.basename( url ) ) || "알 수 없음";
+        queueData.mediaProvider = QueueManager.providerType.Direct;
+        queueData.mediaProviderURL = url;
+        queueData.mediaThumbnail = "";
+        queueData.mediaContentURL = url;
+        queueData.mediaDuration = videoLengthSec;
+        queueData.mediaPosition = startPosition;
+        queueData.userVote = {};
+        queueData.userVoteSum = {
+            like: 0,
+            unlike: 0
         };
 
-    var newQueueData = hook.run( "ModifyQueueData", roomID, queueData );
+        if ( client )
+            queueData.user = {
+                name: client.name,
+                userID: client.userID,
+                avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+                information: client.information( )
+            };
 
-    if ( newQueueData )
-        queueData = newQueueData;
+        var newQueueData = hook.run( "ModifyQueueData", roomID, queueData );
 
-    QueueManager._appendQueue( client, roomID, queueData );
+        if ( newQueueData )
+            queueData = newQueueData;
+
+        QueueManager._appendQueue( client, roomID, queueData );
+    }
+    catch ( e )
+    {
+        Logger.error( `[Queue] Failed to process Direct video file. (code: ${ e.code }, msg: ${ e.message }` )
+    }
 }
 
 QueueManager.getCount = function( roomID )
@@ -1373,7 +1412,7 @@ QueueManager.register = function( providerType, client, roomID, url, videoID, st
     }
 
     if ( !force )
-        QueueManager.registerTimeDelay( client, QueueManager.config.DELAY );
+        QueueManager.registerTimeDelay( client, Server.getGlobalVar( "Queue.REGISTER_DELAY", 1000 * 60 ) );
 
     var providers = Object.keys( QueueManager.providerType );
 
@@ -1383,20 +1422,39 @@ QueueManager.register = function( providerType, client, roomID, url, videoID, st
 
 QueueManager.clear = function( roomID, alsoPlayingQueue )
 {
-    if ( !Server.QUEUE[ roomID ] ) return;
-
-    Server.QUEUE[ roomID ].queueList = [ ];
-
-    if ( alsoPlayingQueue )
+    if ( roomID === null )
     {
-        QueueManager.skip( roomID );
+        util.forEach( Server.QUEUE, function( queueData, roomID )
+        {
+            Server.QUEUE[ roomID ].queueList = [ ];
+
+            if ( alsoPlayingQueue )
+                QueueManager.skip( roomID );
+
+            Server.sendMessage( roomID, "RS.queueEvent",
+            {
+                type: "clear"
+            } );
+
+            App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+        } );
     }
-
-    Server.sendMessage( roomID, "RS.queueEvent",
+    else
     {
-        type: "dataReq",
-        queueList: Server.QUEUE[ roomID ].queueList
-    } );
+        if ( !Server.QUEUE[ roomID ] ) return;
+
+        Server.QUEUE[ roomID ].queueList = [ ];
+
+        if ( alsoPlayingQueue )
+            QueueManager.skip( roomID );
+
+        Server.sendMessage( roomID, "RS.queueEvent",
+        {
+            type: "clear"
+        } );
+
+        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+    }
 }
 
 QueueManager.skip = function( roomID )
@@ -1405,29 +1463,128 @@ QueueManager.skip = function( roomID )
     if ( !this.isPlaying( roomID ) ) return;
 
     Server.QUEUE[ roomID ].currentPlayingQueue = {};
+    Server.ROOMINFO[ roomID ].currentPlaying = null;
 
     Server.sendMessage( roomID, "RS.mediaPlay",
     {
         empty: true
     } );
+
+    App.redisClient.set( "RS.QUEUE." + roomID + ".currentPlayingQueue", JSON.stringify( Server.QUEUE[ roomID ].currentPlayingQueue ) );
+}
+
+QueueManager.findByID = function( roomID, id )
+{
+    if ( !Server.QUEUE[ roomID ] ) return null;
+
+    var queueList = Server.QUEUE[ roomID ].queueList;
+    var length = queueList.length;
+
+    for ( var i = 0; i < length; i++ )
+    {
+        if ( queueList[ i ] && queueList[ i ].id === id )
+            return queueList[ i ];
+    }
+
+    return null;
+}
+
+QueueManager.findByIDAndIndex = function( roomID, id )
+{
+    if ( !Server.QUEUE[ roomID ] ) return null;
+
+    var queueList = Server.QUEUE[ roomID ].queueList;
+    var length = queueList.length;
+
+    for ( var i = 0; i < length; i++ )
+    {
+        console.log( queueList[ i ].id + " =? " + id );
+
+        if ( queueList[ i ] && queueList[ i ].id === id )
+            return {
+                queueObj: queueList[ i ],
+                index: i
+            };
+    }
+
+    return {
+        queueObj: null,
+        index: null
+    };
 }
 
 QueueManager.removeAt = function( roomID, index )
 {
     if ( Server.QUEUE[ roomID ] && index >= 0 && index < Server.QUEUE[ roomID ].queueList.length )
     {
+        var queueObj = Server.QUEUE[ roomID ].queueList[ index ];
+
+        if ( !queueObj ) return;
+
         Server.QUEUE[ roomID ].queueList.splice( index, 1 );
 
         Server.sendMessage( roomID, "RS.queueEvent",
         {
-            type: "dataReq",
-            queueList: Server.QUEUE[ roomID ].queueList
+            type: "remove",
+            id: queueObj.id
         } );
+
+        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
     }
 }
 
-QueueManager.moveTo = function( roomID, index, toIndex ) {
+QueueManager.removeByID = function( roomID, id )
+{
+    if ( Server.QUEUE[ roomID ] )
+    {
+        var queueList = Server.QUEUE[ roomID ].queueList;
+        var length = queueList.length;
 
+        for ( var i = 0; i < length; i++ )
+        {
+            if ( queueList[ i ] && queueList[ i ].id === id )
+            {
+                queueList.splice( i, 1 );
+                break;
+            }
+        }
+
+        Server.sendMessage( roomID, "RS.queueEvent",
+        {
+            type: "remove",
+            id: id
+        } );
+
+        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+    }
+}
+
+// *NOTE: 랜덤 버그 있음.
+QueueManager.moveTo = function( roomID, index, toIndex )
+{
+    if ( !Server.QUEUE[ roomID ] ) return;
+
+    var queueList = Server.QUEUE[ roomID ].queueList;
+
+    if ( !!queueList[ index ] && queueList.length > toIndex )
+    {
+        var temp = queueList[ index ];
+        var temp2 = queueList[ toIndex ];
+
+        queueList.splice( index, 1 );
+        queueList.splice( toIndex, 1 );
+
+        queueList.insert( index, temp2 );
+        queueList.insert( toIndex, temp );
+
+        Server.sendMessage( roomID, "RS.queueEvent",
+        {
+            type: "dataInitialize",
+            queueList: queueList
+        } );
+
+        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
+    }
 }
 
 QueueManager.setVideoPos = function( roomID, pos )
@@ -1437,18 +1594,26 @@ QueueManager.setVideoPos = function( roomID, pos )
 
     Server.QUEUE[ roomID ].currentPlayingPos = pos;
     Server.sendMessage( roomID, "RS.setMediaPos", pos );
+
+    App.redisClient.set( "RS.QUEUE." + roomID + ".currentPlayingPos", pos.toString( ) );
 }
 
 QueueManager.removeFirst = function( roomID )
 {
     if ( Server.QUEUE[ roomID ] && Server.QUEUE[ roomID ].queueList.length > 0 ) // 수정 바람
     {
+        var recent = Server.QUEUE[ roomID ].queueList[ 0 ];
+
         Server.QUEUE[ roomID ].queueList.splice( 0, 1 );
 
         Server.sendMessage( roomID, "RS.queueEvent",
         {
-            type: "removeRecent"
+            type: "remove",
+            id: recent.id,
+            isRemoveRecent: true
         } );
+
+        App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
     }
 }
 
@@ -1459,20 +1624,20 @@ QueueManager.isEmpty = function( roomID )
     return Server.QUEUE[ roomID ].queueList.length === 0;
 }
 
-QueueManager.sendQueueList = function( socket, roomID )
+QueueManager.sendQueueList = function( client, roomID )
 {
     if ( !Server.QUEUE[ roomID ] ) return;
 
-    socket.emit( "RS.queueEvent",
+    client.emit( "RS.queueEvent",
     {
-        type: "dataReq",
+        type: "dataInitialize",
         queueList: Server.QUEUE[ roomID ].queueList
     } );
 }
 
-QueueManager.sendUserVoteList = function( socket, roomID )
+QueueManager.sendUserVoteList = function( client, roomID )
 {
-    socket.emit( "RS.queueEvent",
+    client.emit( "RS.queueEvent",
     {
         type: "userVoteRefresh",
         voteList: QueueManager.getPlayingData( roomID )
@@ -1497,6 +1662,7 @@ QueueManager.play = function( roomID )
 
     Server.QUEUE[ roomID ].currentPlayingQueue = recentQueue;
     Server.QUEUE[ roomID ].currentPlayingPos = recentQueue.mediaPosition;
+    Server.ROOMINFO[ roomID ].currentPlaying = recentQueue.mediaName;
 
     Server.sendMessage( roomID, "RS.mediaPlay", recentQueue );
 
@@ -1511,7 +1677,7 @@ QueueManager.play = function( roomID )
             {
                 name: "대기열 재생"
             },
-            url: "https://regustreaming.oa.to",
+            url: config.Server.DOMAIN,
             timestamp: new Date( ),
             footer:
             {
@@ -1525,7 +1691,7 @@ QueueManager.play = function( roomID )
     App.redisClient.set( "RS.QUEUE." + roomID + ".queueList", JSON.stringify( Server.QUEUE[ roomID ].queueList ) );
     App.redisClient.set( "RS.QUEUE." + roomID + ".currentPlayingQueue", JSON.stringify( Server.QUEUE[ roomID ].currentPlayingQueue ) );
 
-    Logger.write( Logger.type.Event, `[Queue] [${ roomID }] Room playing ${ recentQueue.mediaName }-${ recentQueue.mediaProviderURL } by (${ ( recentQueue.user ? recentQueue.user.information : "SERVER" ) })` );
+    Logger.write( Logger.type.Event, `[Queue] [${ roomID }] Room playing (mediaName: ${ recentQueue.mediaName }, url: ${ recentQueue.mediaProviderURL }) by (${ ( recentQueue.user ? recentQueue.user.information : "SERVER" ) })` );
 
     hook.run( "PostPlayQueue", roomID, recentQueue );
 }
@@ -1574,6 +1740,17 @@ QueueManager.removeTimeDelay = function( client )
     }
 }
 
+QueueManager.getCurrentPlayingQueueTimeLeft = function( roomID )
+{
+    if ( !Server.QUEUE[ roomID ] ) return null;
+    if ( !this.isPlaying( roomID ) ) return null;
+
+    var queueData = Server.QUEUE[ roomID ];
+    var currentQueueData = queueData.currentPlayingQueue;
+
+    return Math.abs( currentQueueData.mediaDuration - queueData.currentPlayingPos );
+}
+
 hook.register( "OnCreateOfficialRoom", function( )
 {
     hook.register( "TickTok", function( )
@@ -1592,6 +1769,12 @@ hook.register( "OnCreateOfficialRoom", function( )
 
             if ( currentQueueData.mediaDuration <= queueData.currentPlayingPos ) // *TODO: 3초 딜레이 수정바람
             {
+                if ( Server.getRoomVar( roomID, "queue_loop", false ) === true )
+                {
+                    QueueManager.setVideoPos( roomID, 0 );
+                    return;
+                }
+
                 if ( QueueManager.isEmpty( roomID ) )
                 {
                     QueueManager.skip( roomID );
@@ -1608,39 +1791,45 @@ hook.register( "OnCreateOfficialRoom", function( )
                 return;
             }
 
-            queueData.currentPlayingPos += Server.getRoomConfig( roomID, "playbackRate", 1.0 );
+            queueData.currentPlayingPos += Server.getRoomVar( roomID, "playbackRate", 1.0 );
 
-            if ( queueData.currentPlayingPos % 3 === 0 ) // 3초마다 currentPlayingPos redisDB 에 저장
+            if ( Math.floor( queueData.currentPlayingPos ) % Server.getGlobalVar( "Queue.PLAYING_POS_STORE_TICK", 3 ) === 0 )
                 App.redisClient.set( "RS.QUEUE." + roomID + ".currentPlayingPos", queueData.currentPlayingPos.toString( ) );
         } );
     } );
 
-    if ( !App.config.enableAutoQueue ) return;
+    if ( !Server.getGlobalVar( "SERVER.AUTO_QUEUE_ENABLE", false ) ) return;
 
     util.forEach( Server.QUEUE, function( queueData, roomID )
     {
-        if ( roomID !== "24hournc" && roomID !== "24hourjapan" ) return;
+        if ( !Server.getRoomVar( roomID, "autoQueueEnable", false ) ) return;
+        if ( Server.getRoomVar( roomID, "playlist", [ ] )
+            .length === 0 ) return;
 
         QueueManager.refreshRandomPlayList(
-            QueueManager.config.randomPlayList[ "_" + roomID ][ Math.floor( Math.random( ) * QueueManager.config.randomPlayList[ "_" + roomID ].length ) ],
+            Server.getRoomVar( roomID, "playlist", [ ] )
+            .random( ),
             function( videoList )
             {
                 QueueManager._randomVideos[ roomID ] = videoList;
 
-                var length = videoList.length < 10 ? videoList.length : 10;
-
-                for ( var i = 0; i < length; i++ )
+                if ( QueueManager.getCount( roomID ) < 10 )
                 {
-                    var videoURL = videoList[ Math.floor( Math.random( ) * videoList.length ) ];
-                    var urlParsed = URL.parse( videoURL );
+                    var length = videoList.length < 10 ? videoList.length : 10;
 
-                    if ( urlParsed )
+                    for ( var i = 0; i < length; i++ )
                     {
-                        var query = querystring.parse( urlParsed.query );
+                        var videoURL = videoList[ Math.floor( Math.random( ) * videoList.length ) ];
+                        var urlParsed = URL.parse( videoURL );
 
-                        if ( query )
+                        if ( urlParsed )
                         {
-                            QueueManager.register( QueueManager.providerType.Youtube, null, roomID, videoURL, query.v, 0, true );
+                            var query = querystring.parse( urlParsed.query );
+
+                            if ( query )
+                            {
+                                QueueManager.register( QueueManager.providerType.Youtube, null, roomID, videoURL, query.v, 0, true );
+                            }
                         }
                     }
                 }
@@ -1685,17 +1874,73 @@ QueueManager.refreshRandomPlayList = function( listURL, callback )
 // }
 // } );
 
+QueueManager.generate = function( roomID, playlistURL, count )
+{
+    QueueManager.refreshRandomPlayList( playlistURL, function( videoList )
+    {
+        var length = count || 10;
+
+        for ( var i = 0; i < length; i++ )
+        {
+            var videoURL = videoList[ Math.floor( Math.random( ) * videoList.length ) ];
+
+            var urlParsed = URL.parse( videoURL );
+
+            if ( urlParsed )
+            {
+                var query = querystring.parse( urlParsed.query );
+
+                if ( query )
+                {
+                    QueueManager.register( QueueManager.providerType.Youtube, null, roomID, videoURL, query.v, 0, true );
+                }
+            }
+        }
+    } );
+}
+
+QueueManager.rebuild = function( roomID )
+{
+    if ( !Server.getGlobalVar( "SERVER.AUTO_QUEUE_ENABLE", false ) ) return;
+
+    QueueManager.clear( roomID, false );
+
+    var videoList = QueueManager._randomVideos[ roomID ];
+    var length = videoList.length < 10 ? videoList.length : 10;
+
+    for ( var i = 0; i < length; i++ )
+    {
+        var videoURL = videoList[ Math.floor( Math.random( ) * videoList.length ) ];
+        var urlParsed = URL.parse( videoURL );
+
+        if ( urlParsed )
+        {
+            var query = querystring.parse( urlParsed.query );
+
+            if ( query )
+            {
+                QueueManager.register( QueueManager.providerType.Youtube, null, roomID, videoURL, query.v, 0, true );
+            }
+        }
+    }
+}
+
 hook.register( "PostPlayQueue", function( roomID, queueData )
 {
-    if ( !App.config.enableAutoQueue ) return;
-    if ( roomID !== "24hournc" && roomID !== "24hourjapan" ) return;
+    if ( !Server.getGlobalVar( "SERVER.AUTO_QUEUE_ENABLE", false ) ) return;
+    if ( !Server.getRoomVar( roomID, "autoQueueEnable", false ) ) return;
 
-    if ( QueueManager.getCount( roomID ) < 5 )
+    if ( QueueManager.getCount( roomID ) < 10 )
     {
         setTimeout( function( )
         {
+            if ( !QueueManager._randomVideos[ roomID ] )
+            {
+                Logger.warn( `[Queue] Failed to execute AutoQueue [${ roomID }] room doesn't exists Random Videos!` )
+            }
+
             var videoList = QueueManager._randomVideos[ roomID ];
-            var length = videoList.length < 5 ? videoList.length : 5;
+            var length = videoList.length < 10 ? videoList.length : 10;
 
             var videoURL = videoList[ Math.floor( Math.random( ) * videoList.length ) ];
 
@@ -1758,41 +2003,44 @@ hook.register( "PostClientConnected", function( client, socket )
 {
     var roomID = client.room;
 
-    QueueManager.sendQueueList( socket, roomID );
+    QueueManager.sendQueueList( client, roomID );
 
-    socket.on( "regu.mediaUserVote", function( data )
+    socket.on( "RS.mediaUserVote", function( data, ack )
     {
-        if ( !util.isValidSocketData( data,
-            {
-                type: "number"
-            } ) )
+        if ( !util.isValidSocketData( data, "number" ) )
         {
-            Logger.write( Logger.type.Important, `[Queue] Client's queue register request has rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            Logger.impor( `[Queue] WARNING: Clients requested Socket [RS.mediaUserVote] data structure is not valid!, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
             return;
         }
 
-        var result = QueueManager.userVote( client, data.type );
+        if ( !ack || typeof ack === "undefined" )
+        {
+            Logger.impor( `[Queue] WARNING: Clients requested Socket [RS.mediaUserVote] ack parameter missing!, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
+            return;
+        }
+
+        var result = QueueManager.userVote( client, data );
 
         if ( result.success )
         {
-            socket.emit( "regu.mediaUserVoteReceive",
+            ack(
             {
-                success: true
+                code: 0
             } );
-
-            QueueManager.sendUserVoteList( socket, client.room );
+            QueueManager.sendUserVoteList( client, roomID );
         }
         else
         {
-            socket.emit( "regu.mediaUserVoteReceive",
+            ack(
             {
-                success: false,
-                reason: result.reason
+                code: 1
             } );
         }
     } );
 
-    socket.on( "regu.mediaRequest", function( data )
+    socket.on( "RS.mediaRequest", function( data )
     {
         var playingData = QueueManager.getPlayingData( roomID );
 
@@ -1820,7 +2068,7 @@ hook.register( "PostClientConnected", function( client, socket )
         }
     } );
 
-    socket.on( "regu.queueRegister", function( data )
+    socket.on( "RS.queueRegister", function( data )
     {
         if ( !util.isValidSocketData( data,
             {
@@ -1828,7 +2076,8 @@ hook.register( "PostClientConnected", function( client, socket )
                 start: "number"
             } ) )
         {
-            Logger.write( Logger.type.Important, `[Queue] Client's queue register request has rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            Logger.impor( `[Queue] WARNING: Clients requested Socket [RS.queueRegister] data structure is not valid!, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
             return;
         }
 
@@ -1838,7 +2087,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
         if ( isAllowRegister.code !== QueueManager.statusCode.success )
         {
-            socket.emit( "regu.queueRegisterReceive", isAllowRegister );
+            socket.emit( "RS.queueRegisterReceive", isAllowRegister );
 
             Logger.write( Logger.type.Warning, `[Queue] Queue register request rejected. (url:${ data.url }, code:${ util.getCodeID( QueueManager.statusCode, isAllowRegister.code ) }) ${ client.information( ) }` );
             return;
@@ -1847,12 +2096,67 @@ hook.register( "PostClientConnected", function( client, socket )
         QueueManager.register( isAllowRegister.type, client, client.room, isAllowRegister.newURL, isAllowRegister.videoID, data.start );
     } );
 
-    socket.on( "queueDataRequest", function( data )
+    socket.on( "RS.setMediaPos", function( data )
     {
-        socket.emit( "RS.queueEvent",
+        if ( !util.isValidSocketData( data, "number" ) )
         {
-            type: "dataReq"
-        } );
+            Logger.impor( `[Queue] WARNING: Clients requested Socket [RS.setMediaPos] data structure is not valid!, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
+            return;
+        }
+
+        if ( client.rank != "admin" )
+        {
+            Logger.impor( `[Queue] WARNING: Clients requested Socket [RS.setMediaPos] permission(Not admin) not granted, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
+            return;
+        }
+
+        if ( Number.isInteger( data ) )
+            QueueManager.setVideoPos( roomID, data );
+    } );
+
+    socket.on( "RS.queueRemoveRequest", function( data )
+    {
+        if ( !util.isValidSocketData( data,
+            {
+                id: "string",
+            } ) )
+        {
+            Logger.impor( `[Queue] WARNING: Clients requested Socket [RS.queueRemoveRequest] data structure is not valid!, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
+            return;
+        }
+
+        // *TODO: 남용을 막기 위해 remove 에 제한이 필요함.
+        var
+        {
+            queueObj,
+            index
+        } = QueueManager.findByIDAndIndex( roomID, data.id );
+
+        // *TODO: 로그 추가하기
+        //
+        if ( queueObj && queueObj.user && queueObj.user.userID === client.userID )
+        {
+            if ( index === 0 && QueueManager.getCurrentPlayingQueueTimeLeft( roomID ) <= 10 )
+            {
+                // *TODO: 이름 수정바람.. (socket)
+                socket.emit( "RS.queueRegisterReceive",
+                {
+                    code: QueueManager.statusCode.queueContinueTimeLeftError
+                } );
+                return;
+            }
+
+            QueueManager.removeByID( roomID, data.id );
+            Logger.event( `[Queue] Queue removed. -> (name: ${ queueObj.mediaName }, url: ${ queueObj.mediaProviderURL }, author: ${ queueObj.user ? queueObj.user.information : "SERVER" }) ${ client.information( ) }` );
+        }
+        else
+        {
+            Logger.impor( `[Queue] WARNING: Clients requested Socket [RS.queueRemoveRequest] permission(UserID Mismatch) not granted, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
+        }
     } );
 } );
 

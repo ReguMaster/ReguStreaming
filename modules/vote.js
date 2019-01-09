@@ -82,10 +82,25 @@ VoteManager.register = function( client )
 
     var voteData = this._voteList[ client.room ];
 
-    Server.sendMessage( roomID, "regu.voteEvent",
+    console.log( client );
+
+    client.emit( "RS.voteEvent",
+    {
+        type: "register_local",
+        percent: 1 / Server.getRoomClientCount( roomID ), // 항상 시작한 사람은 1이므로 확률 계산을 1명으로 취급
+        endTime: VoteManager.config.TIME
+    } );
+
+    Server.sendMessage( roomID, "RS.voteEvent",
     {
         type: "register",
-        startUserName: voteData.startUserName,
+        startUser:
+        {
+            name: client.name,
+            userID: client.userID,
+            avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" )
+        },
+        percent: 1 / Server.getRoomClientCount( roomID ), // 항상 시작한 사람은 1이므로 확률 계산을 1명으로 취급
         endTime: VoteManager.config.TIME
     }, client );
 
@@ -102,7 +117,7 @@ VoteManager.remove = function( roomID )
 {
     var voteData = this._voteList[ roomID ];
 
-    Server.sendMessage( roomID, "regu.voteEvent",
+    Server.sendMessage( roomID, "RS.voteEvent",
     {
         type: "finish"
     } );
@@ -158,7 +173,9 @@ hook.register( "PostPlayQueue", function( roomID, queueData )
 
 VoteManager.stackFlag = function( client, flag )
 {
-    if ( !this.isRunningVote( client.room ) )
+    var roomID = client.room;
+
+    if ( !this.isRunningVote( roomID ) )
     {
         return {
             success: false,
@@ -174,7 +191,7 @@ VoteManager.stackFlag = function( client, flag )
         };
     }
 
-    var voteData = this._voteList[ client.room ];
+    var voteData = this._voteList[ roomID ];
 
     if ( voteData.startUser === client )
     {
@@ -196,10 +213,36 @@ VoteManager.stackFlag = function( client, flag )
 
     voteData.votedUser[ client.userID ] = flag;
 
+    var votedUser = voteData.votedUser;
+    var keys = Object.keys( votedUser );
+    var length = keys.length;
+    var count = 0;
+
+    for ( var i = 0; i < length; i++ )
+    {
+        if ( votedUser[ keys[ i ] ] === this.voteFlag.accept )
+            count++;
+    }
+
+    // *TODO: 최적화 필요;
+
+    Server.sendMessage( roomID, "RS.voteEvent",
+    {
+        type: "flag",
+        percent: count / Server.getRoomClientCount( roomID )
+    } );
+
     Logger.write( Logger.type.Event, `[Vote] Vote flag request. -> ${ client.information( ) } -> ${ flag }` );
 
+    // if ( ( count / Server.getRoomClientCount( roomID ) ) >= 0.65 )
+    // {
+    //     VoteManager.finished( roomID, voteData );
+    // }
+
     return {
-        success: true
+        success: true,
+        percent: ( count / Server.getRoomClientCount( roomID ) ),
+        isTrue: ( count / Server.getRoomClientCount( roomID ) ) >= 0.65
     };
 }
 
@@ -209,7 +252,7 @@ VoteManager.sendData = function( client )
     // {
     //     var voteData = this.getRoomVote( client.room );
 
-    //     client.emit( "regu." );
+    //     client.emit( "RS." );
     // }
 }
 
@@ -230,20 +273,20 @@ hook.register( "OnCreateOfficialRoom", function( roomList )
 
 hook.register( "PostClientConnected", function( client, socket )
 {
-    socket.on( "regu.voteRegister", function( data )
+    socket.on( "RS.voteRegister", function( data )
     {
         var result = VoteManager.register( client );
 
         if ( result.accept )
         {
-            socket.emit( "regu.voteRegisterReceive",
+            socket.emit( "RS.voteRegisterReceive",
             {
                 success: true
             } );
         }
         else
         {
-            socket.emit( "regu.voteRegisterReceive",
+            socket.emit( "RS.voteRegisterReceive",
             {
                 success: false,
                 reason: result.reason
@@ -253,7 +296,7 @@ hook.register( "PostClientConnected", function( client, socket )
         }
     } );
 
-    socket.on( "regu.voteStackFlag", function( data )
+    socket.on( "RS.voteStackFlag", function( data )
     {
         if ( !util.isValidSocketData( data,
             {
@@ -268,7 +311,7 @@ hook.register( "PostClientConnected", function( client, socket )
 
         if ( !result.success )
         {
-            socket.emit( "regu.voteStackFlagReceive",
+            socket.emit( "RS.voteStackFlagReceive",
             {
                 success: false,
                 reason: result.reason
@@ -278,10 +321,11 @@ hook.register( "PostClientConnected", function( client, socket )
         }
         else
         {
-            socket.emit( "regu.voteStackFlagReceive",
+            socket.emit( "RS.voteStackFlagReceive",
             {
                 success: true,
-                flag: data.flag
+                percent: result.percent,
+                isTrue: result.isTrue
             } );
         }
     } );

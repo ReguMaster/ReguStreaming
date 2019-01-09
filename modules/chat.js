@@ -11,21 +11,23 @@ const Server = require( "../server" );
 const util = require( "../util" );
 const Logger = require( "./logger" );
 const hook = require( "../hook" );
-
 const filterXSS = require( "xss" ); // https://www.npmjs.com/package/xss
 
+/*
 ChatManager.color = {
     normal: 0,
     red: 1,
     green: 2,
     blue: 3
 }
+*/
 ChatManager.statusCode = {
     success: 0,
     lengthError: 1,
     xssError: 2,
     isGuestError: 3,
-    dataError: 4
+    globalVarError: 4,
+    roomVarError: 5
 }
 
 ChatManager.saySystem = function( roomID, message, icon, noDiscord )
@@ -37,6 +39,7 @@ ChatManager.saySystem = function( roomID, message, icon, noDiscord )
         icon: icon
     } );
 
+    // *TODO: roomID 체크 바람..
     if ( !noDiscord )
     {
         Server.emitDiscord( roomID,
@@ -66,31 +69,46 @@ ChatManager.emitImage = function( client, fileID, isAdult )
     Server.sendMessage( client.roomID, "RS.chat",
     {
         type: "img",
-        profileImage: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ), // 최적화 필요함.
-        name: client.name,
         userID: client.userID,
-        isAdult: isAdult,
-        fileID: fileID
+        fileID: fileID,
+        isAdult: isAdult
     } );
 
     Logger.info( `[Chat] ${ client.information( ) } : <IMAGE> ${ fileID }` );
 }
 
-ChatManager.sayGlobal = function( message )
+// *TODO: 메소드 params 관련 다시 구현 바람
+// *NOTE: client, fileID, fileType, [isAdult] (for image file), [mimeType] (for video file), [fileName] (for raw file)
+ChatManager.emitFile = function( client, fileID, fileType, isAdult, mimeType, fileName )
 {
-    Server.sendMessage( null, "regu.chat",
+    Server.sendMessage( client.roomID, "RS.chat",
     {
-        message: message,
-        type: "system",
+        type: "file",
+        userID: client.userID,
+        fileID: fileID,
+        fileType: fileType,
+
+
+        mimeType: mimeType,
+        fileName: fileName,
+        isAdult: isAdult
     } );
+
+    Logger.info( `[Chat] ${ client.information( ) } : <FILE> ${ fileID }` );
 }
 
-ChatManager.preChat = function( client, chatMessage )
+ChatManager.preChat = function( roomID, chatMessage )
 {
     // var PreChat = hook.run( "PreChat", client, chatMessage );
 
     // if ( client.provider === "guest" )
     //     return this.statusCode.isGuestError;
+
+    if ( Server.getGlobalVar( "Chat.NOT_ALLOW", false ) )
+        return this.statusCode.globalVarError;
+
+    if ( Server.getRoomVar( roomID, "chatDisable", false ) )
+        return this.statusCode.roomVarError;
 
     if ( chatMessage.length <= 0 || chatMessage.length > 200 )
         return this.statusCode.lengthError;
@@ -103,11 +121,19 @@ ChatManager.preChat = function( client, chatMessage )
 
 hook.register( "PostClientConnected", function( client, socket )
 {
-    socket.on( "RS.chat", function( data )
+    socket.on( "RS.chat", function( data, ack )
     {
         if ( !util.isValidSocketData( data, "string" ) )
         {
-            Logger.impor( `[Chat] Chat rejected. (code:dataError) ${ client.information( ) }` );
+            Logger.impor( `[Chat] WARNING: Clients requested Socket [RS.chat] data structure is not valid!, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
+            return;
+        }
+
+        if ( !ack || typeof ack === "undefined" )
+        {
+            Logger.impor( `[Chat] WARNING: Clients requested Socket [RS.chat] ack parameter missing!, this is actually Clients manual socket emission. ${ client.information( ) }` );
+            client.pushWarning( );
             return;
         }
 
@@ -116,24 +142,60 @@ hook.register( "PostClientConnected", function( client, socket )
 
         if ( preChat !== ChatManager.statusCode.success )
         {
-            socket.emit( "RS.chatResult", preChat );
-
             if ( preChat !== ChatManager.statusCode.xssError )
-                Logger.warn( `[Chat] Chat rejected. (code:${ util.getCodeID( ChatManager.statusCode, preChat ) }) -> ${ client.information( ) } : ${ chatMessage }` );
+                Logger.warn( `[Chat] Client chat post rejected. (code:${ util.getCodeID( ChatManager.statusCode, preChat ) }) -> ${ client.information( ) } : ${ chatMessage }` );
             else
-                Logger.impor( `[Chat] WARNING! : XSS attack detected! -> ${ client.information( ) } : ${ chatMessage }` );
+                Logger.impor( `[Chat] WARNING: XSS attack detected! -> ${ client.information( ) } : ${ chatMessage }` );
 
-            return;
+            return ack(
+            {
+                code: preChat
+            } );
         }
 
         Server.sendMessage( client.room, "RS.chat",
         {
-            profileImage: client.getPassportField( "avatar", "/images/icon/user_64.png" ),
-            name: client.name,
+            type: "text",
             userID: client.userID,
-            rank: client.rank,
+            // profileImage: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+            // profileName: client.name,
+            message: chatMessage
+        }, client );
+
+        ack(
+        {
+            type: "text",
+            userID: client.userID,
+            // profileImage: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+            // profileName: client.name,
             message: chatMessage
         } );
+
+        // Server.sendMessage( client.room, "RS.chat",
+        // {
+
+        // } );
+
+        // if ( client.platform === "android" )
+        // {
+        // Server.sendMessage( client.room, "RS.chat",
+        // {
+        // type: "text",
+        // userID: client.userID,
+        // profileImage: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+        // profileName: client.name,
+        // message: chatMessage
+        // } );
+        // }
+        // else if ( client.platform === "web" )
+        // {
+        // Server.sendMessage( client.room, "RS.chat",
+        // {
+        // type: "text",
+        // userID: client.userID,
+        // message: chatMessage
+        // } );
+        // }
 
         Server.emitDiscord( client.room, client.name + " : " + chatMessage );
 

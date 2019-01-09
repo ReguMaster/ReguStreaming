@@ -5,6 +5,52 @@
 
 const util = {};
 
+util.browserType = {
+    opera: 0,
+    firefox: 1,
+    safari: 2,
+    ie: 3,
+    edge: 4,
+    chrome: 5,
+    blink: 6
+}
+util.isBrowser = function( browserType )
+{
+    switch ( browserType )
+    {
+        case this.browserType.opera:
+            return ( !!window.opr && !!opr.addons ) || !!window.opera || navigator.userAgent.indexOf( ' OPR/' ) >= 0;
+        case this.browserType.firefox:
+            return typeof InstallTrigger !== 'undefined';
+        case this.browserType.safari:
+            return /constructor/i.test( window.HTMLElement ) || ( function( p )
+            {
+                return p.toString( ) === "[object SafariRemoteNotification]";
+            } )( !window[ 'safari' ] || ( typeof safari !== 'undefined' && safari.pushNotification ) );
+        case this.browserType.ie:
+            return /*@cc_on!@*/ false || !!document.documentMode;
+        case this.browserType.edge:
+            return !this.isBrowser( this.browserType.ie ) && !!window.StyleMedia;
+        case this.browserType.chrome:
+            return !!window.chrome && !!window.chrome.webstore;
+        case this.browserType.blink:
+            return ( this.isBrowser( this.browserType.chrome ) || this.isBrowser( this.browserType.opera ) ) && !!window.CSS;
+        default:
+            return false;
+    }
+}
+
+// https://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
+util.isIE = function( )
+{
+    return false || !!document.documentMode;
+}
+
+util.isEdge = function( )
+{
+    return !util.isIE( ) && !!window.StyleMedia;
+}
+
 // https://developers.livechatinc.com/blog/setting-cookies-to-subdomains-in-javascript/
 util.cookie = {
     set: function( name, value, days, domain )
@@ -97,7 +143,7 @@ util.startCSSAnimation = function( animationProprierties, targetElement, onEnd )
             targetElement.off( "animationend webkitAnimationEnd oanimationend MSAnimationEnd" );
 
             if ( onEnd )
-                onEnd( );
+                onEnd( targetElement );
         } );
 }
 
@@ -134,23 +180,19 @@ util.notification = function( notificationType, title, message, time, allow_dism
             type: "info",
             placement:
             {
-                from: "bottom",
+                from: "top",
                 align: "center"
             },
+            offset: 64,
+            spacing: 10,
             newest_on_top: true,
             animate:
             {
-                enter: "animated zoomInUp",
-                exit: "animated zoomOutDown"
+                enter: "animated bounceInDown",
+                exit: "animated bounceOutUp"
             },
             delay: time,
-            timer: 1000,
-            template: `<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-pastel-{0}" role="alert">
-            <button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>
-            <span data-notify="icon"></span>
-            <span data-notify="title">{1}</span>
-            <span data-notify="message">{2}</span>
-        </div>`
+            timer: 1000
         } );
     }
     else if ( notificationType === util.notificationType.warning )
@@ -166,23 +208,19 @@ util.notification = function( notificationType, title, message, time, allow_dism
             type: "warning",
             placement:
             {
-                from: "bottom",
+                from: "top",
                 align: "center"
             },
+            offset: 64,
+            spacing: 10,
             newest_on_top: true,
             animate:
             {
-                enter: "animated zoomInUp",
-                exit: "animated zoomOutDown"
+                enter: "animated bounceInDown",
+                exit: "animated bounceOutUp"
             },
             delay: time,
-            timer: 1000,
-            template: `<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-pastel-{0}" role="alert">
-            <button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>
-            <span data-notify="icon"></span>
-            <span data-notify="title">{1}</span>
-            <span data-notify="message">{2}</span>
-        </div>`
+            timer: 1000
         } );
     }
     else if ( notificationType === util.notificationType.danger )
@@ -198,23 +236,19 @@ util.notification = function( notificationType, title, message, time, allow_dism
             type: "danger",
             placement:
             {
-                from: "bottom",
+                from: "top",
                 align: "center"
             },
+            offset: 64,
+            spacing: 10,
             newest_on_top: true,
             animate:
             {
-                enter: "animated zoomInUp",
-                exit: "animated zoomOutDown"
+                enter: "animated bounceInDown",
+                exit: "animated bounceOutUp"
             },
             delay: time,
-            timer: 1000,
-            template: `<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-pastel-{0}" role="alert">
-            <button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>
-            <span data-notify="icon"></span>
-            <span data-notify="title">{1}</span>
-            <span data-notify="message">{2}</span>
-        </div>`
+            timer: 1000
         } );
     }
     else if ( notificationType === util.notificationType.success )
@@ -230,23 +264,19 @@ util.notification = function( notificationType, title, message, time, allow_dism
             type: "success",
             placement:
             {
-                from: "bottom",
+                from: "top",
                 align: "center"
             },
+            offset: 64,
+            spacing: 10,
             newest_on_top: true,
             animate:
             {
-                enter: "animated zoomInUp",
-                exit: "animated zoomOutDown"
+                enter: "animated bounceInDown",
+                exit: "animated bounceOutUp"
             },
             delay: time,
-            timer: 1000,
-            template: `<div data-notify="container" class="col-xs-11 col-sm-3 alert alert-pastel-{0}" role="alert">
-            <button type="button" aria-hidden="true" class="close" data-notify="dismiss">×</button>
-            <span data-notify="icon"></span>
-            <span data-notify="title">{1}</span>
-            <span data-notify="message">{2}</span>
-        </div>`
+            timer: 1000
         } );
     }
 }
@@ -289,17 +319,6 @@ util.getAMPM = function( hour )
     return hour < 12 ? "AM" : "PM";
 }
 
-// https://stackoverflow.com/questions/9847580/how-to-detect-safari-chrome-ie-firefox-and-opera-browser
-util.isIE = function( )
-{
-    return false || !!document.documentMode;
-}
-
-util.isEdge = function( )
-{
-    return !util.isIE( ) && !!window.StyleMedia;
-}
-
 //https://gist.github.com/demonixis/4202528/5f0ce3c2622fba580e78189cfe3ff0f9dd8aefcc
 Math.clamp = function( value, min, max )
 {
@@ -322,6 +341,12 @@ Math.lerp = function( a, b, amount )
     amount = amount > 1 ? 1 : amount;
     return a + ( b - a ) * amount;
 }
+
+// https://stackoverflow.com/questions/586182/how-to-insert-an-item-into-an-array-at-a-specific-index
+Array.prototype.insert = function( index, item )
+{
+    this.splice( index, 0, item );
+};
 
 String.prototype.toMMSS = function( )
 {
@@ -358,6 +383,21 @@ Number.prototype.toSexyMMSS = function( )
         seconds = "0" + seconds;
 
     return ( minutes > 0 ? minutes + '분 ' : '' ) + seconds + '초';
+}
+
+Number.prototype.toSimpleSexyMMSS = function( )
+{
+    var hours = Math.floor( this / 3600 );
+    var minutes = Math.floor( ( this - ( hours * 3600 ) ) / 60 );
+    var seconds = this - ( hours * 3600 ) - ( minutes * 60 );
+
+    // if ( minutes < 10 )
+    //     minutes = "0" + minutes;
+
+    if ( seconds < 10 )
+        seconds = "0" + seconds;
+
+    return minutes + ":" + seconds;
 }
 
 // function formatTime( numberofseconds )
@@ -439,6 +479,12 @@ util.getQueryObject = function( )
     </div>
 */
 
+util.isEmptyObject = function( obj )
+{
+    return Object.keys( obj )
+        .length === 0 && obj.constructor === Object;
+}
+
 util.removeAllQueryParameters = function( )
 {
     window.history.replaceState(
@@ -466,7 +512,8 @@ util.showModal = function( title, body, closeText, confirmText, onClose, onConfi
     closeObj.text( closeText || "닫기" );
 
     if ( onClose )
-        closeObj.one( "click", onClose );
+        closeObj.off( "click" )
+        .one( "click", onClose );
 
 
     if ( isSingleButton )
@@ -484,7 +531,8 @@ util.showModal = function( title, body, closeText, confirmText, onClose, onConfi
         confirmObj.text( confirmText || "확인" );
 
         if ( onConfirm )
-            confirmObj.one( "click", onConfirm );
+            confirmObj.off( "click" )
+            .one( "click", onConfirm );
     }
 
     self.modal( );
@@ -507,12 +555,54 @@ if ( !String.format )
 // https://gist.github.com/davefearon/2115905
 ( function( $ )
 {
+    $.fn.opacityTo = function( to, duration, onEnd )
+    {
+        var self = this;
+
+        this.stop( )
+            .animate(
+            {
+                opacity: to.toString( )
+            }, duration, function( )
+            {
+                if ( onEnd && typeof onEnd === "function" )
+                    onEnd( self );
+            } )
+
+        return this;
+    }
+
+    $.fn.startAnimation = function( animationProprierties, onEnd )
+    {
+        var self = this;
+
+        self.css( "animation", animationProprierties )
+            .off( "animationend webkitAnimationEnd oanimationend MSAnimationEnd" )
+            .on( "animationend webkitAnimationEnd oanimationend MSAnimationEnd", function( )
+            {
+                self.css( "animation", "" );
+                self.off( "animationend webkitAnimationEnd oanimationend MSAnimationEnd" );
+
+                if ( onEnd && typeof onEnd === "function" )
+                    onEnd( self );
+            } );
+
+        return this;
+    }
+
+    $.fn.stopAnimation = function( )
+    {
+        this.off( "animationend webkitAnimationEnd oanimationend MSAnimationEnd" )
+            .css( "animation", "" );
+
+        return this;
+    }
+
     // https://css-tricks.com/snippets/jquery/move-cursor-to-end-of-textarea-or-input/
     $.fn.putCursorAtEnd = function( )
     {
         return this.each( function( )
         {
-
             // Cache references
             var $el = $( this ),
                 el = this;

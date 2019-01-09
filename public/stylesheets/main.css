@@ -3,6 +3,67 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
+.header-buttonList {
+    display: flex;
+    position: absolute;
+    top: 92px;
+    left: 128px;
+    height: 42px;
+    align-items: center;
+
+}
+
+.header-button {
+    margin-right: 32px;
+}
+
+.header-button-text {
+    font-size: 13px;
+}
+
+@-webkit-keyframes rotating
+
+/* Safari and Chrome */
+    {
+    from {
+        -webkit-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    to {
+        -webkit-transform: rotate(360deg);
+        -o-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+@keyframes rotating {
+    from {
+        -ms-transform: rotate(0deg);
+        -moz-transform: rotate(0deg);
+        -webkit-transform: rotate(0deg);
+        -o-transform: rotate(0deg);
+        transform: rotate(0deg);
+    }
+
+    to {
+        -ms-transform: rotate(360deg);
+        -moz-transform: rotate(360deg);
+        -webkit-transform: rotate(360deg);
+        -o-transform: rotate(360deg);
+        transform: rotate(360deg);
+    }
+}
+
+.rotating-normal {
+    -webkit-animation: rotating 2s linear infinite;
+    -moz-animation: rotating 2s linear infinite;
+    -ms-animation: rotating 2s linear infinite;
+    -o-animation: rotating 2s linear infinite;
+    animation: rotating 2s linear infinite;
+}
+
 .processBackground {
     width: 100%;
     height: 100%;
@@ -16,10 +77,11 @@
     display: block;
 
     background-image: url("/images/msg.gif");
-    background-size: 82px;
+    background-size: 64px;
     background-position: center center;
     background-repeat: no-repeat;
-    background-color: rgba( 0, 0, 0, 0.3);
+    border: 50%;
+    background-color: rgba(0, 0, 0, 0.3);
 }
 
 .discordRecommendModal {
@@ -33,7 +95,7 @@
     z-index: 1;
     margin: auto;
 
-    background-color: rgba( 235, 235, 235, 1);
+    background-color: rgba(235, 235, 235, 1);
     display: block;
     border-radius: 10px;
 }
@@ -45,14 +107,14 @@
     width: 100%;
     height: 42px;
     position: absolute;
-    background-color: rgba( 73, 161, 255, 1);
+    background-color: rgba(73, 161, 255, 1);
 }
 
 .discordRecommendModalTitleText {
     margin: 12px;
     font-size: 15px;
     color: white;
-    text-shadow: 0px 0px 12px rgba( 100, 100, 100, 0.7);
+    text-shadow: 0px 0px 12px rgba(100, 100, 100, 0.7);
 }
 
 .discordRecommendModalClose {
@@ -70,46 +132,46 @@
 
 @keyframes headerServiceStatusInfo {
     0% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 
     50% {
-        box-shadow: 0px 0px 16px rgb( 56, 110, 156);
-        transform: scale( 1.1);
+        box-shadow: 0px 0px 16px rgb(56, 110, 156);
+        transform: scale(1.1);
     }
 
     100% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 }
 
 @keyframes headerServiceStatusWarning {
     0% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 
     50% {
-        box-shadow: 0px 0px 16px rgb( 255, 141, 58);
-        transform: scale( 1.1);
+        box-shadow: 0px 0px 16px rgb(255, 141, 58);
+        transform: scale(1.1);
     }
 
     100% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 }
 
 @keyframes headerServiceStatusDanger {
     0% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 
     50% {
-        box-shadow: 0px 0px 16px rgb( 202, 64, 61);
-        transform: scale( 1.1);
+        box-shadow: 0px 0px 16px rgb(202, 64, 61);
+        transform: scale(1.1);
     }
 
     100% {
-        transform: scale( 1);
+        transform: scale(1);
     }
 }
 
@@ -129,21 +191,63 @@
 .header-serviceNotification {
     position: fixed;
     width: 350px;
-    top: 116px;
-    left: 290px;
+    top: 128px;
+    left: 131px;
     border-radius: 12px;
-    background-color: rgba( 235, 235, 255, 1);
+    background-color: rgba(235, 235, 255, 1);
     z-index: 10;
     display: none;
 }
 
+.header-serviceNotification[data-highesttype="info"]:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border: 16px solid transparent;
+    border-bottom-color: rgb(56, 110, 156);
+    border-top: 0;
+    margin-left: -16px;
+    margin-top: -16px;
+}
+
+.header-serviceNotification[data-highesttype="warning"]:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border: 16px solid transparent;
+    border-bottom-color: rgb(255, 141, 58);
+    border-top: 0;
+    margin-left: -16px;
+    margin-top: -16px;
+}
+
+.header-serviceNotification[data-highesttype="danger"]:after {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 50%;
+    width: 0;
+    height: 0;
+    border: 16px solid transparent;
+    border-bottom-color: rgb(202, 64, 61);
+    border-top: 0;
+    margin-left: -16px;
+    margin-top: -16px;
+}
+
 .header-serviceStatusFloating {
     width: 100%;
-    height: 32px;
-    background-color: rgb( 255, 58, 58);
+    padding: 6px;
+    background-color: rgb(255, 58, 58);
+    box-shadow: 0px 0px 32px rgb(255, 58, 58);
     position: fixed;
     top: 0;
-    cursor: pointer;
     align-items: center;
     justify-content: center;
     display: flex;
@@ -151,13 +255,11 @@
 
 .header-serviceStatusFloating-message {
     font-size: 13px;
-    margin: 0;
     margin-left: 8px;
-    color: white;
-    display: inline-block;
 }
 
 @keyframes serviceNotificationFadeIn {
+
     from,
     60%,
     75%,
@@ -227,7 +329,7 @@
     padding: 8px;
     padding-left: 12px;
     margin: 0;
-    background-color: rgba( 255, 141, 58);
+    background-color: rgba(255, 141, 58);
 
     /* border-top-left-radius: 12px;
     border-top-right-radius: 12px; */
@@ -235,12 +337,10 @@
 
 .header-serviceNotification-item-message {
     font-size: 13px;
-    color: rgb( 25, 25, 25);
+    color: rgb(25, 25, 25);
     padding: 12px;
     margin: 0;
 }
-
-.footer {}
 
 .footerTitle {
     position: absolute;
@@ -249,7 +349,7 @@
     right: 0;
     bottom: 12px;
     text-align: center;
-    color: rgb( 235, 235, 235);
+    color: rgb(235, 235, 235);
 }
 
 .footerCommunityDiscord {
@@ -261,6 +361,23 @@
     cursor: pointer;
     z-index: 1;
 }
+
+.footerCommunityKakao {
+    left: 64px;
+    bottom: 13px;
+    position: fixed;
+    cursor: pointer;
+    z-index: 1;
+}
+
+.footerCommunityKakaoChat {
+    left: 64px;
+    bottom: 4px;
+    position: fixed;
+    cursor: pointer;
+    z-index: 1;
+}
+
 
 .footerCommunityGithub {
     width: 36px;
@@ -299,9 +416,28 @@
     position: absolute;
     margin: auto;
     text-align: center;
-    text-shadow: 0px 0px 12px rgba( 0, 0, 0, 1);
+    text-shadow: 0px 0px 12px rgba(0, 0, 0, 1);
     width: 100%;
     height: 24px;
+}
+
+.roomListContainer-refreshHelp {
+    display: flex;
+    align-items: center;
+    justify-content: flex-start;
+}
+
+.roomListContainer-refreshHelp-icon {
+    color: rgb(230, 230, 230);
+    font-size: 12px;
+    top: -1px;
+}
+
+.roomListContainer-refreshHelp-text {
+    color: rgb(230, 230, 230);
+    font-size: 12px;
+    margin: 0;
+    margin-left: 8px;
 }
 
 .header-login {
@@ -401,11 +537,34 @@
 .header-loginInformation-profileImage {
     margin-left: 6px;
     border-radius: 50%;
-    width: 32px;
-    height: 32px;
+    width: 42px;
+    height: 42px;
+    float: right;
 }
 
 .header-loginInformation-profileProvider {
+    font-size: 11px;
+    display: inline-block;
+    margin: 0;
+    top: 2px;
+    right: 6px;
+    position: relative;
+    margin-left: 6px;
+}
+
+.header-loginInformation-profileCredit {
+    display: flex;
+    margin-top: 2px;
+}
+
+.header-loginInformation-profileCredit-icon {
+    color: white;
+    font-size: 13px;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.header-loginInformation-profileCredit-text {
     font-size: 11px;
     display: inline-block;
     margin: 0;
@@ -421,12 +580,18 @@
     display: inline-block;
     cursor: pointer;
     margin: 12px;
+    float: right;
 }
 
 .roomListContainer {
     /* position: fixed; */
-    width: 800px;
+    /* min-width: 1100px; */
+    max-height: 242px;
+    width: auto;
+    height: 242px;
     position: absolute;
+    display: inline-table;
+    text-align: center;
     top: 50%;
     left: 50%;
     transform: translate(-50%, -50%);
@@ -436,95 +601,67 @@
     -ms-transform: translate(-50%, -50%);
 }
 
-.roomList {}
-
-.roomChild {
-    width: 100%;
-    height: 72px;
+.roomItem {
+    width: 50vh;
+    height: 50vh;
+    max-width: 212px;
+    max-height: 242px;
     border-radius: 16px;
+    margin-right: 24px;
     margin-bottom: 12px;
-    background-color: rgba( 200, 200, 200, 0.2);
+    background-color: rgba(200, 200, 200, 0.2);
+    /* box-shadow: 0px 0px 16px rgb(30, 30, 30) !important; */
     cursor: pointer;
+    opacity: 0;
 }
 
-
-.roomChildTitle {
-    height: auto;
-    /* padding: 12px; */
-    font-size: 17px;
-    top: 5px;
-    margin: 0;
-    margin-left: 24px;
-    margin-top: 12px;
-    width: auto;
-    color: white;
-    text-shadow: 0px 0px 16px rgb(32, 255, 181);
-    display: inline-block;
-}
-
-.roomChildTitleSmall {
-    height: auto;
-    padding: 12px;
-    font-size: 12px;
-
-    color: white;
-    display: inline-block;
-
-    margin-left: -10px;
-    padding-left: 0px;
-    padding-top: 21px;
-}
-
-.roomChildDesc {
-    padding: 0;
-    font-size: 13px;
-    color: white;
-    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 1);
-    margin-top: 8px;
-    margin-left: 24px;
+.roomItem-icon {
+    width: 84px;
+    height: 84px;
     position: absolute;
-    height: auto;
+    top: -12px;
+    left: -12px;
+    border-radius: 12px;
+    /* box-shadow: 0px 0px 6px white; */
 }
 
-.roomChildCurrentPlaying {
-    padding: 0;
+.roomItem-title {
+    height: auto;
+    font-size: 17px;
+    margin: 0;
+    margin-top: 86px;
+    width: 100%;
+    color: white;
+    text-shadow: 0px 0px 24px rgb(255, 255, 255);
+    text-align: center;
+}
+
+.roomItem-desc {
+    color: rgb(200, 200, 200);
+    font-size: 13px;
+    text-shadow: 0px 0px 12px rgba(50, 50, 50, 1);
+    margin-top: 8px;
+    margin-left: 16px;
+    margin-right: 16px;
+    /* position: absolute; */
+    /* text-align: center; */
+}
+
+.roomItem-currentPlaying {
     font-size: 11px;
     color: white;
-    top: 0;
-    left: 35%;
-    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 1);
+    margin: 16px 12px 12px 12px;
+    text-align: center;
+    text-shadow: 0px 0px 12px rgb(50, 50, 50);
+    word-wrap: break-word;
     font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
-    margin-top: 28px;
-    margin-left: 24px;
-    max-width: 55%;
+}
+
+.roomItem-count {
+    font-size: 17px;
+    text-shadow: 0px 0px 12px rgba(50, 50, 50, 0.5);
+    color: rgb(119, 186, 249);
     position: absolute;
-    height: auto;
-
-    /* http://juve.tistory.com/119 */
-    padding-left: 4em;
-    text-indent: -4em;
-}
-
-.roomChildCount {
-    padding: 0;
-
-    font-size: 15px;
-    text-shadow: 0px 0px 12px rgba( 50, 50, 50, 0.5);
-
-    color: rgb( 119, 206, 249);
-
-    float: right;
-    margin: 0 auto;
-    margin-top: 28px;
-    margin-right: 20px;
-}
-
-#roomChildConnectButton {
-    height: auto;
-    width: 100px;
-    padding: 8px;
-    font-size: 15px;
-    float: right;
-    margin: 16px;
-    margin-right: 16px;
+    top: 16px;
+    right: 16px;
 }

@@ -8,7 +8,7 @@
 const FileStorage = {};
 const fileStream = require( "fs" );
 const path = require( "path" );
-const Logger = require( "./modules/logger" ); // 로거 위치 바꾸기
+const Logger = require( "./modules/logger" );
 
 FileStorage.config = {
     directory: path.join( __dirname, "fileStorage" )
@@ -17,7 +17,7 @@ FileStorage.config = {
 fileStream.access( FileStorage.config.directory, fileStream.constants.F_OK, function( err )
 {
     if ( err )
-        Logger.write( Logger.type.Error, `[FileStorage] FileStorage directory missing! (directory:${ FileStorage.config.directory })` );
+        Logger.error( `[FileStorage] FileStorage store directory is missing! (location: ${ FileStorage.config.directory })` );
 } );
 
 FileStorage.save = function( id, type, data )
@@ -25,13 +25,9 @@ FileStorage.save = function( id, type, data )
     fileStream.writeFile( path.join( this.config.directory, id + ".db" ), type === "json" ? JSON.stringify( data ) : data, "utf8", function( err )
     {
         if ( err )
-        {
-            Logger.write( Logger.type.Error, `[FileStorage] Failed to save '${ id }'! (err:${ err.stack })` );
-        }
+            Logger.error( `[FileStorage] Failed to save FileStorage [${ id }:${ type }] database! (err: ${ err.stack })` );
         else
-        {
-            Logger.write( Logger.type.Event, `[FileStorage] FileStorage database ${ id } saved.` );
-        }
+            Logger.event( `[FileStorage] FileStorage [${ id }:${ type }] database successfully saved.` );
     } );
 }
 
@@ -44,8 +40,8 @@ FileStorage.loadAsync = function( id, type, defaultValue = [ ], callback )
     {
         if ( err )
         {
+            Logger.warn( `[FileStorage] FileStorage [${ id }:${ type }] database not exist, so it is set to default to (${ defaultValue }:${ typeof defaultValue }).` );
             callback( defaultValue );
-            Logger.write( Logger.type.Warning, `[FileStorage] FileStorage database '${ id }' not exist, will be default value. -> ${ defaultValue }` );
         }
         else
         {
@@ -53,13 +49,25 @@ FileStorage.loadAsync = function( id, type, defaultValue = [ ], callback )
             {
                 if ( err2 )
                 {
+                    Logger.error( `[FileStorage] Failed to load FileStorage [${ id }:${ type }] database! (err: ${ err2.stack })` );
                     callback( defaultValue );
-                    Logger.write( Logger.type.Error, `[FileStorage] Failed to load '${ id }'! (err:${ err2.stack })` );
                 }
                 else
                 {
-                    callback( type === "json" ? JSON.parse( data ) : data );
-                    Logger.write( Logger.type.Event, `[FileStorage] FileStorage database '${ id }' loaded.` );
+                    try
+                    {
+                        var convert = type === "json" ? JSON.parse( data ) : data;
+
+                        Logger.event( `[FileStorage]  FileStorage [${ id }:${ type }] database successfully loaded.` );
+                        callback( convert );
+                    }
+                    catch ( e )
+                    {
+                        if ( e instanceof SyntaxError )
+                            Logger.error( `[FileStorage] Failed to conversion FileStorage [${ id }:${ type }] database!, so it is set to default to (${ defaultValue }:${ typeof defaultValue }).` );
+                        else
+                            Logger.error( `[FileStorage] Failed to conversion FileStorage [${ id }:${ type }] database! (err: ${ e.stack })` );
+                    }
                 }
             } );
         }
@@ -67,6 +75,9 @@ FileStorage.loadAsync = function( id, type, defaultValue = [ ], callback )
 }
 
 // *TODO: 구현
+/**
+ * @deprecated Do not use sync method.
+ */
 FileStorage.loadSync = function( id, type, defaultValue ) {
 
 }

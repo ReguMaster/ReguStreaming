@@ -36,7 +36,7 @@ timer.create = function( id, interval, loopCount, callback )
                 obj.callback( );
 
                 if ( obj.loopCount === 0 )
-                    this.remove( obj.id, "Loop limit reached" );
+                    timer.remove( obj.id, "Loop limit reached" );
             }
         }
 

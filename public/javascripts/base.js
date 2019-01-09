@@ -3,8 +3,14 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
-const reguStreaming = {};
-reguStreaming.config = {};
+const reguStreaming = {
+    config:
+    {}
+};
+
+reguStreaming.debugMode = true;
+
+window.VAR_NULL = "^NULL^";
 
 reguStreaming.setConfig = function( name, value )
 {
@@ -13,10 +19,16 @@ reguStreaming.setConfig = function( name, value )
 
 reguStreaming.getConfig = function( name, defaultValue )
 {
-    if ( typeof this.config[ name ] === "undefined" || this.config[ name ] === null )
-        return defaultValue || null;
+    if ( !this.config.hasOwnProperty( name ) || typeof this.config[ name ] === "undefined" )
+        return defaultValue;
 
     return this.config[ name ];
+}
+
+reguStreaming.printError = function( errorMessage )
+{
+    if ( this.debugMode )
+        console.log( "%c[ReguStreaming] " + errorMessage, "color: red; font-size: 13px;" );
 }
 
 // 브라우저 간 호환성 해결. https://blog.outsider.ne.kr/856

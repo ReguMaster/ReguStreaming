@@ -10,6 +10,8 @@
 reguStreaming.canvas = null;
 reguStreaming.canvas2D = null;
 
+reguStreaming.audioContext = null;
+
 /*
 let canvas;
 let canvas2D;
@@ -49,6 +51,40 @@ function groundInitialize( )
 }
 */
 
+reguStreaming.canvasInitialize = function( )
+{
+    this.visualizerInitialized = true;
+
+    /*
+    if ( this.visualizerInitialized ) return;
+    if ( !reguStreaming.audioObj )
+    {
+        console.log( "audioObj not genereated" )
+        return;
+    }
+
+    var context = new AudioContext( );
+    var source = context.createMediaElementSource( reguStreaming.audioObj );
+    var analyser = context.createAnalyser( );
+
+    source.connect( analyser );
+    analyser.connect( context.destination );
+    analyser.fftSize = 1024;
+
+    var visualizerBufferLength = analyser.frequencyBinCount;
+    reguStreaming.visualizerBuffer = new Uint8Array( visualizerBufferLength );
+
+    this.audioContext = context;
+    this.audioSource = source;
+    this.audioAnalyser = analyser;
+
+    bg_r = Math.floor( Math.random( ) * 255 ) + 1;
+    bg_g = Math.floor( Math.random( ) * 255 ) + 1;
+    bg_b = Math.floor( Math.random( ) * 255 ) + 1;
+
+    this.visualizerInitialized = true;*/
+}
+
 reguStreaming.canvasResize = function( )
 {
     if ( !this.canvas ) return;
@@ -77,77 +113,65 @@ reguStreaming.showCaption = function( data )
 
 reguStreaming.captionInitialize = function( )
 {
-    reguStreaming.captionReset( );
+    this.captionClear( );
 
     var roomID = reguStreaming.getConfig( "roomID", null );
 
-    if ( roomID )
+    if ( !roomID ) return;
+
+    jQuery.ajax(
     {
-        $.ajax(
+        url: "/extra/" + roomID,
+        type: "get",
+        dataType: "json",
+        success: function( caption )
         {
-            url: "/extra/" + roomID,
-            type: "get",
-            dataType: "json",
-            success: function( caption )
+            if ( !caption || !Array.isArray( caption ) || caption.length === 0 ) return;
+            var self = reguStreaming;
+
+            self.captionTick = setInterval( function( )
             {
-                if ( !caption || caption.length === 0 ) return;
-                var self = reguStreaming;
+                var currentTime = Math.round( controls.videoContainer.get( 0 )
+                    .currentTime );
+                var length = caption.length;
 
-                self.captionTick = setInterval( function( )
+                for ( var i = 0; i < length; i++ )
                 {
-                    var currentTime = Math.round( controls.videoContainer.get( 0 )
-                        .currentTime );
-                    var length = caption.length;
+                    var captionData = caption[ i ];
 
-                    for ( var i = 0; i < length; i++ )
+                    if ( currentTime >= captionData.attr.start && currentTime <= captionData.attr.start + captionData.attr.dur )
                     {
-                        var captionData = caption[ i ];
-
-                        if ( currentTime >= captionData.attr.start && currentTime <= captionData.attr.start + captionData.attr.dur )
-                        {
-                            self.showCaption( captionData );
-                            // caption.splice( i, 1 );
-                            return;
-                        }
+                        self.showCaption( captionData );
+                        // caption.splice( i, 1 );
+                        return;
                     }
+                }
 
-                    self.showCaption( null );
-                }, 100 );
-            }
-        } );
-    }
+                self.showCaption( null );
+            }, 100 );
+        }
+    } );
 }
 
-reguStreaming.captionReset = function( )
+reguStreaming.captionClear = function( )
 {
     if ( this.captionTick )
+    {
         clearInterval( this.captionTick );
+        this.captionTick = null;
+    }
 
     this.showCaption( null );
 }
 
 reguStreaming._showingCloudList = [ ];
-reguStreaming._showCloud = function( data )
+
+reguStreaming.tvpleCloudInitialize = function( cloudList ) // 여기 바꾸기
 {
-    this._showingCloudList.push(
+    this.tvpleCloudClear( );
+    this.tvpleCloudTick = setInterval( function( self )
     {
-        startTime: Date.now( ),
-        text: data.text,
-        x: data.x,
-        y: data.y,
-        alpha: 1
-    } );
-
-    // console.log( reguStreaming._showingCloudList );
-}
-
-reguStreaming.cloudInitialize = function( cloud ) // 여기 바꾸기
-{
-    this.cloudReset( );
-
-    this.cloudTickTok = setInterval( function( self )
-    {
-        var timeData = cloud[ Math.floor( controls.videoContainer.get( 0 )
+        var timeData = cloudList[ Math.floor( controls.videoContainer.get( 0 )
             .currentTime ) ];
 
         if ( timeData )
@@ -156,16 +180,28 @@ reguStreaming.cloudInitialize = function( cloud ) // 여기 바꾸기
 
             for ( var i = 0; i < length; i++ )
             {
-                self._showCloud( timeData[ i ] );
+                var data = timeData[ i ];
+
+                self._showingCloudList.push(
+                {
+                    startTime: Date.now( ),
+                    text: data.text,
+                    x: data.x,
+                    y: data.y,
+                    alpha: 1
+                } );
             }
         }
     }, 1000, this );
 }
 
-reguStreaming.cloudReset = function( )
+reguStreaming.tvpleCloudClear = function( )
 {
-    if ( this.cloudTickTok )
-        clearInterval( this.cloudTickTok );
+    if ( this.tvpleCloudTick )
+    {
+        clearInterval( this.tvpleCloudTick );
+        this.tvpleCloudTick = null;
+    }
 
     this._showingCloudList = [ ];
 }
@@ -179,17 +215,28 @@ reguStreaming.captionRender = function( )
 
     this.canvas2D.font = "20px Nanum Gothic";
 
-    var textSize = this.canvas2D.measureText( currentCaption.val );
+    var currentCaptionSplit = currentCaption.val.split( '\n' );
+    var y = 0;
 
-    this.canvas2D.fillStyle = "rgba( 35, 35, 35, " + ( alpha / 2 ) + " )";
-    this.canvas2D.fillRect( this.canvas.width / 2 - ( textSize.width + 12 ) / 2, this.canvas.height - 42 - 24, textSize.width + 12, 32 );
+    for ( var i = currentCaptionSplit.length - 1; i >= 0; i-- )
+    {
+        var text = currentCaptionSplit[ i ];
+        var textSize = this.canvas2D.measureText( text );
 
-    this.canvas2D.fillStyle = "rgba( 255, 255, 255, " + alpha + " )"
-    this.canvas2D.shadowColor = "rgba( 30, 30, 30, 1 )";
-    this.canvas2D.shadowBlur = 3;
-    this.canvas2D.textAlign = "center";
+        // 26 = align baseline;
 
-    this.canvas2D.fillText( currentCaption.val, this.canvas.width / 2, this.canvas.height - 42 );
+        this.canvas2D.fillStyle = "rgba( 35, 35, 35, " + ( alpha ) + " )";
+        this.canvas2D.fillRect( this.canvas.width / 2 - textSize.width / 2 - 6, this.canvas.height - ( 32 + 26 + y ), textSize.width + 12, 26 );
+
+        this.canvas2D.fillStyle = "rgba( 255, 255, 255, " + alpha + " )"
+        this.canvas2D.shadowColor = "rgba( 30, 30, 30, 1 )";
+        this.canvas2D.shadowBlur = 6;
+        this.canvas2D.textAlign = "center";
+
+        this.canvas2D.fillText( text, this.canvas.width / 2, this.canvas.height - ( 26 / 2 ) - 26 - y );
+
+        y += 32;
+    }
 }
 
 reguStreaming.cloudRender = function( )
@@ -271,6 +318,144 @@ reguStreaming.cloudRender = function( )
 
 // }
 
+var rot = 0;
+var react_x = 0;
+var react_y = 0;
+var intensity = 0;
+var center_x = 0,
+    center_y = 0;
+
+var deltarad = 0;
+
+var bar_x = 0,
+    bar_y = 0;
+
+var bar_width = 0,
+    bar_height = 0;
+
+var radius = 0;
+var radius_old = 0;
+
+var bar_x_term = 0,
+    bar_y_term = 0;
+
+var bg_r = 0,
+    bg_g = 0,
+    bg_b = 0;
+
+var bg_r_ani = 0,
+    bg_g_ani = 0,
+    bg_b_ani = 0;
+
+setInterval( function( )
+{
+    bg_r = Math.floor( Math.random( ) * 255 ) + 1;
+    bg_g = Math.floor( Math.random( ) * 255 ) + 1;
+    bg_b = Math.floor( Math.random( ) * 255 ) + 1;
+
+
+}, 5000 );
+
+function lerp( A, B, t )
+{
+    return ( A + t * ( B - A ) )
+}
+
+
+reguStreaming.visualizerRender = function( w, h )
+{
+    if ( !this.visualizerInitialized ) return;
+
+    var x = 0;
+    var barWidth;
+    var barHeight;
+
+    this.audioAnalyser.getByteFrequencyData( this.visualizerBuffer );
+
+    // console.log( this.visualizerBuffer );
+    // var length = this.visualizerBuffer.length;
+
+    // for ( var i = 0; i < length; i++ )
+    // {
+    //     barWidth = w / length;
+    //     barHeight = this.visualizerBuffer[ i ];
+
+    //     var r = 255 - ( i / 3 );
+    //     var g = 255 - ( i / 3 );
+    //     var b = 255;
+    //     var a = ( barHeight / ( h / 2 ) );
+
+    //     this.canvas2D.fillStyle = "rgba(" + r + "," + g + "," + b + ", " + a + ")";
+    //     this.canvas2D.fillRect( x, h - barHeight, barWidth, barHeight );
+
+    //     x += barWidth + 3;
+    // }
+
+    rot = rot + intensity * 0.0000001;
+
+    react_x = 0;
+    react_y = 0;
+
+    intensity = 0;
+
+    var bars = 300;
+
+    var rads = 0;
+
+    for ( var i = 0; i < bars; i++ )
+    {
+        rads = Math.PI * 2 / bars;
+
+        bar_x = center_x;
+        bar_y = center_y;
+
+        bar_height = Math.min( 99999, Math.max( ( this.visualizerBuffer[ i ] * 2 - 100 ), 0 ) );
+        bar_width = bar_height * 0.01;
+
+
+        bar_x_term = center_x + Math.cos( rads * i + rot ) * ( radius + bar_height );
+        bar_y_term = center_y + Math.sin( rads * i + rot ) * ( radius + bar_height );
+
+        // this.canvas2D.save();
+
+        var lineColor = "rgb(255, 255, 255)";
+
+        this.canvas2D.strokeStyle = lineColor;
+        this.canvas2D.lineWidth = bar_width;
+        this.canvas2D.beginPath( );
+        this.canvas2D.moveTo( bar_x, bar_y );
+        this.canvas2D.lineTo( bar_x_term, bar_y_term );
+        this.canvas2D.stroke( );
+
+        react_x += Math.cos( rads * i + rot ) * ( radius + bar_height );
+        react_y += Math.sin( rads * i + rot ) * ( radius + bar_height );
+
+        intensity += bar_height;
+    }
+
+    center_x = canvas.width / 2 - ( react_x * 0.007 );
+    center_y = canvas.height / 2 - ( react_y * 0.007 );
+
+    radius_old = radius;
+    radius = 20 + ( intensity * 0.0015 );
+    deltarad = radius - radius_old;
+
+    bg_r_ani = lerp( bg_r_ani, bg_r, 0.007 );
+    bg_g_ani = lerp( bg_g_ani, bg_g, 0.007 );
+    bg_b_ani = lerp( bg_b_ani, bg_b, 0.007 );
+
+    this.canvas2D.shadowBlur = 6;
+    this.canvas2D.shadowColor = "rgba(" + bg_r_ani + "," + bg_g_ani + "," + bg_b_ani + ", 1)";
+
+    this.canvas2D.fillStyle = "rgba(" + bg_r_ani + "," + bg_g_ani + "," + bg_b_ani + ", 1)";
+    this.canvas2D.beginPath( );
+    this.canvas2D.arc( center_x, center_y, radius + 2, 0, Math.PI * 2, false );
+    this.canvas2D.fill( );
+
+    this.canvas2D.shadowBlur = null;
+    this.canvas2D.shadowColor = null;
+}
+
 reguStreaming.canvasRender = function( )
 {
     // window.requestAnimationFrame( reguStreaming.canvasRender );
@@ -290,7 +475,10 @@ reguStreaming.canvasRender = function( )
         if ( reguStreaming.mediaProvider === reguStreaming.providerType.Tvple )
             reguStreaming.cloudRender( );
         else if ( reguStreaming.mediaProvider === reguStreaming.providerType.Youtube )
+        {
             reguStreaming.captionRender( );
+            // reguStreaming.visualizerRender( reguStreaming.canvas.width, reguStreaming.canvas.height );
+        }
     }
 
     //ground;
@@ -348,22 +536,7 @@ reguStreaming.canvasRender = function( )
 
     // var average = 0;
 
-    // for ( var i = 0; i < visualizerBufferLength; i++ )
-    // {
-    //     visualizerBarHeight = visualizerDataArray[ i ] * 0.5;
 
-    //     var r = 0;
-    //     var g = 0;
-    //     var b = 0;
-    //     var a = ( visualizerBarHeight / ( canvas.height / 3 ) );
-
-    //     canvas2D.fillStyle = "rgba(" + r + "," + g + "," + b + ", " + a + ")";
-    //     canvas2D.fillRect( visualizerX, canvas.height - visualizerBarHeight, visualizerBarWidth, visualizerBarHeight );
-
-    //     visualizerX += visualizerBarWidth + 5;
-
-    //     average += visualizerDataArray[ i ] / 2;
-    // }
 
     // backgroundBeatPer = Math.lerp( backgroundBeatPer, Math.clamp( 80 + ( average / visualizerBufferLength ), 100, 115 ), 0.3 );
     // controls.bg.css( "backgroundSize", backgroundBeatPer + "% " + backgroundBeatPer + "%");

@@ -14,22 +14,95 @@ const Client = require( "./client" );
 const Tracker = require( "./modules/tracker" );
 const Discord = require( "discord.js" );
 const apiConfig = require( "./const/config" );
+const uniqid = require( "uniqid" );
+const fileStream = require( "fs" );
 
 Server.CONN = [ ];
 Server.CLIENT = {};
 Server.ROOM = {};
 Server.QUEUE = {};
+Server.ROOMINFO = {};
 Server.MANAGEMENT_CONSOLE = [ ];
+Server.RECENT_QUEUE_REQUEST = {};
+Server.VARS = {};
+
 Server.DiscordClient = new Discord.Client( );
 Server.discordInitialized = false;
 Server.discordChannelType = {
     Queue: 0
 };
-Server.discordChannelList = {
-    "center": "474566071941201941",
-    "everync": "474608399586426921",
-    "24hourjapan": "474608432867967006"
+Server.discordChannelIDList = {
+    "main": "474566071941201941",
+    "ncabyss": "474608399586426921",
+    "mfspecial": "505737749131689992",
+    "nsfw": "474608432867967006"
 }
+
+Server.setGlobalVar = function( varName, value, sendToClient = false )
+{
+    if ( value === VAR_NULL )
+    {
+        this.VARS[ varName ] = null;
+        delete this.VARS[ varName ];
+    }
+    else
+    {
+        this.VARS[ varName ] = value;
+    }
+
+    /*
+    if ( sendToClient )
+        this.emit( "RS.syncGlobalVar",
+        {
+            varName: varName,
+            value: value
+        } );*/
+
+    hook.run( "PostSetGlobalVar", varName, value );
+
+    Logger.info( `[Server] Server global var [${ varName }] changed to [${ value }] (sendToClient: ${ sendToClient.toString( ) })` );
+}
+
+Server.getGlobalVar = function( varName, defaultValue )
+{
+    var value = this.VARS[ varName ];
+
+    if ( !this.VARS.hasOwnProperty( varName ) || typeof value === "undefined" )
+        return defaultValue;
+
+    return value;
+}
+
+// Server.createRoom( true, "main", "메인", "레그 스트리밍에 오신것을 환영합니다.", 3000, null,
+//     {
+//         video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
+//         video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
+//     } );
+
+//     // Server.createRoom( true, "main2", "메인 2", "레그 스트리밍에 오신것을 환영합니다.", 3000, null,
+//     // {
+//     //     video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
+//     //     video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
+//     // } );
+
+//     Server.createRoom( true, "everync", "나이트코어 어비스", "모든 영상이 나이트코어 스타일로 재생됩니다.", 50, null,
+//     {
+//         playbackRate: 1.15, // 1.15
+//         video_position_bar_color: "rgba( 49, 226, 79, 0.3 )",
+//         video_position_bar_full_color: "rgba( 49, 226, 79, 1 )"
+//     } );
+
+//     Server.createRoom( true, "nsfw", "성인", "NSFW(Not Safe For Work) 후방을 조심하세요!!", 10, null,
+//     {
+//         video_position_bar_color: "rgba( 255, 150, 150, 0.3 )",
+//         video_position_bar_full_color: "rgba( 255, 150, 150, 1 )"
+//     } );
+
+//     Server.createRoom( true, "admin", "관리자", "관리자 전용 채널입니다.", 0, null,
+//     {
+//         video_position_bar_color: "rgba( 255, 150, 150, 0.3 )",
+//         video_position_bar_full_color: "rgba( 255, 150, 150, 1 )"
+//     } );
 
 /*
     *TODO: binary flag
@@ -45,11 +118,11 @@ Server.discordChannelList = {
 
 Server.emitDiscord = function( channelType, message )
 {
-    if ( !this.discordInitialized ) return;
+    if ( !this.discordInitialized || !this.DiscordClient ) return;
 
     if ( typeof channelType === "string" )
     {
-        var channelID = this.discordChannelList[ channelType ];
+        var channelID = this.discordChannelIDList[ channelType ];
 
         if ( channelID )
             this.DiscordClient.channels.get( channelID )
@@ -63,39 +136,46 @@ Server.emitDiscord = function( channelType, message )
     }
 }
 
-// *TODO : 성능 하락 이슈가 있을 수 있음. (deepCopy)
 Server.getRoomDataForClient = function( )
 {
-    var roomData = util.deepCopy( this.ROOM );
-    var queueData = util.deepCopy( this.QUEUE );
+    return this.ROOMINFO;
 
-    var keys = Object.keys( roomData );
-    var keysLength = keys.length;
+    // var roomData = util.deepCopy( this.ROOM );
+    // var queueData = util.deepCopy( this.QUEUE );
 
-    for ( var i = 0; i < keysLength; i++ )
-    {
-        delete roomData[ keys[ i ] ].onConnect;
-        delete roomData[ keys[ i ] ].config;
+    // var keys = Object.keys( roomData );
+    // var keysLength = keys.length;
 
-        roomData[ keys[ i ] ].count = this.getRoomClientCount( keys[ i ] );
+    // for ( var i = 0; i < keysLength; i++ )
+    // {
+    //     delete roomData[ keys[ i ] ].onConnect;
+    //     delete roomData[ keys[ i ] ].config;
 
-        if ( !util.isEmpty( queueData[ keys[ i ] ].currentPlayingQueue ) )
-            roomData[ keys[ i ] ].currentPlaying = queueData[ keys[ i ] ].currentPlayingQueue.mediaName;
-    }
+    //     roomData[ keys[ i ] ].count = this.getRoomClientCount( keys[ i ] );
 
-    return roomData;
+    //     if ( !util.isEmpty( queueData[ keys[ i ] ].currentPlayingQueue ) )
+    //         roomData[ keys[ i ] ].currentPlaying = "NULL"; // queueData[ keys[ i ] ].currentPlayingQueue.mediaName;
+    //     // roomData[ keys[ i ] ].currentPlaying = queueData[ keys[ i ] ].currentPlayingQueue.mediaName;
+    // }
+
+    // return roomData;
 }
 
-Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, onConnect, config )
+// *TODO: destroyRoom 함수 사용시 refresh 필요
+Server.AcceptableClientCount = 0;
+
+Server.createRoom = function( isOfficial, roomID, title, desc, iconData, maxConnectable, onConnect, vars )
 {
     this.ROOM[ roomID ] = {
         roomID: roomID,
         isOfficial: isOfficial,
         title: title,
         desc: desc,
+        iconData: iconData,
         maxConnectable: maxConnectable,
         onConnect: onConnect,
-        config: config
+        vars: typeof vars === "object" && vars !== null ? vars :
+        {}
     };
 
     this.QUEUE[ roomID ] = {
@@ -105,7 +185,23 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
         currentPlayingPos: 0
     };
 
+    this.ROOMINFO[ roomID ] = {
+        roomID: roomID,
+        isOfficial: isOfficial,
+        title: title,
+        desc: desc,
+        iconData: iconData,
+        maxConnectable: maxConnectable,
+        count: 0,
+        currentPlaying: null
+    };
+
+    this.RECENT_QUEUE_REQUEST[ roomID ] = [ ];
     this.CLIENT[ roomID ] = [ ];
+
+    this.AcceptableClientCount += maxConnectable;
+
+    Logger.info( `[Server] Room created. (roomID:${ roomID }, title:${ title }, maxConnectable:${ maxConnectable })` );
 
     App.redisClient.get( "RS.QUEUE." + roomID + ".queueList", function( err, result )
     {
@@ -114,11 +210,11 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
         try
         {
             Server.QUEUE[ roomID ].queueList = JSON.parse( result );
-            Logger.write( Logger.type.Info, `[Queue] [${ roomID }] queueList overridden from RedisDB.` );
+            Logger.info( `[Server] [${ roomID }] queueList overridden from RedisDB.` );
         }
         catch ( exception )
         {
-            Logger.write( Logger.type.Warning, `[Queue] Failed to fetch [${ roomID }] queueList from RedisDB! (err:${ err })` );
+            Logger.warn( `[Server] Failed to fetch [${ roomID }] queueList from RedisDB! (err:${ exception.stack })` );
         }
     } );
 
@@ -129,11 +225,14 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
         try
         {
             Server.QUEUE[ roomID ].currentPlayingQueue = JSON.parse( result );
-            Logger.write( Logger.type.Info, `[Queue] [${ roomID }] currentPlayingQueue overridden from RedisDB.` );
+
+            // *TODO: 최적화 필요;
+            Server.ROOMINFO[ roomID ].currentPlaying = Server.QUEUE[ roomID ].currentPlayingQueue.mediaName;
+            Logger.info( `[Server] [${ roomID }] currentPlayingQueue overridden from RedisDB.` );
         }
         catch ( exception )
         {
-            Logger.write( Logger.type.Warning, `[Queue] Failed to fetch [${ roomID }] currentPlayingQueue from RedisDB! (err:${ err })` );
+            Logger.warn( `[Server] Failed to fetch [${ roomID }] currentPlayingQueue from RedisDB! (err:${ exception.stack })` );
         }
     } );
 
@@ -144,13 +243,110 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
         try
         {
             Server.QUEUE[ roomID ].currentPlayingPos = Number( result ) || 0;
-            Logger.write( Logger.type.Info, `[Queue] [${ roomID }] currentPlayingPos overridden from RedisDB.` );
+            Logger.info( `[Server] [${ roomID }] currentPlayingPos overridden from RedisDB.` );
         }
         catch ( exception )
         {
-            Logger.write( Logger.type.Warning, `[Queue] Failed to fetch [${ roomID }] currentPlayingPos from RedisDB! (err:${ err })` );
+            Logger.warn( `[Server] Failed to fetch [${ roomID }] currentPlayingPos from RedisDB! (err:${ exception.stack })` );
         }
     } );
+
+    App.redisClient.get( "RS.QUEUE." + roomID + ".vars", function( err, result )
+    {
+        if ( err || !result ) return;
+
+        try
+        {
+            result = JSON.parse( result );
+
+            if ( result instanceof Object )
+            {
+                if ( typeof vars === "object" && vars !== null )
+                {
+                    var keys = Object.keys( result );
+                    var keyLength = keys.length;
+
+                    for ( var i = 0; i < keyLength; i++ )
+                    {
+                        var index = keys[ i ];
+
+                        if ( typeof vars[ index ] !== "undefined" )
+                        {
+                            Server.ROOM[ roomID ].vars[ index ] = result[ index ];
+
+                            Logger.warn( `[Server] [${ roomID }] initialize var '${ keys[ i ] }' overrided to '${ result[ keys[ i ] ] }'` );
+                        }
+                        else
+                        {
+                            Server.ROOM[ roomID ].vars[ index ] = result[ index ];
+
+                            Logger.info( `[Server] [${ roomID }] var '${ keys[ i ] }' setting to '${ result[ keys[ i ] ] }'` );
+                        }
+                    }
+                }
+                else
+                {
+                    var keys = Object.keys( result );
+                    var keyLength = keys.length;
+
+                    for ( var i = 0; i < keyLength; i++ )
+                    {
+                        Logger.info( `[Server] [${ roomID }] var '${ keys[ i ] }' setting to '${ result[ keys[ i ] ] }'` );
+                    }
+
+                    Server.ROOM[ roomID ].vars = result;
+
+                    Logger.info( `[Server] [${ roomID }] var overridden from RedisDB.` );
+                }
+            }
+        }
+        catch ( exception )
+        {
+            Logger.warn( `[Server] Failed to fetch [${ roomID }] var from RedisDB! (err:${ exception.stack })` );
+        }
+    } );
+}
+
+Server.destroyRoom = function( roomID )
+{
+    if ( !this.ROOM[ roomID ] ) return;
+
+    QueueManager.clear( roomID, true );
+
+    this.getAllClient( roomID )
+        .forEach( function( v, i )
+        {
+            if ( v && v.initialized )
+                v.kick( "채널이 닫혔습니다." );
+        } );
+
+    delete this.ROOM[ roomID ];
+    delete this.ROOMINFO[ roomID ];
+    delete this.QUEUE[ roomID ];
+    delete this.RECENT_QUEUE_REQUEST[ roomID ];
+    delete this.CLIENT[ roomID ];
+
+    App.redisClient.keys( "RS.QUEUE." + roomID + ".*", function( err, result )
+    {
+        if ( err || !result ) return;
+
+        console.log( result );
+
+        App.redisClient.del( result, function( err )
+        {
+            if ( err )
+                Logger.error( `[Server] Failed to delete [${ roomID }] redis DB! (err:${ err.stack })` );
+        } );
+    } );
+
+    Logger.event( `[Server] [${ roomID }] room remove successful.` );
+}
+
+Server.moveUsersToRoom = function( roomID, targetRoomID )
+{
+    if ( !this.ROOM[ roomID ] || this.ROOM[ targetRoomID ] ) return;
+
+    this.executeClientSideJavascript( roomID, `location.href = "/?room=${ targetRoomID }";` );
 }
 
 // Server.getRoomClient = function(roomID)
@@ -158,75 +354,188 @@ Server.createRoom = function( isOfficial, roomID, title, desc, maxConnectable, o
 //     return this.ROOM[roomID].clients;
 // }
 
+/**
+ * @description Sync function
+ */
+Server.initializeVar = function( )
+{
+    try
+    {
+        let configCode = fileStream.readFileSync( "./service/config.cfg", "utf8" );
+        let SERVER = require( "./server" );
+        eval( configCode );
+        Logger.event( `[Server] Execute server.cfg code successful.` );
+    }
+    catch ( e )
+    {
+        Logger.error( `[Server] Failed to execute server.cfg code! (exception:${ e.stack })` );
+    }
+}
+
+hook.register( "PostSetGlobalVar", function( varName, value )
+{
+    // *NOTE: Doesn't work!
+    /*
+    if ( varName === "SERVER.DISCORD_SYNC" )
+    {
+        console.log( "this" );
+        console.log( Server.DiscordClient );
+        if ( value )
+        {
+            if ( Server.DiscordClient === null )
+            {
+                Server.DiscordClient = new Discord.Client( );
+                Server.DiscordClient.login( apiConfig.DISCORD_BOT_TOKEN )
+                    .then( console.log )
+                    .catch( console.error );
+
+                console.log( Server.DiscordClient );
+            }
+        }
+        else
+        {
+            if ( Server.DiscordClient !== null )
+            {
+                Server.DiscordClient.destroy( )
+                    .then( function( )
+                    {
+                        Logger.info( `[Discord] Disconnecting Discord client successful.` );
+                        Server.DiscordClient = null;
+                    } )
+                    .catch( function( reason )
+                    {
+                        Logger.error( `[Discord] ERROR: Failed to disconnect Discord client! ${ reason }` );
+                    } );
+            }
+        }
+    }*/
+} );
+
 hook.register( "Initialize", function( )
 {
-    Server.createRoom( true, "main", "비르요", "레그 스트리밍에 오신것을 환영합니다.", 3000, null,
+    // *NOTE: Sync function
+    Server.initializeVar( );
+
+    Server.createRoom( true, "main", "메인", "레그 스트리밍에 오신 것을 환영합니다.",
     {
-        video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
-        video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
+        image: "/images/room/main.png",
+        shadow: "0px 0px 6px #191919"
+    }, 3000, null,
+    {
+        video_position_bar_style: "random"
     } );
 
-    Server.createRoom( true, "everync", "나이트코어 어비스", "모든 영상이 나이트코어 스타일로 재생됩니다.", 50, null,
+    Server.createRoom( true, "ncabyss", "나이트코어 어비스", "깊고 다크한 어비스, 나이트코어 어비스입니다.",
     {
-        playbackRate: 1.15, // 1.15
-        video_position_bar_color: "rgba( 49, 226, 79, 0.3 )",
-        video_position_bar_full_color: "rgba( 49, 226, 79, 1 )"
+        image: "/images/room/ncabyss.png",
+        shadow: "0px 0px 6px #2c5287"
+    }, 50, null,
+    {
+        video_position_bar_style: "random",
+        playbackRate: 1.08
     } );
 
-    Server.createRoom( true, "nsfw", "성인", "NSFW(Not Safe For Work) 후방을 조심하세요!!", 10, null,
+    Server.createRoom( true, "mfspecial", "마후마후 스페셜", "24시간 동안 마후마후 곡이 재생됩니다.",
     {
-        video_position_bar_color: "rgba( 255, 150, 150, 0.3 )",
-        video_position_bar_full_color: "rgba( 255, 150, 150, 1 )"
+        image: "/images/room/mfspecial.png",
+        shadow: "0px 0px 6px #ffffff"
+    }, 50, null,
+    {
+        disallow_queue_request: true,
+        video_position_bar_style: "random",
+        autoQueueEnable: true,
+        playlist: [
+            "https://www.youtube.com/playlist?list=PLgTeCdyjCZc20pGMHjWsT9IBFJtdLCaGi"
+        ]
     } );
 
-    Server.createRoom( true, "admin", "관리원", "관리자 전용 채널입니다.", 0, null,
+    Server.createRoom( true, "nsfw", "성인", "NSFW(Not Safe For Work) 후방을 조심하세요!",
     {
-        video_position_bar_color: "rgba( 255, 150, 150, 0.3 )",
-        video_position_bar_full_color: "rgba( 255, 150, 150, 1 )"
+        image: "/images/room/nsfw.png",
+        shadow: "0px 0px 6px #c9bd9a"
+    }, 50, null,
+    {
+        video_position_bar_style: "random"
     } );
 
-    // Server.createRoom( true, "center", "빅 홀 오스", "많은 사람들이 거주하는 마을입니다.", 5000, null,
+    // Server.createRoom( true, "admin", "관리자", "관리자 전용 채널입니다.",
     // {
-    //     video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
-    //     video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
+    //     image: "/images/room/main.png",
+    //     shadow: "0px 0px 6px #191919"
+    // }, 10, null,
+    // {
+    //     chatDisable: true
     // } );
-    // Server.createRoom( true, "home", "벨 시에로 보육원", "안전하고 신성한 공간.", 15 );
 
-    // Server.createRoom( true, "24hourjapan", "24시간 일본곡", "24시간 동안 일본 노래가 재생됩니다.", 50, null,
+    // Server.createRoom( true, "hos", "혼돈 어비스", "레그의 엉덩이 구멍도 어비스입니다만?",
     // {
-    //     disallow_queue_request: true,
-    //     video_position_bar_color: "rgba( 247, 247, 150, 0.3 )",
-    //     video_position_bar_full_color: "rgba( 247, 247, 150, 1 )"
+    //     image: "/images/room/hos.png",
+    //     shadow: "0px 0px 6px #191919"
+    // }, 1, null,
+    // {
+    //     video_position_bar_style: "random",
+    //     playbackRate: 2
     // } );
 
     Server.roomCreated = true;
+
+    process.send(
+    {
+        type: "getAcceptableClients",
+        count: Server.AcceptableClientCount
+    } );
+
+    if ( Server.getGlobalVar( "SERVER.DISCORD_SYNC", false ) )
+        Server.DiscordClient.login( apiConfig.DISCORD_BOT_TOKEN );
 
     hook.run( "OnCreateOfficialRoom", Server.ROOM );
 } );
 
 Server.DiscordClient.on( "ready", function( )
 {
-    Logger.write( Logger.type.Info, `[Discord] Logged in as ${ Server.DiscordClient.user.tag }.` );
+    Logger.event( `[Discord] Logged in as ${ Server.DiscordClient.user.tag }.` );
 
     hook.run( "PostReadyDiscordClient" );
 
     Server.discordInitialized = true;
 } );
 
+Server.DiscordClient.on( "error", function( err )
+{
+    Logger.error( `[Discord] ERROR: Discord client Error ${ err.stack }` );
+
+    Server.discordInitialized = false;
+} );
+
+Server.DiscordClient.on( "disconnect", function( e )
+{
+    Logger.warn( `[Discord] Discord client disconnect from Server.` );
+
+    Server.DiscordClient = null;
+    Server.discordInitialized = false;
+} );
+
+Server.DiscordClient.on( "reconnect", function( )
+{
+    Logger.warn( `[Discord] Discord client reconnecting to Server.` );
+} );
+
 Server.DiscordClient.on( "message", function( message )
 {
     if ( !message.guild ) return;
-    if ( message.author.id === "474541831867072512" ) return;
+    if ( message.author.id === apiConfig.DISCORD_BOT_ID ) return;
 
-    Server.discordChannelList.some( ( v, i ) =>
+    util.some( Server.discordChannelIDList, ( v, i ) =>
     {
         if ( v === message.channel.id )
         {
-            Server.sendMessage( i, "regu.chat",
+            Logger.info( `[Chat] ${ message.author.tag }(${ message.author.id }) [-DISCORD-] : ${ message.content }` );
+
+            Server.sendMessage( i, "RS.chat",
             {
-                profileImage: message.author.avatarURL,
-                name: message.author.username + "#Discord",
-                userID: "discord",
+                type: "discord",
+                avatar: message.author.avatarURL,
+                name: message.author.username,
                 message: message.content
             } );
 
@@ -237,17 +546,30 @@ Server.DiscordClient.on( "message", function( message )
     hook.run( "PostDiscordMessage", message );
 } );
 
-// Server.DiscordClient.login( apiConfig.DISCORD_BOT_TOKEN );
+//
 
 hook.register( "PostClientConnected", function( client, socket )
 {
-    if ( client.room === "everync" )
+    if ( client.room === "main" )
     {
-        client.emit( "RS.modal",
+        if ( !client.getExtraVar( "welcomeModalDisplayed", false ) )
         {
-            title: "채널 안내",
-            message: "이 채널에서는 모든 영상이 나이트코어 스타일로 재생됩니다."
-        } );
+            client.setExtraVar( "welcomeModalDisplayed", true, false, true );
+            client.sendModal( "채널 안내", "레그 스트리밍에 오신 것을 환영합니다. <p style='color: red; display: inline-block;'>다른 사람들에게 불쾌감을 유발할 수 있는 영상은 제재될 수 있습니다</p>, 자세한 내용은 운영정책을 참고하세요." );
+        }
+    }
+    else if ( client.room === "ncabyss" )
+    {
+        client.sendModal( "채널 안내", "이 채널에서는 모든 영상이 <a href='//en.wikipedia.org/wiki/Nightcore' target='_blank'>나이트코어(Nightcore)</a> 스타일로 재생됩니다." );
+    }
+    else if ( client.room === "nsfw" )
+    {
+        client.sendModal( "채널 안내", "이 채널에서는 적절한 수위의 영상은 허용되지만 <p style='color: red; display: inline-block;'>다른 사람들에게 불쾌감을 유발할 수 있는 영상은 제재될 수 있습니다</p>, 자세한 내용은 운영정책을 참고하세요." );
+    }
+    else if ( client.room === "admin" )
+    {
+        if ( client.rank !== "admin" )
+            client.kick( "이 채널에 <p style='color: red; display: inline-block;'>접근할 수 있는 권한이 없습니다</p>, 다른 채널을 이용해주세요." );
     }
 } );
 
@@ -361,30 +683,50 @@ Server.getClientByProperty = function( property, propertyValue )
     return result;
 }
 
-Server.getRoomConfig = function( roomID, configName, defaultValue )
+Server.setRoomVar = function( roomID, varName, value )
+{
+    if ( !this.ROOM[ roomID ] ) return;
+
+    var vars = this.ROOM[ roomID ].vars;
+
+    vars[ varName ] = value;
+
+    App.redisClient.set( "RS.QUEUE." + roomID + ".vars", JSON.stringify( Server.ROOM[ roomID ].vars ) );
+}
+
+Server.getRoomVar = function( roomID, varName, defaultValue )
 {
     if ( !this.ROOM[ roomID ] ) return defaultValue;
-    var configs = this.ROOM[ roomID ].config;
+    var vars = this.ROOM[ roomID ].vars;
 
-    if ( !configs ) return defaultValue;
+    if ( !vars || !vars.hasOwnProperty( varName ) ) return defaultValue;
 
-    return configs[ configName ] !== undefined ? configs[ configName ] : defaultValue;
+    return vars[ varName ] !== undefined ? vars[ varName ] : defaultValue;
+}
+
+/**
+ * @deprecated
+ */
+Server.getRoomVars = function( roomID, varNameArray, defaultValueArray ) {
+
+}
+
+Server.getRoomAllVars = function( roomID )
+{
+    if ( !this.ROOM[ roomID ] ) return {};
+
+    return this.ROOM[ roomID ].vars ||
+    {};
 }
 
 Server.isAlreadyConnected = function( passportID, sessionID, ipAddress )
 {
-    return false;
-
-
     var length = this.CONN.length;
-
-    console.log( this.CONN );
 
     for ( var i = 0; i < length; i++ )
     {
         var data = this.CONN[ i ];
 
-        // if ( data.sessionID === sessionID || data.passport.user.id === passportID || data.ipAddress === ipAddress )
         if ( data.sessionID === sessionID || data.passport.user.id === passportID )
             return true;
     }
@@ -435,13 +777,13 @@ Server.removeAtConnList = function( client )
     var length = this.CONN.length;
     var sessionID = client.socket.handshake.sessionID;
     var passportID = client.getPassportField( "id" );
-    // var ipAddress = client.getPassportField( "id" ); // 아이피는 중복될 수 있으므로 하지 않음.
+    var ipAddress = client.ipAddress;
 
     for ( var i = 0; i < length; i++ )
     {
         var data = this.CONN[ i ];
 
-        if ( data.sessionID === sessionID || data.passport.user.id === passportID )
+        if ( data.sessionID === sessionID || data.passport.user.id === passportID || data.ipAddress === ipAddress )
         {
             this.CONN.splice( i, 1 );
             return;
@@ -461,13 +803,35 @@ Server.getAllCount = function( )
     return sum;
 }
 
-Server.executeClientJavascript = function( roomID, code )
+Server.executeClientSideJavascript = function( roomIDOrClient, code, hidden = true )
 {
-    this.sendMessage( roomID, "RS.executeJS",
+    // 설정한 룸 안에 클라이언트에게 전송
+    if ( typeof roomIDOrClient === "string" )
     {
-        code: code,
-        hidden: true // *NOTE: default option
-    } );
+        this.sendMessage( roomIDOrClient, "RS.executeJS",
+        {
+            code: code,
+            hidden: hidden
+        } );
+    }
+    // 설정한 클라이언트에게만 전송
+    else if ( roomIDOrClient instanceof Client && roomIDOrClient.initialized )
+    {
+        roomIDOrClient.emit( "RS.executeJS",
+        {
+            code: code,
+            hidden: hidden
+        } );
+    }
+    // 모든 룸의 클라이언트에게 전송
+    else if ( roomIDOrClient === null )
+    {
+        this.sendMessage( null, "RS.executeJS",
+        {
+            code: code,
+            hidden: hidden
+        } );
+    }
 }
 
 Server.getRoomClientCount = function( roomID )
@@ -536,7 +900,7 @@ Server.isConnectable = function( roomID, sessionID, userID, ipAddress, countryCo
         }
     }
 
-    if ( this.CLIENT[ roomID ].length >= this.ROOM[ roomID ].maxConnectable )
+    if ( this.getRoomClientCount( roomID ) >= this.ROOM[ roomID ].maxConnectable )
     {
         return {
             accept: false,
@@ -571,52 +935,184 @@ Server.isConnectable = function( roomID, sessionID, userID, ipAddress, countryCo
     }
 }
 
-Server.onConnect = function( socket )
+Server.onConnect = function( socket, platform )
 {
     // *TODO: 여기에 룸 체크 다시하기 -> 필요 없을 수 있음.
-    var roomID = socket.handshake.session.roomID;
+    // socket.disconnect( true );
+
+    // return;
+
+    // redis delete .*
 
     if ( !Server.roomCreated )
     {
-        console.log( "WARNING!" );
-        socket.disconnect( );
+        console.log( "WARNING! - room not created!" );
+        socket.disconnect( true );
         return;
     }
 
-    if ( !this.ROOM[ roomID ] ) // *오류: 가끔 room Initialize 보다 먼저 클라이언트가 들어올 시 룸 데이터가 없으므로 오류가 발생함.
+    if ( platform == "web" )
     {
-        console.log( "WARNING!" );
-        socket.disconnect( );
-        return;
+        var roomID = socket.handshake.session.roomID;
+
+        if ( !socket.handshake.session )
+        {
+            console.log( "WARNING! - session not valid" );
+            socket.disconnect( true );
+            return;
+        }
+
+        if ( !this.ROOM[ roomID ] ) // *오류: 가끔 room Initialize 보다 먼저 클라이언트가 들어올 시 룸 데이터가 없으므로 오류가 발생함.
+        {
+            console.log( "WARNING! - room is not exists!" );
+            socket.disconnect( true );
+            return;
+        }
+
+        Logger.conn( `[Client] New client connecting to '${ roomID }' -> ${ socket.handshake.session.passport.user.id }` );
+
+        var client = new Client( socket );
+        client.initialize( roomID, platform, this.getRoomAllVars( roomID ) );
+
+        this.CLIENT[ roomID ].push( client );
+        this.registerConnList( socket );
+
+        socket.reguClient = client;
+        socket.emit( "RS.joinResult",
+        {
+            name: client.name,
+            userID: client.userID,
+            rank: client.rank,
+            avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+            roomTitle: this.ROOM[ roomID ].title,
+            roomID: roomID // *NOTE: for android client
+        } );
+
+        socket.emit( "RS.clientDataEvent",
+        {
+            type: "initialize",
+            allClientData: this.getAnotherClientData( client )
+        } );
+
+        var allClientCount = this.getAllCount( );
+        var roomClientCount = this.getRoomClientCount( roomID );
+
+        this.ROOMINFO[ roomID ].count = roomClientCount;
+
+        this.sendMessage( roomID, "RS.clientDataEvent",
+        {
+            type: "new",
+            targetClientData: this.getTargetClientData( client )
+        }, client );
+
+        process.send(
+        {
+            type: "updateClientCount",
+            count: allClientCount
+        } );
+
+        Logger.conn( `[Client] New client connected to '${ roomID }' -> ${ client.information( false ) } ->>> room: ${ roomClientCount - 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
+
+        return client;
     }
-
-    var client = new Client( socket );
-    client.initialize( roomID, this.ROOM[ roomID ].config );
-
-    this.CLIENT[ roomID ].push( client );
-    this.registerConnList( socket );
-
-    // *TODO: 최적화 필요. clientCountUpdate
-    this.sendMessage( client.room, "regu.clientCountUpdate",
+    else if ( platform == "android" )
     {
-        count: this.getRoomClientCount( roomID ),
-        roomTitle: this.ROOM[ roomID ].title
+        var roomID = socket.handshake.query.roomID;
+
+        if ( !this.ROOM[ roomID ] ) // *오류: 가끔 room Initialize 보다 먼저 클라이언트가 들어올 시 룸 데이터가 없으므로 오류가 발생함.
+        {
+            console.log( "WARNING! - room is not exists!" );
+            socket.disconnect( true );
+            return;
+        }
+
+        Logger.conn( `[Client] New client connecting to '${ roomID }' -> ${ "Android" }` );
+
+        var un = uniqid( );
+        var displayName = "AndroidClient#" + un;
+        var hash = util.md5( displayName.trim( ) );
+
+        socket.handshake.session.passport = {};
+        socket.handshake.session.passport.user = {
+            id: un,
+            displayName: displayName,
+            avatar: `https://gravatar.com/avatar/${ hash }.png?d=retro&s=64`,
+            avatarFull: `https://gravatar.com/avatar/${ hash }.png?d=retro&s=184`,
+            provider: "guest"
+        }
+
+        var client = new Client( socket );
+        client.initialize( roomID, platform, this.getRoomAllVars( roomID ) );
+
+        this.CLIENT[ roomID ].push( client );
+        this.registerConnList( socket );
+
+        socket.reguClient = client;
+        socket.emit( "RS.joinResult",
+        {
+            name: client.name,
+            userID: client.userID,
+            rank: client.rank,
+            avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" ),
+            roomTitle: this.ROOM[ roomID ].title,
+            roomID: roomID // *NOTE: for android client
+        } );
+
+        socket.emit( "RS.clientDataEvent",
+        {
+            type: "initialize",
+            allClientData: this.getAnotherClientData( client )
+        } );
+
+        var allClientCount = this.getAllCount( );
+        var roomClientCount = this.getRoomClientCount( roomID );
+
+        this.ROOMINFO[ roomID ].count = roomClientCount;
+
+        process.send(
+        {
+            type: "updateClientCount",
+            count: allClientCount
+        } );
+
+        this.sendMessage( roomID, "RS.clientDataEvent",
+        {
+            type: "new",
+            targetClientData: this.getTargetClientData( client )
+        }, client );
+
+        Logger.conn( `[Client] New client connected to '${ roomID }' -> ${ client.information( false ) } ->>> room: ${ roomClientCount - 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
+
+        return client;
+    }
+}
+
+Server.getAnotherClientData = function( client )
+{
+    var clients = this.getAllClient( client.room );
+    var data = {};
+
+    clients.forEach( function( v, index )
+    {
+        if ( v === client ) return;
+
+        data[ v.userID ] = {
+            name: v.name,
+            userID: v.userID,
+            avatar: v.getPassportField( "avatar", "/images/avatar/guest_64.png" )
+        };
     } );
 
-    socket.reguClient = client;
-    socket.emit( "RS.joinResult",
-    {
-        rank: client.rank
-    } );
+    return data;
+}
 
-    hook.run( "PostClientConnected", client, socket );
-
-    var allClientCount = this.getAllCount( );
-    var roomClientCount = this.getRoomClientCount( client.room );
-
-    Logger.write( Logger.type.Event, `[Client] New client connected to '${ client.room }' -> ${ client.information( false ) } ->>> room: ${ roomClientCount - 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
-
-    return client;
+Server.getTargetClientData = function( client )
+{
+    return {
+        name: client.name,
+        userID: client.userID,
+        avatar: client.getPassportField( "avatar", "/images/avatar/guest_64.png" )
+    };
 }
 
 Server.onDisconnect = function( client )
@@ -629,19 +1125,26 @@ Server.onDisconnect = function( client )
     this.CLIENT[ roomID ].splice( this.CLIENT[ roomID ].indexOf( client ), 1 );
     // this.CLIENT.splice( this.CLIENT.indexOf( client ), 1 );
 
-    // *TODO: 최적화 필요. clientCountUpdate
-    this.sendMessage( client.room, "regu.clientCountUpdate",
+    this.sendMessage( roomID, "RS.clientDataEvent",
     {
-        count: this.getRoomClientCount( roomID ),
-        roomTitle: this.ROOM[ roomID ].title
-    } );
+        type: "remove",
+        id: client.userID
+    }, client );
 
     hook.run( "ClientDisconnected", client );
 
     var allClientCount = this.getAllCount( );
     var roomClientCount = this.getRoomClientCount( roomID );
 
-    Logger.write( Logger.type.Event, `[Client] Client disconnected from '${ client.room }' ${ client.information( false ) } ->>> room: ${ roomClientCount + 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
+    this.ROOMINFO[ roomID ].count = roomClientCount;
+
+    process.send(
+    {
+        type: "updateClientCount",
+        count: allClientCount
+    } );
+
+    Logger.disconn( `[Client] Client disconnected from '${ roomID }' ${ client.information( false ) } ->>> room: ${ roomClientCount + 1 } -> ${ roomClientCount } all: ${ allClientCount }` );
 
     return null;
 }
@@ -661,9 +1164,7 @@ Server.joinRoom = function( roomID, req, res, ipAddress )
 
     Tracker.getCountryCode( ipAddress, function( countryCode )
     {
-        console.log( countryCode );
-
-        var isConnectable = Server.isConnectable( roomID, req.sessionID, req.session.passport.user, ipAddress, countryCode ); // req.user.id
+        var isConnectable = Server.isConnectable( roomID, req.sessionID, req.user.id, ipAddress, countryCode ); // req.user.id
 
         if ( !isConnectable.accept )
         {
@@ -713,7 +1214,9 @@ App.socketIO.on( "connect", function( socket )
 
     socket.on( "RS.join", function( data )
     {
-        client = Server.onConnect( socket );
+        client = Server.onConnect( socket, socket.handshake.query.platform || "web" );
+
+        hook.run( "PostClientConnected", client, socket );
     } );
 
     socket.on( "disconnect", function( data )
@@ -725,11 +1228,6 @@ App.socketIO.on( "connect", function( socket )
     socket.on( "disconnecting", function( data )
     {
         client = Server.onDisconnect( client );
-    } );
-
-    socket.on( "forceDisconnect", function( data )
-    {
-        socket.disconnect( );
     } );
 
     socket.on( "RS.requestClientCount", function( data )
@@ -747,7 +1245,7 @@ App.socketIO.on( "connect", function( socket )
         if ( !client )
         {
             Logger.write( Logger.type.Important, `[Client] Kick request rejected! -> (#ClientIsNotValid) ${ socket.handshake.address }` );
-            socket.disconnect( );
+            socket.vi.disconnect( true );
             return;
         }
 
@@ -773,45 +1271,42 @@ App.socketIO.on( "connect", function( socket )
         }
     } );
 
-    socket.on( "RS.requestUserInformation", function( data )
+    socket.on( "RS.requestUserInformation", function( data, ack )
     {
-        if ( !util.isValidSocketData( data,
-            {
-                userID: "string"
-            } ) )
+        if ( !util.isValidSocketData( data, "string" ) )
         {
-            Logger.write( Logger.type.Important, `[Client] UserInfo request rejected! -> (#DataIsNotValid) ${ client.information() }` );
-            return;
+            Logger.impor( `[Client] 'RS.requestUserInformation' request has rejected! -> (#DataIsNotValid) ${ client.information( ) }` );
+            return ack(
+            {
+                code: 2
+            } );
         }
 
-        var targetClient = Server.getClientByUserID( data.userID, client.room );
+        var targetClient = Server.getClientByUserID( data );
 
         if ( targetClient && targetClient.initialized )
         {
             if ( targetClient.room !== client.room )
-            {
-                Logger.write( Logger.type.Important, `[Client] WARNING! : UserInfo request -> (#TargetClientRoomAndClientRoomMismatch) ${ client.information( ) }` );
-            }
+                Logger.impor( `[Client] WARNING!: 'RS.requestUserInformation' request warning! -> (#TargetClientRoomAndClientRoomMismatch) ${ client.information( ) }` );
 
-            Logger.write( Logger.type.Info, `[Client] Client requested another Client information. ${ client.information( ) } ---> ${ targetClient.information( ) }` );
+            Logger.info( `[Client] Client requested Client information. ${ client.information( ) } ---> ${ targetClient.information( ) }` );
 
-            socket.emit( "RS.receiveUserInformation",
+            return ack(
             {
-                success: true,
+                code: 0,
                 name: targetClient.name,
                 ipAddress: util.censorshipIP( targetClient.ipAddress ),
                 avatar: targetClient.getPassportField( "avatarFull", "/images/avatar/guest_184.png" ), // *TODO: 네이버 아이디 지원바람;
                 rank: targetClient.rank,
+                userID: targetClient.userID,
                 provider: targetClient.provider
             } );
         }
         else
-        {
-            socket.emit( "RS.receiveUserInformation",
+            return ack(
             {
-                success: false
+                code: 1
             } );
-        }
     } );
 } );
 
@@ -831,9 +1326,10 @@ const QueueManager = require( "./modules/queue" );
 require( "./modules/dns" );
 require( "./modules/db" );
 require( "./filestorage" );
+const ChatManager = require( "./modules/chat" );
 
-require( "./modules/chat" );
-require( "./modules/service" );
+const ServiceManager = require( "./modules/service" );
+const DatabaseCache = require( "./modules/dbcache" );
 require( "./modules/vote" );
 require( "./modules/fileupload" );
 // require( "./modules/tracker" );
@@ -860,7 +1356,7 @@ Server.COMMAND = {
             url: args[ 2 ],
             start: Number( args[ 3 ] || 0 )
         };
-        var isAllowRegister = QueueManager.isAllowRegister( null, args[ 1 ], data );
+        var isAllowRegister = QueueManager.isAllowRegister( null, args[ 1 ], data, true );
 
         if ( isAllowRegister.code !== QueueManager.statusCode.success )
             return util.getCodeID( QueueManager.statusCode, isAllowRegister.code ) + " 코드가 반환되었습니다.";
@@ -878,7 +1374,7 @@ Server.COMMAND = {
         if ( !Server.ROOM[ args[ 1 ] ] )
             return "Argument[1] 올바르지 않은 채널입니다.";
 
-        QueueManager.register( QueueManager.providerType.Direct, null, args[ 1 ], args[ 2 ], args[ 2 ], Number( args[ 3 ] || 0 ), true );
+        QueueManager.register( QueueManager.providerType.Direct, null, args[ 1 ], args[ 2 ], args[ 2 ], Number( args[ 3 ] || 0 ), true, args[ 4 ] );
     },
     "/kick": function( args )
     {
@@ -900,7 +1396,25 @@ Server.COMMAND = {
         if ( !args[ 2 ] )
             return "Argument[2] 코드를 입력하세요.";
 
-        Server.executeClientJavascript( args[ 1 ] !== "all" ? args[ 1 ] : null, args.chain( 2 ) );
+        Server.executeClientSideJavascript( args[ 1 ] !== "all" ? args[ 1 ] : null, args.chain( 2 ) );
+    },
+    "/execute-javascript-target": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !args[ 2 ] )
+            return "Argument[2] 타겟 아이피 주소를 입력하세요.";
+
+        var client = Server.getClientByIPAddress( args[ 2 ] );
+
+        if ( !client )
+            return "Argument[2] 올바른 타겟 아이피 주소를 입력하세요.";
+
+        if ( !args[ 3 ] )
+            return "Argument[3] 코드를 입력하세요.";
+
+        Server.executeClientSideJavascript( client, args.chain( 3 ) );
     },
     "/kickall": function( args )
     {
@@ -951,7 +1465,7 @@ Server.COMMAND = {
         if ( !args[ 1 ] )
             return "Argument[1] 채널 아이디를 입력하세요.";
 
-        if ( !args[ 2 ] || isNaN( Number( args[ 2 ] ) ) )
+        if ( !args[ 2 ] || !Number.isInteger( Number( args[ 2 ] ) ) )
             return "Argument[2] 제거할 위치를 입력하시거나 올바르게 입력하세요.";
 
         if ( !Server.ROOM[ args[ 1 ] ] )
@@ -964,10 +1478,29 @@ Server.COMMAND = {
         if ( !args[ 1 ] )
             return "Argument[1] 채널 아이디를 입력하세요.";
 
+        if ( args[ 1 ] !== "all" && !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        QueueManager.clear( args[ 1 ] !== "all" ? args[ 1 ] : null, args[ 2 ] === "true" );
+    },
+    "/queue-loopstatus": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
         if ( !Server.ROOM[ args[ 1 ] ] )
             return "Argument[1] 올바르지 않은 채널입니다.";
 
-        QueueManager.clear( args[ 1 ], args[ 2 ] === "true" );
+        Server.setRoomVar( args[ 1 ], "queue_loop", !Server.getRoomVar( args[ 1 ], "queue_loop", false ) );
+
+        if ( Server.getRoomVar( args[ 1 ], "queue_loop", false ) )
+        {
+            ChatManager.saySystem( args[ 1 ], "관리자에 의해 채널에 현재 영상을 반복합니다.", "glyphicon glyphicon-repeat" );
+        }
+        else
+        {
+            ChatManager.saySystem( args[ 1 ], "관리자에 의해 채널에 현재 영상을 반복하지 않습니다.", "glyphicon glyphicon-remove-circle" );
+        }
     },
     "/video-setpos": function( args )
     {
@@ -981,6 +1514,119 @@ Server.COMMAND = {
             return "Argument[1] 올바르지 않은 채널입니다.";
 
         QueueManager.setVideoPos( args[ 1 ], Number( args[ 2 ] ) );
+    },
+    "/service-refreshbg": function( args )
+    {
+        ServiceManager.refreshBackground( );
+    },
+    "/service-status-reload-request": function( args )
+    {
+        Server.getAllClient( )
+            .forEach( ( client, index ) =>
+            {
+                client.emit( "RS.refreshServiceStatus" );
+            } );
+    },
+    // "/service-live-reload": function( args )
+    // {
+    //     ServiceManager.reloadLiveCode( );
+    // },
+    "/service-ipfilter-reload": function( args )
+    {
+        ServiceManager.reloadIPFilter( );
+    },
+    "/server-cfg-reload": function( args )
+    {
+        fileStream.readFile( "./service/config.cfg", "utf8", function( err, data )
+        {
+            if ( err )
+            {
+                Logger.error( `[Server] Failed to load config.cfg! (err:${ err })` );
+                return;
+            }
+
+            try
+            {
+                let SERVER = require( "./server" );
+                eval( data );
+                Logger.event( `[Server] Execute server.cfg code successful.` );
+            }
+            catch ( e )
+            {
+                Logger.error( `[Server] Failed to execute server.cfg code! (exception:${ e.stack })` );
+            }
+        } );
+    },
+    // "/server-room-playback": function( args )
+    // {
+    //     if ( !args[ 1 ] )
+    //         return "Argument[1] 아이디를 입력하세요.";
+
+    //     if ( !Server.ROOM[ args[ 1 ] ] )
+    //         return "Argument[1] 올바르지 않은 채널입니다.";
+    // },
+    "/queue-moveto": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !args[ 2 ] || !Number.isInteger( Number( args[ 2 ] ) ) || !args[ 3 ] || !Number.isInteger( Number( args[ 3 ] ) ) )
+            return "Argument[2 or 3] 이동할 위치에서 이동시킬 위치를 입력하거나 숫자로 입력하세요.";
+
+        if ( !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        QueueManager.moveTo( args[ 1 ], Number( args[ 2 ] ), Number( args[ 3 ] ) );
+    },
+    "/queue-generate": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !Server.ROOM[ args[ 1 ] ] )
+            return "Argument[1] 올바르지 않은 채널입니다.";
+
+        if ( !args[ 2 ] )
+            return "Argument[2] 플레이리스트 주소를 입력하세요.";
+
+        // *TODO: 하드코딩 수정 필요
+        // if ( args[ 1 ] != "alwaysjapan" )
+        //     return "Argument[1] 자동 재생 채널이 아닙니다.";
+
+        QueueManager.generate( args[ 1 ], args[ 2 ], Number( args[ 3 ] ) );
+    },
+    "/notify": function( args )
+    {
+        if ( !args[ 1 ] )
+            return "Argument[1] 채널 아이디를 입력하세요.";
+
+        if ( !args[ 2 ] )
+            return "Argument[2] 제목을 입력하세요.";
+
+        if ( !args[ 3 ] )
+            return "Argument[3] 내용을 입력하세요.";
+
+        ChatManager.saySystem( args[ 1 ] !== "all" ? args[ 1 ] : null, args.chain( 3 ), "glyphicon glyphicon-comment" );
+        Server.getAllClient( args[ 1 ] !== "all" ? args[ 1 ] : null )
+            .forEach( ( client, index ) =>
+            {
+                client.emit( "RS.notification",
+                {
+                    title: args[ 2 ],
+                    body: args.chain( 3 )
+                } );
+            } );
+    },
+    "/cache-flushall": function( args )
+    {
+        DatabaseCache.removeAll( );
+    },
+    "/exit": function( args )
+    {
+        process.send(
+        {
+            type: "exit"
+        } );
     }
 };
 

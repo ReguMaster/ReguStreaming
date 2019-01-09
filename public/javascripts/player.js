@@ -6,8 +6,26 @@
 const socket = io(
 {
     reconnectionDelay: 5000,
-    secure: true
+    secure: true,
+    query:
+    {
+        "platform": "web",
+        "language": navigator.language
+    }
 } );
+
+var AudioContext = window.AudioContext || window.webkitAudioContext;
+
+// socket.on( 'ping', ( ) =>
+// {
+//     console.log( "ping" )
+// } );
+
+// socket.on( 'pong', ( ) =>
+// {
+//     console.log( "pong" )
+// } );
+
 
 // socket.on( 'ping', ( ) =>
 // {
@@ -20,9 +38,11 @@ const socket = io(
 //     console.log( latency );
 // } );
 
-const siofu = new SocketIOFileUpload( socket );
+// const siofu = new SocketIOFileUpload( socket );
 
 // 채팅 딜레이 넣기
+
+reguStreaming.debugMode = true;
 
 reguStreaming.controlInitialized = false;
 reguStreaming.chatCommands = [
@@ -32,12 +52,15 @@ reguStreaming.chatCommands = [
         {
             controls.chatBoxInner.empty( );
 
-            chatMessageCount = 0;
-            chatMessageInputHistory = [ ];
+            reguStreaming.currentChatMessageCount = 0;
+            reguStreaming.currentChatMessageInputHistoryIndex = 0;
+            reguStreaming.chatMessageInputHistory = [ ];
 
             util.notification( util.notificationType.info, "정리 완료 :", "모든 채팅 메세지가 삭제되었습니다.", 1500 );
         }
-} ];
+    }
+];
+
 reguStreaming.registerChatCommand = function( command, callback )
 {
     this.chatCommands.push(
@@ -52,20 +75,19 @@ reguStreaming.checkXSS = function( chatMessage, callback )
     callback( filterXSS( chatMessage ) !== chatMessage );
 }
 
+reguStreaming.allowUploadType = [
+    "image/png",
+    "image/gif",
+    "image/jpg",
+    "image/jpeg"
+];
+
 reguStreaming.canUpload = function( fileData, callback )
 {
-    var allowType = [
-        "image/png",
-        "image/gif",
-        "image/jpg",
-        "image/jpeg"
-    ];
-
     if ( fileData )
     {
-        if ( allowType.indexOf( fileData.type.toLowerCase( ) ) > -1 )
+        if ( reguStreaming.allowUploadType.indexOf( fileData.type.toLowerCase( ) ) > -1 )
         {
-            console.log( fileData );
             var img = new Image( );
             img.src = URL.createObjectURL( fileData );
             img.onload = function( )
@@ -90,22 +112,34 @@ reguStreaming.canUpload = function( fileData, callback )
         callback( false, "파일을 업로드할 수 없습니다, 파일 데이터가 올바르지 않습니다." );
 }
 
+reguStreaming.stickerUploadButtonClicked = function( ) {
+
+}
+
 reguStreaming.imageUploadButtonClicked = function( )
 {
-    controls.imageFileInput.trigger( "click" );
+    // if ( reguStreaming.getConfig( "isFileUploading", false ) ) return;
+
+    controls.fileInput.trigger( "click" );
 }
 
 reguStreaming.fileUploadData = null;
-let chatMessageInputHistory = [ ];
-let currentChatMessageInputHistoryIndex = 0;
+
+reguStreaming.chatMessageInputHistory = [ ];
+reguStreaming.currentChatMessageInputHistoryIndex = 0;
 
 // id element only!
 let controls = {
-    imageFileInput: null,
+    fileUploadForm: null,
+    fileInput: null,
     background: null,
 
     innerHeader: null,
     innerHeaderRoomPlayersContainer: null,
+    innerHeaderRoomPlayersCount: null,
+    innerHeaderRoomTitle: null,
+    innerHeaderServiceNotification: null,
+    innerHeaderServiceStatus: null,
 
     chatContainer: null,
     chatInputContainer: null,
@@ -114,20 +148,37 @@ let controls = {
     userRightMenu: null,
 
     videoTitle: null,
+    videoProvider: null,
     videoBuffering: null,
     videoPositionBar: null,
-    videoPositionFullBar: null,
+    videoPositionBarFull: null,
+    innerHeaderVideoPositionHelp: null,
+
     videoURL: null,
     videoVolumeController: null,
     videoRequesterInformation: null,
     videoRequesterProfileImage: null,
     videoRequesterProfileName: null,
 
-    voteContainerTime: null,
-    voteContainerStartUser: null,
+    voteContainerCounterText: null,
+    voteRequesterProfileInformation: null,
+    voteRequesterProfileImage: null,
+    voteRequesterProfileName: null,
+    voteContainerTitle: null,
+    voteContainerVoteStatusPercent: null,
+
+    voteContainerVoteStatusTrue: null,
+    voteContainerVoteStatusFalse: null,
+
+    chatInputContainerDragHint: null,
+    chatBoxImageUploadButton: null,
+    chatBoxStickerUploadButton: null,
 
     chatContainerQueueRegisterButton: null,
     chatContainerQueueRegisterButtonDelayRemain: null,
+
+    chatContainerQueueContinueVoteButton: null,
+    chatContainerQueueContinueVoteButtonDelayRemain: null,
     queueRegisterContainer: null,
     queueRegisterURLTextField: null,
     queueRegisterStartTimeTextFieldMin: null,
@@ -137,7 +188,11 @@ let controls = {
     queueVideoInformationBG: null,
     queueVideoInformationThumbnail: null,
     queueVideoInformationName: null,
-    queueVideoInformationTimeleft: null,
+    // queueVideoInformationTimeleft: null,
+    queueVideoInformationProfileName: null,
+    queueVideoInformationProfileImage: null,
+    queueVideoInformationRemoveHint: null,
+    queueVideoInformationDuration: null,
 
     voteContainer: null,
     userInfoContainer: null,
@@ -162,20 +217,144 @@ let controls = {
 
     canvas: null,
     videoContainer: null,
-    videoAutoPlayAgree: null
+    videoAutoPlayAgree: null,
+    processBackground: null,
+
+    dialogBackground: null
 };
+
+function C( id )
+{
+
+}
 
 $( window )
     .on( "load", function( )
     {
+        // var audioContext = new AudioContext( );
+
+        console.log( "%c[ReguStreaming] Debug mode enabled %c^ㅡ^!", "color: blue; font-size: 15px;", "color: purple; font-size: 20px; text-shadow: 0 0 16px red;" );
+
         if ( !reguStreaming.getActiveProcessBackground( ) )
-            reguStreaming.setActiveProcessBackground( true, null, "불러오는 중 ...", true );
+            reguStreaming.setActiveProcessBackground( true, null, "서버와 연결하고 정보를 가져오고 있습니다.", true );
+
+        $( window )
+            .one( "mouseover", function( )
+            {
+                if ( !reguStreaming.userInteracted )
+                    reguStreaming.userInteracted = true;
+            } );
+
+        $( window )
+            .one( "scroll", function( )
+            {
+                if ( !reguStreaming.userInteracted )
+                    reguStreaming.userInteracted = true;
+            } );
+
+
+        $( window )
+            .one( "keydown", function( )
+            {
+                if ( !reguStreaming.userInteracted )
+                    reguStreaming.userInteracted = true;
+            } );
 
         reguStreaming.defineControls( );
+        reguStreaming.ajaxServiceStatus( );
 
         controls.videoVolumeController.val( reguStreaming.getLocalStorageVolume( ) * 100 );
-        // controls.chatInputContainer.hide( );
         controls.videoContainer.prop( "volume", reguStreaming.getLocalStorageVolume( ) );
+
+        if ( localStorage.getItem( "RS.chatInputHistory" ) )
+            controls.chatTextField.val( localStorage.getItem( "RS.chatInputHistory" ) );
+
+        if ( localStorage.getItem( "RS.queueRegisterDelay" ) )
+        {
+            reguStreaming.registerQueueDelay( Number( localStorage.getItem( "RS.queueRegisterDelay" ) ) );
+            localStorage.removeItem( "RS.queueRegisterDelay" );
+        }
+
+        controls.videoPositionBar.on( "click", function( e )
+        {
+            if ( reguStreaming.getConfig( "localUserInfo",
+                {
+                    rank: "user"
+                } )
+                .rank !== "admin" ) return;
+
+            var xPos = e.clientX;
+            var width = window.innerWidth;
+
+
+            var newPos = Math.round( Number( ( xPos / width ) * controls.videoContainer.get( 0 )
+                .duration ) );
+
+            // console.log( xPos );
+            // console.log( width );
+            // console.log( newPos );
+            // console.log( Number.isInteger( newPos ) );
+
+            if ( Number.isInteger( newPos ) )
+                socket.emit( "RS.setMediaPos", newPos );
+        } );
+
+        controls.videoPositionBar.on( "mouseenter", function( e )
+        {
+            controls.videoPositionBar.css( "height", "12px" )
+                .css( "cursor", "pointer" );
+
+            controls.innerHeaderVideoPositionHelp.stop( )
+                .show( )
+                .removeClass( "noTransition" )
+                .css( "opacity", "1" );
+
+            var handler = controls.videoPositionBar.data( "videoPositionBarMouseOutHandler" );
+
+            if ( handler )
+            {
+                clearTimeout( handler );
+                handler = null;
+            }
+        } );
+
+        controls.videoPositionBar.on( "mouseleave", function( e )
+        {
+            var handler = controls.videoPositionBar.data( "videoPositionBarMouseOutHandler" );
+
+            if ( !handler )
+            {
+                controls.videoPositionBar.data( "videoPositionBarMouseOutHandler", setTimeout( function( )
+                {
+                    controls.videoPositionBar.css( "height", controls.videoPositionBar.attr( "data-height" ) )
+                        .css( "cursor", "default" );
+
+                    controls.innerHeaderVideoPositionHelp.stop( )
+                        .addClass( "noTransition" )
+                        .opacityTo( "0", 500, function( self )
+                        {
+                            self.hide( );
+                        } );
+                }, 1000 ) );
+            }
+            else
+            {
+                clearTimeout( handler );
+
+                controls.videoPositionBar.data( "videoPositionBarMouseOutHandler", setTimeout( function( )
+                {
+                    controls.videoPositionBar.css( "height", controls.videoPositionBar.attr( "data-height" ) )
+                        .css( "cursor", "default" );
+
+                    controls.innerHeaderVideoPositionHelp.stop( )
+                        .addClass( "noTransition" )
+                        .opacityTo( "0", 500, function( self )
+                        {
+                            self.hide( );
+                        } );
+                }, 1000 ) );
+            }
+        } );
 
         controls.queueVideoInformation.on( "mouseenter", function( e )
         {
@@ -234,35 +413,229 @@ $( window )
         //         }
         //     } );
 
-        controls.videoContainer.on( "loadedmetadata", function( ) {
+        // $( document )
+        //     .on( "visibilitychange", function( e )
+        //     {
+        //         if ( document.visibilityState == "visible" )
+        //         {
 
+        //         }
+        //         else if ( document.visibilityState == "hidden" )
+        //         {
+
+        //         }
+        //     } );
+
+        controls.innerHeaderServiceStatus.on( "click", function( e )
+        {
+            e.stopPropagation( );
         } );
 
-        controls.videoContainer.on( "waiting", function( )
+        controls.innerHeaderServiceNotification.on( "click", function( e )
         {
-            if ( !controls.videoBuffering.is( ":visible" ) )
-                controls.videoBuffering.show( )
-                .stop( )
-                .css( "opacity", "0" )
-                .animate(
-                {
-                    opacity: "1"
-                }, 300 );
+            e.stopPropagation( );
+        } );
+
+        controls.videoContainer.on( "loadedmetadata", function( )
+        {
+            if ( reguStreaming.debugMode )
+                console.log( "[ReguStreaming] Video media loaded metadata ..." );
+        } );
+
+        controls.videoContainer.on( "loadstart", function( )
+        {
+            if ( controls.videoContainer.get( 0 )
+                .networkState !== 1 ) // NETWORK_IDLE
+            {
+                if ( !controls.videoBuffering.is( ":visible" ) )
+                    controls.videoBuffering.stop( )
+                    .show( )
+                    .css( "opacity", "0" )
+                    .opacityTo( "1", 300 );
+
+                if ( reguStreaming.debugMode )
+                    console.log( "[ReguStreaming] Video media load start ..." );
+            }
         } );
 
         controls.videoContainer.on( "canplay", function( )
         {
             if ( controls.videoBuffering.is( ":visible" ) )
-                controls.videoBuffering.stop( )
-                .animate(
+                controls.videoBuffering.hide( )
+
+            if ( reguStreaming.audioObj )
+            {
+                // Chrome Policy
+                if ( Math.abs( reguStreaming.audioObj.currentTime - controls.videoContainer.get( 0 )
+                        .currentTime ) > 0.1 )
                 {
-                    opacity: "0"
-                }, 300, function( )
-                {
-                    $( this )
-                        .hide( );
-                } );
+                    reguStreaming.audioObj.currentTime = controls.videoContainer.get( 0 )
+                        .currentTime;
+
+                    if ( reguStreaming.debugMode )
+                        console.log( "[ReguStreaming] Video media and AudioObject resynchronized." );
+                }
+            }
+
+            if ( reguStreaming.debugMode )
+                console.log( "[ReguStreaming] Video media now available to play ..." );
         } );
+
+        controls.videoContainer.on( "waiting", function( )
+        {
+            if ( !controls.videoBuffering.is( ":visible" ) )
+                controls.videoBuffering.show( );
+
+            if ( reguStreaming.debugMode )
+                console.log( "[ReguStreaming] Video media waiting for data ..." );
+        } );
+
+        controls.videoContainer.on( "pause", function( )
+        {
+            if ( document.visibilityState == "hidden" )
+            {
+                reguStreaming.isHidden = true;
+            }
+
+            if ( document.visibilityState !== "hidden" && reguStreaming.audioObj )
+                reguStreaming.audioObj.pause( );
+
+            if ( reguStreaming.debugMode )
+                console.log( "[ReguStreaming] Video media paused." );
+        } );
+
+        // https://stackoverflow.com/questions/5573461/html5-video-error-handling
+        controls.videoContainer.on( "error", function( e )
+        {
+            e = e.originalEvent;
+
+            var error;
+
+            // Chrome v60
+            if ( e.path && e.path[ 0 ] )
+                error = e.path[ 0 ].error;
+
+            // Firefox v55
+            if ( e.originalTarget )
+                error = error.originalTarget.error;
+            // if ( state === 3 ) // NETWORK_NO_SOURCE
+            // {
+            //     if ( controls.videoBuffering.is( ":visible" ) )
+            //         controls.videoBuffering.stop( )
+            //         .opacityTo( "0", 300, function( )
+            //         {
+            //             controls.videoBuffering.hide( );
+            //         } );
+            // }
+
+            if ( error.message )
+            {
+                util.notification( util.notificationType.danger, "미디어 재생 오류", "죄송합니다, 미디어 재생 중 오류가 발생했습니다.<br />" + error.message, 0, true );
+
+                if ( reguStreaming.debugMode )
+                    console.log( "%c[ReguStreaming] Video media failed to play because " + error.message, "color: red;" );
+            }
+            else
+            {
+                util.notification( util.notificationType.danger, "미디어 재생 오류", "죄송합니다, 미디어 재생 중 알 수 없는 오류가 발생했습니다.", 0, true );
+
+                if ( reguStreaming.debugMode )
+                    console.log( "%c[ReguStreaming] Video media failed to play because Unknown error", "color: red;" );
+            }
+
+
+        } );
+
+        controls.videoContainer.on( "play", function( )
+        {
+            if ( reguStreaming.audioObj )
+            {
+                if ( reguStreaming.isHidden )
+                {
+                    controls.videoContainer.get( 0 )
+                        .currentTime = reguStreaming.audioObj.currentTime;
+
+                    reguStreaming.isHidden = false;
+                }
+
+                if ( reguStreaming.playerMode === reguStreaming.playerType.both )
+                {
+                    controls.videoContainer.prop( "muted", true );
+
+                    if ( reguStreaming.audioObj.paused )
+                    {
+                        var playPromise = reguStreaming.audioObj.play( );
+
+                        // Autoplay Policy
+                        playPromise.then( function( )
+                            {
+                                if ( reguStreaming.debugMode )
+                                    console.log( "[ReguStreaming] AudioObject played." );
+
+                                reguStreaming.audioObj.muted = false;
+                            } )
+                            .catch( function( err )
+                            {
+                                if ( reguStreaming.debugMode )
+                                    console.log( "%c[ReguStreaming] Failed to play AudioObject [%cㅡ,.ㅡ %cAutoplay Policy].", "color: orange;", "color: red; font-size: 15px; font-weight: bold;", "color: orange;" );
+
+                                if ( !controls.videoAutoPlayAgree.is( ":visible" ) )
+                                    controls.videoAutoPlayAgree.show( )
+                                    .css( "opacity", "0" )
+                                    .opacityTo( "1", 500 );
+                            } );
+                    }
+                }
+                else if ( reguStreaming.playerMode === reguStreaming.playerType.videoOnly )
+                {
+                    if ( reguStreaming.userInteracted )
+                        controls.videoContainer.prop( "muted", false );
+                    else
+                    {
+                        if ( !controls.videoAutoPlayAgree.is( ":visible" ) )
+                            controls.videoAutoPlayAgree.show( );
+                    }
+                }
+            }
+
+            if ( reguStreaming.debugMode )
+                console.log( "[ReguStreaming] Video media played." );
+        } );
+
+        controls.videoAutoPlayAgree.one( "click", function( )
+        {
+            var self = controls.videoAutoPlayAgree;
+
+            self.opacityTo( "0", 300, function( )
+            {
+                self.hide( )
+            } );
+
+            if ( !reguStreaming.userInteracted )
+                reguStreaming.userInteracted = true;
+
+            // var audioContext = new AudioContext( );
+            if ( reguStreaming.audioObj && reguStreaming.audioObj.paused )
+            {
+                reguStreaming.audioObj.play( );
+                reguStreaming.audioObj.muted = false;
+                reguStreaming.audioObj.currentTime = controls.videoContainer.get( 0 )
+                    .currentTime;
+
+                if ( reguStreaming.debugMode )
+                    console.log( "[ReguStreaming] AudioObject played." );
+            }
+
+            // audioContext.resume( )
+            //     .then( function( )
+            //     {
+
+            //         console.log( "playback resumed!" )
+            //     } );
+
+            controls.videoContainer.prop( "muted", false );
+        } );
+
 
         controls.videoContainer.on( "timeupdate", function( )
         {
@@ -270,8 +643,18 @@ $( window )
 
             if ( video.paused ) return;
 
-            controls.videoPositionFullBar.css( "width", ( ( video.currentTime / video.duration ) * 100 ) + "%" );
+            controls.videoPositionBarFull.css( "width", ( ( video.currentTime / video.duration ) * 100 ) + "%" );
 
+            if ( controls.innerHeaderVideoPositionHelp.is( ":visible" ) )
+            {
+                var width = $( window )
+                    .width( );
+
+                controls.innerHeaderVideoPositionHelp.css( "left", ( ( video.currentTime / video.duration ) * width ) + "px" )
+                    .text( Math.floor( video.currentTime )
+                        .toSimpleSexyMMSS( ) );
+            }
+            /*
             if ( controls.queueVideoInformation.is( ":visible" ) )
             {
                 var thisIndex = reguStreaming.queueInformationCurrentShowingIndex;
@@ -295,7 +678,7 @@ $( window )
 
                 controls.queueVideoInformationTimeleft.text( "이 영상 재생까지 " + Math.floor( timeleft )
                     .toSexyMMSS( ) + " 남았습니다." );
-            }
+            }*/
         } );
 
         $( document )
@@ -316,18 +699,45 @@ $( window )
                             return;
                     }
 
+                    // console.log( e.target );
+
                     switch ( e.target.className )
                     {
                         case "canvas":
                             e.preventDefault( );
-
                             break;
                         case "queueItem":
+                        case "queueItemThumbnail":
+                            var obj = null;
+
+                            if ( e.target.className === "queueItemThumbnail" )
+                                obj = $( e.target )
+                                .parent( ".queueItem" );
+                            else
+                                obj = $( e.target );
+
+                            var localData = obj.data( "queueData" );
+
+                            if ( localData.user && localData.user.userID === reguStreaming.getConfig( "localUserInfo",
+                                {
+                                    userID: "NULL"
+                                } )
+                                .userID )
+                            {
+                                util.showModal( "경고", "'" + localData.mediaName + "' 영상을 대기열에서 제거하시겠습니까?", "취소", "확인", null, function( )
+                                {
+                                    socket.emit( "RS.queueRemoveRequest",
+                                    {
+                                        id: localData.id
+                                    } );
+                                } );
+                            }
+
                             e.preventDefault( );
                             break;
                         case "chatProfileName":
                         case "chatProfileAvatar":
-                            reguStreaming.clickedChatMessageTemp = e.target;
+                            reguStreaming.setConfig( "lastClickedChatMessage", e.target );
 
                             if ( !controls.userRightMenu.is( ":visible" ) )
                                 controls.userRightMenu.show( );
@@ -365,91 +775,119 @@ $( window )
                             .attr( "id" ) )
                         {
                             case "userRightMenu-userInfo":
-                                reguStreaming.userInfoContainerStatus( true, reguStreaming.clickedChatMessageTemp.parentElement );
+                                if ( reguStreaming.getConfig( "lastClickedChatMessage" ) )
+                                    reguStreaming.userInfoContainerStatus( true, reguStreaming.getConfig( "lastClickedChatMessage" )
+                                        .parentElement );
                                 break;
                             case "userRightMenu-kick":
-                                //reguStreaming.clickedChatMessageTemp.parentElement
+                                if ( !reguStreaming.getConfig( "lastClickedChatMessage" ) ) break;
 
-                                console.log( "this" );
-                                console.log( reguStreaming.clickedChatMessageTemp.parentElement );
                                 socket.emit( "RS.admin.kickRequest",
                                 {
-                                    userID: $( reguStreaming.clickedChatMessageTemp.parentElement )
+                                    userID: $( reguStreaming.getConfig( "lastClickedChatMessage" )
+                                            .parentElement )
                                         .data( "userID" )
                                 } );
                                 break;
                             case "userRightMenu-ban":
+                                if ( !reguStreaming.getConfig( "lastClickedChatMessage" ) ) break;
+
                                 socket.emit( "RS.admin.banRequest",
                                 {
-                                    userID: $( reguStreaming.clickedChatMessageTemp.parentElement )
+                                    userID: $( reguStreaming.getConfig( "lastClickedChatMessage" )
+                                            .parentElement )
                                         .data( "userID" )
                                 } );
                                 break;
                         }
 
-                        reguStreaming.clickedChatMessageTemp = null;
+                        reguStreaming.setConfig( "lastClickedChatMessage", null );
                     }
                 }
-            } )
+            } );
 
+        controls.fileUploadForm.on( "submit", function( e )
+        {
+            var self = $( this );
+            var formData = new FormData( this );
 
-        // $( "#notifyModal" ).modal( "show" );
+            e.preventDefault( );
 
-        controls.imageFileInput.on( "change", function( )
+            $.ajax(
+            {
+                url: self.attr( "action" ),
+                type: self.attr( "method" ),
+                processData: false,
+                contentType: false,
+                cache: false,
+                data: formData,
+                success: function( data )
+                {
+                    if ( reguStreaming.debugMode )
+                        console.log( "%c[ReguStreaming] File upload successful. (result: " + data + ")", "color: green;" );
+                },
+                error: function( err )
+                {
+                    if ( reguStreaming.debugMode )
+                        console.log( "%c[ReguStreaming] File upload failed to upload because (" + err.statusText + ": " + err.responseText + ")", "color: red;" );
+
+                    util.notification( util.notificationType.danger, "파일 업로드 오류", "죄송합니다, 파일 업로드 처리 중 서버에서 오류를 반환했습니다.<br />(" + err.statusText + ": " + err.responseText + ")", 0, true );
+                }
+            } );
+        } );
+
+        controls.fileInput.on( "change", function( )
         {
             var fileList = $( this )
                 .prop( "files" );
 
+            if ( !fileList.length || fileList[ 0 ] == null ) return;
+
+            // reguStreaming.setConfig( "isFileUploading", true );
+            // controls.chatBoxImageUploadButton.attr( "src", "/images/spinner.gif" );
+
             reguStreaming.canUpload( fileList[ 0 ], function( isAllow, reason )
             {
-                if ( isAllow )
+                var reader = new FileReader( );
+                reader.onload = function( e )
                 {
-                    reguStreaming.fileUploadData = $.extend( true,
-                    {}, fileList ); // Shallow copy to deep;
+                    var hash = sha1( e.target.result );
 
-                    var reader = new FileReader( );
-                    // Closure to capture the file information.
-                    reader.onload = function( e )
+                    socket.emit( "RS.fileExistCheck", hash, function( result )
                     {
-                        var fileData = reguStreaming.fileUploadData[ 0 ];
-
-                        var raw = e.target.result;
-
-                        // console.log( raw );
-
-                        // // https://developer.mozilla.org/en/JavaScript_typed_arrays
-                        // var rawBytes = new Uint8Array( raw );
-                        // var hex = "";
-                        // for ( var cycle = 0; cycle < raw.byteLength; cycle++ )
-                        // {
-                        //     hex += rawBytes[ cycle ].toString( 16 ) + " ";
-                        //     // TODO: more elegance
-                        //     if ( !( ( cycle + 1 ) % 8 ) )
-                        //         hex += "\n";
-                        // }
-
-                        socket.emit( "RS.uploadFile",
+                        switch ( result.code )
                         {
-                            name: fileData.name,
-                            size: fileData.size,
-                            lastModified: fileData.lastModified
-                        } );
-                    }
+                            case 0:
+                                if ( !result.exists )
+                                    controls.fileUploadForm.submit( );
 
-                    reader.readAsArrayBuffer( reguStreaming.fileUploadData[ 0 ] );
-
-                    // console.log( reguStreaming.fileUploadData );
-                    // console.log( reguStreaming.fileUploadData[ 0 ] );
+                                controls.fileInput.val( "" );
+                                break;
+                            case 1:
+                                util.notification( util.notificationType.danger, "파일 업로드 오류", "파일 업로드에 실패했습니다, 데이터베이스 오류가 발생했습니다." );
+                                controls.fileInput.val( "" );
+                                break;
+                            case 2:
+                                util.notification( util.notificationType.warning, "파일 업로드 오류", "파일 업로드에 실패했습니다, 현재 서버 설정에 의해 업로드가 불가능합니다." );
+                                controls.fileInput.val( "" );
+                        }
+                    } );
+                };
+                reader.onerror = function( e )
+                {
+                    controls.fileInput.val( "" );
                 }
-                else
-                    util.notification( util.notificationType.warning, "파일 업로드 오류", reason || "정의되지 않은 오류가 발생했습니다.", 4000 );
+                reader.onabort = function( e )
+                {
+                    controls.fileInput.val( "" );
+                }
 
-                controls.imageFileInput.val( "" );
+                reader.readAsArrayBuffer( fileList[ 0 ] );
             } );
         } );
 
         $( "#queueRegisterURLTextField" )
-            .keydown( function( event )
+            .on( "keydown", function( event )
             {
                 if ( event.keyCode == 13 ) // Enter
                 {
@@ -461,7 +899,7 @@ $( window )
             } );
 
         $( "#chatTextField" )
-            .keydown( function( event )
+            .on( "keydown", function( event )
             {
                 if ( event.keyCode == 13 ) // Enter
                 {
@@ -482,63 +920,157 @@ $( window )
                         if ( xssDetected )
                             return util.notification( util.notificationType.warning, "채팅 불가", "채팅 메세지에 입력할 수 없는 문장입니다.", 2000 );
 
-                        if ( runChatCommand( chatMessage ) )
+                        if ( reguStreaming.executeChatCommand( chatMessage ) )
                             return false;
 
-                        if ( chatMessageInputHistory.length > 5 )
-                            chatMessageInputHistory.slice( 0, 1 );
+                        if ( reguStreaming.chatMessageInputHistory.length > 5 )
+                            reguStreaming.chatMessageInputHistory.slice( 0, 1 );
 
-                        chatMessageInputHistory.push( chatMessage );
+                        reguStreaming.chatMessageInputHistory.push( chatMessage );
 
-                        currentChatMessageInputHistoryIndex = chatMessageInputHistory.length - 1;
+                        reguStreaming.currentChatMessageInputHistoryIndex = reguStreaming.chatMessageInputHistory.length - 1;
 
-                        socket.emit( "RS.chat", chatMessage );
+                        socket.emit( "RS.chat", chatMessage, reguStreaming.onPostChatHandler );
 
                         return false;
                     } );
                 }
                 else if ( event.keyCode == 38 ) // 위 방향
                 {
-                    if ( chatMessageInputHistory.length > 0 && chatMessageInputHistory[ currentChatMessageInputHistoryIndex ] )
+                    if ( reguStreaming.chatMessageInputHistory.length > 0 && reguStreaming.chatMessageInputHistory[ reguStreaming.currentChatMessageInputHistoryIndex ] )
                     {
-                        var messageHistory = chatMessageInputHistory[ currentChatMessageInputHistoryIndex ]
+                        var messageHistory = reguStreaming.chatMessageInputHistory[ reguStreaming.currentChatMessageInputHistoryIndex ]
 
                         $( this )
                             .val( messageHistory )
                             .putCursorAtEnd( );
 
-                        currentChatMessageInputHistoryIndex = Math.clamp( currentChatMessageInputHistoryIndex - 1, 0, chatMessageInputHistory.length - 1 );
+                        reguStreaming.currentChatMessageInputHistoryIndex = Math.clamp( reguStreaming.currentChatMessageInputHistoryIndex - 1, 0, reguStreaming.chatMessageInputHistory.length - 1 );
                     }
                 }
                 else if ( event.keyCode == 40 ) // 아래 방향
                 {
-                    if ( chatMessageInputHistory[ currentChatMessageInputHistoryIndex ] )
+                    if ( reguStreaming.chatMessageInputHistory[ reguStreaming.currentChatMessageInputHistoryIndex ] )
                     {
-                        var messageHistory = chatMessageInputHistory[ currentChatMessageInputHistoryIndex ]
+                        var messageHistory = reguStreaming.chatMessageInputHistory[ reguStreaming.currentChatMessageInputHistoryIndex ]
 
                         $( this )
                             .val( messageHistory )
                             .putCursorAtEnd( );
 
-                        currentChatMessageInputHistoryIndex = Math.clamp( currentChatMessageInputHistoryIndex + 1, 0, chatMessageInputHistory.length - 1 );
+                        reguStreaming.currentChatMessageInputHistoryIndex = Math.clamp( reguStreaming.currentChatMessageInputHistoryIndex + 1, 0, reguStreaming.chatMessageInputHistory.length - 1 );
                     }
                 }
             } );
 
-        controls.videoAutoPlayAgree.on( "click", function( )
-        {
-            $( this )
-                .animate(
-                {
-                    opacity: "0"
-                }, 300, function( )
-                {
-                    $( this )
-                        .hide( );
-                } );
+        /*
+            .on( "dragenter", function( e ) {
 
-            controls.videoContainer.prop( "muted", false );
-        } );
+            } )
+            .on( "dragover", function( e )
+            {
+                if ( !controls.chatInputContainerDragHint.is( ":visible" ) )
+                {
+                    controls.chatInputContainerDragHint.show( )
+                        .stop( )
+                        .css( "opacity", "0" )
+                        .animate(
+                        {
+                            opacity: "1"
+                        }, 500 );
+                }
+
+                e.stopPropagation( );
+                e.preventDefault( );
+                e.originalEvent.dataTransfer.dropEffect = "copy";
+            } )
+            .on( "dragleave", function( e )
+            {
+                if ( controls.chatInputContainerDragHint.is( ":visible" ) )
+                {
+                    controls.chatInputContainerDragHint.stop( )
+                        .css( "opacity", "1" )
+                        .animate(
+                        {
+                            opacity: "0"
+                        }, 500, function( )
+                        {
+                            controls.chatInputContainerDragHint.hide( );
+                        } );
+                }
+
+                e.stopPropagation( );
+                e.preventDefault( );
+            } )
+            .on( "drop", function( e )
+            {
+                if ( controls.chatInputContainerDragHint.is( ":visible" ) )
+                {
+                    controls.chatInputContainerDragHint.stop( )
+                        .css( "opacity", "1" )
+                        .animate(
+                        {
+                            opacity: "0"
+                        }, 500, function( )
+                        {
+                            controls.chatInputContainerDragHint.hide( );
+                        } );
+                }
+
+                var dataTransfer = e.originalEvent.dataTransfer;
+                var fileList = dataTransfer.files;
+
+                if ( fileList.length > 0 )
+                {
+                    // reguStreaming.setConfig( "isFileUploading", true );
+                    // controls.chatBoxImageUploadButton.attr( "src", "/images/spinner.gif" );
+                    controls.fileInput.val( fileList );
+
+                    reguStreaming.canUpload( fileList[ 0 ], function( isAllow, reason )
+                    {
+                        var reader = new FileReader( );
+                        reader.onload = function( e )
+                        {
+                            var hash = sha1( e.target.result );
+
+                            socket.emit( "RS.fileExistCheck",
+                            {
+                                hash: hash
+                            }, function( result )
+                            {
+                                switch ( result.code )
+                                {
+                                    case 0:
+                                        if ( !result.exists )
+                                            controls.fileUploadForm.submit( );
+
+                                        controls.fileInput.val( "" );
+                                        break;
+                                    case 1:
+                                        util.notification( util.notificationType.danger, "파일 업로드 오류", "파일 업로드에 실패했습니다, 데이터베이스 오류가 발생했습니다." );
+                                        break;
+                                    case 2:
+                                        util.notification( util.notificationType.danger, "파일 업로드 오류", "파일 업로드에 실패했습니다, 요청이 거부되었습니다." );
+                                }
+                            } );
+                        };
+                        reader.onerror = function( e )
+                        {
+                            controls.fileInput.val( "" );
+                        }
+                        reader.onabort = function( e )
+                        {
+                            controls.fileInput.val( "" );
+                        }
+
+                        reader.readAsArrayBuffer( fileList[ 0 ] );
+                    } );
+                }
+
+                e.stopPropagation( );
+                e.preventDefault( );
+            } );
+*/
 
         // window.addEventListener( "focus", function( e )
         // {
@@ -566,16 +1098,16 @@ $( window )
         //     //     .currentTime = reguStreaming.audio.currentTime;
         // } );
 
-        if ( util.isIE( ) || util.isEdge( ) )
-        {
+        if ( util.isBrowser( util.browserType.ie ) || util.isBrowser( util.browserType.edge ) )
             util.notification( util.notificationType.warning, "호환성 알림 :", "이 사이트는 해당 브라우저에서 테스트되지 않았습니다<br />버그 발견 시 즉시 신고해주세요.", 0 );
-        }
 
         reguStreaming.canvas = document.getElementById( "canvas" );
         reguStreaming.canvas2D = reguStreaming.canvas.getContext( "2d" );
 
         reguStreaming.canvas.width = window.innerWidth;
         reguStreaming.canvas.height = window.innerHeight - 112;
+
+        reguStreaming.canvasInitialize( );
 
         $( window )
             .resize( function( )
@@ -590,15 +1122,22 @@ $( window )
         socket.emit( "RS.join" );
     } );
 
-socket.on( "RS.uploadFileReceive", function( data )
+// socket.on( "RS.fileExistCheckReceive", function( data )
+// {
+//     if ( !data.exists && reguStreaming.fileUploadData != null )
+//         siofu.submitFiles( reguStreaming.fileUploadData );
+//     else
+//         reguStreaming.fileUploadData = null;
+// } );
+
+socket.on( "RS.fileUploadReceive", function( data )
 {
-    if ( !data.exists && reguStreaming.fileUploadData != null )
-        siofu.submitFiles( reguStreaming.fileUploadData );
-    else
-        reguStreaming.fileUploadData = null;
+    // console.log( "success fileUpload" )
+    // reguStreaming.setConfig( "isFileUploading", false );
+    // controls.chatBoxImageUploadButton.attr( "src", "/images/icon/camera.png" );
 } );
 
-socket.on( "RS.uploadFileError", function( data )
+socket.on( "RS.fileUploadError", function( data )
 {
     var reason;
 
@@ -623,11 +1162,16 @@ socket.on( "RS.uploadFileError", function( data )
     util.notification( util.notificationType.warning, "파일 업로드 오류", reason, 4000 );
 } );
 
-function runChatCommand( message )
+reguStreaming.refreshBackground = function( )
+{
+    // controls.background.insertBefore( $( '<div class="backgroundBuffer"></div>' ) )
+}
+
+reguStreaming.executeChatCommand = function( message )
 {
     message = message.toLowerCase( );
 
-    return reguStreaming.chatCommands.some( function( val )
+    return this.chatCommands.some( function( val )
     {
         if ( val.command.toLowerCase( ) === message )
         {
@@ -639,34 +1183,25 @@ function runChatCommand( message )
 
 reguStreaming.queueUserVote = function( type )
 {
-    socket.emit( "regu.mediaUserVote",
+    socket.emit( "RS.mediaUserVote", type, function( data )
     {
-        type: type
+        if ( !data || data.code !== 0 )
+            util.notification( util.notificationType.warning, "투표 불가", "정의되지 않은 오류가 발생했습니다.", 2500 );
     } );
 }
 
-socket.on( "regu.mediaUserVoteReceive", function( data )
-{
-    if ( data.success )
-    {
-
-    }
-    else
-    {
-        util.notification( util.notificationType.warning, "투표 불가", data.reason, 2500 );
-    }
-} );
-
 socket.on( "RS.joinResult", function( data )
 {
-    setTimeout( function( )
-    {
-        if ( reguStreaming.getActiveProcessBackground( ) )
-            reguStreaming.setActiveProcessBackground( false );
-    }, 0 ); // 1000
-
     reguStreaming.setConfig( "lastLoginSuccess", true );
-    reguStreaming.setConfig( "localUserInfo", data );
+    reguStreaming.setConfig( "localUserInfo",
+    {
+        name: data.name,
+        userID: data.userID,
+        rank: data.rank,
+        avatar: data.avatar
+    } );
+    reguStreaming.setConfig( "localUserID", data.userID );
+    reguStreaming.setConfig( "roomTitle", data.roomTitle );
 
     if ( data.rank !== "admin" )
     {
@@ -692,38 +1227,13 @@ socket.on( "RS.joinResult", function( data )
     var roomID = reguStreaming.getConfig( "roomID", null );
 
     if ( roomID )
+    {
         controls.videoContainer.attr( "src", "/media/" + roomID );
+    }
 
-    socket.emit( "regu.mediaRequest" );
+    controls.innerHeaderRoomTitle.text( data.roomTitle + " 채널" || "알 수 없음 채널" );
 
-    // if ( data.queuePlaying )
-    // {
-    //     controls.videoContainer.css( "opacity", "0" )
-    //         .show( )
-    //         .stop( )
-    //         .animate(
-    //         {
-    //             opacity: "1"
-    //         }, 1000 );
-    // }
-
-    // if ( !controls.videoContainer.is( ":visible" ) )
-    //     controls.videoContainer.css( "opacity", "0" )
-    //     .show( )
-    //     .stop( )
-    //     .animate(
-    //     {
-    //         opacity: "1"
-    //     }, 1000 );
-
-    // if ( !controls.innerHeader.is( ":visible" ) )
-    //     controls.innerHeader.css( "opacity", "0" )
-    //     .show( )
-    //     .stop( )
-    //     .animate(
-    //     {
-    //         opacity: "1"
-    //     }, 1000 );
+    socket.emit( "RS.mediaRequest" );
 
     if ( !controls.chatContainer.is( ":visible" ) )
         controls.chatContainer.css( "opacity", "0" )
@@ -749,7 +1259,14 @@ socket.on( "RS.joinResult", function( data )
     $( window )
         .on( "beforeunload", function( e )
         {
+            localStorage.setItem( "RS.chatInputHistory", controls.chatTextField.val( ) );
+
+            if ( reguStreaming.queueRegisterDelay )
+                this.localStorage.setItem( "RS.queueRegisterDelay", reguStreaming.queueRegisterDelay.toString( ) );
+
+
             socket.disconnect( );
+
             // e = e || window.event;
 
             // if ( e )
@@ -757,55 +1274,22 @@ socket.on( "RS.joinResult", function( data )
 
             // return "레그 스트리밍에서 접속을 종료하시겠습니까?";
         } );
+
+    setTimeout( function( )
+    {
+        if ( reguStreaming.getActiveProcessBackground( ) )
+            reguStreaming.setActiveProcessBackground( false );
+    }, 0 ); // 1000
 } );
 
-// 수정바람
-const queueEventString = '<div class="queueItem" id="queueItem_{0}"> \
-                <img class="queueItemThumbnail" src="{1}" /> \
-			</div>'
-
-let queueCount = 0;
-let queueListClient = [ ];
-
-socket.on( "regu.queueRegisterReceive", function( data )
+socket.on( "RS.queueRegisterReceive", function( data )
 {
-    if ( data.code === 0 )
+    if ( data.code === 0 ) // 영상 추가 성공
     {
-        util.notification( util.notificationType.info, "영상 추가", "귀하가 요청한 영상을 대기열에 추가했습니다.", 2500 );
+        util.notification( util.notificationType.success, "영상 추가 완료", "귀하가 요청한 영상이 대기열에 추가되었습니다.", 3500 );
 
         reguStreaming.queueContainerStatus( false );
-
-        controls.chatContainerQueueRegisterButton.attr( "src", "images/icon/circle_32.png" )
-            .attr( "title", "대기열에 영상을 추가하시려면 잠시 기다리세요." );
-
-        controls.chatContainerQueueRegisterButtonDelayRemain.stop( )
-            .css( "opacity", 0 )
-            .show( )
-            .animate(
-            {
-                opacity: "1"
-            }, 1000 )
-            .text( Math.floor( ( reguStreaming.queueRegisterDelay - Date.now( ) ) / 1000 ) );
-
-        reguStreaming.queueRegisterDelay = Date.now( ) + ( 1000 * 60 );
-
-        reguStreaming.queueRegisterDelayIntervalObj = setInterval( function( )
-        {
-            if ( Date.now( ) < reguStreaming.queueRegisterDelay )
-            {
-                controls.chatContainerQueueRegisterButtonDelayRemain.text( Math.floor( ( reguStreaming.queueRegisterDelay - Date.now( ) ) / 1000 ) );
-            }
-            else
-            {
-                controls.chatContainerQueueRegisterButton.attr( "src", "images/icon/queue_register_32.png" )
-                    .attr( "title", "대기열에 영상 추가" );
-                controls.chatContainerQueueRegisterButtonDelayRemain.hide( );
-
-                clearInterval( reguStreaming.queueRegisterDelayIntervalObj );
-                reguStreaming.queueRegisterDelayIntervalObj = null;
-                reguStreaming.queueRegisterDelay = null;
-            }
-        }, 500 );
+        reguStreaming.registerQueueDelay( );
     }
     else
     {
@@ -849,6 +1333,9 @@ socket.on( "regu.queueRegisterReceive", function( data )
             case 11:
                 reason = "영상 추가를 할 수 없습니다, 알 수 없는 오류가 발생했습니다.";
                 break;
+            case 12:
+                reason = "해당 영상을 대기열에서 지울 수 없습니다, 현재 재생 중인 영상이 끝나기 10초전에 제거할 수 있습니다.";
+                break;
             case 50:
                 reason = "현재 영상 추가 서비스가 불가능합니다, 공지사항을 확인하세요.";
                 break;
@@ -862,302 +1349,463 @@ socket.on( "regu.queueRegisterReceive", function( data )
     }
 } );
 
+reguStreaming.registerQueueDelay = function( overrideDelay )
+{
+    this.queueRegisterDelay = overrideDelay ? overrideDelay : Date.now( ) + ( 1000 * 0 ); // 60
+
+    controls.chatContainerQueueRegisterButton.attr( "src", "images/icon/circle_32.png" )
+        .attr( "title", "대기열에 영상을 추가하시려면 잠시 기다리세요." );
+
+    controls.chatContainerQueueRegisterButtonDelayRemain.stop( )
+        .css( "opacity", 0 )
+        .show( )
+        .opacityTo( "1", 1000 )
+        .text( Math.floor( ( this.queueRegisterDelay - Date.now( ) ) / 1000 ) );
+
+    if ( this.queueRegisterDelayIntervalObj )
+        clearInterval( this.queueRegisterDelayIntervalObj );
+
+    this.queueRegisterDelayIntervalObj = setInterval( function( )
+    {
+        if ( Date.now( ) < reguStreaming.queueRegisterDelay )
+        {
+            controls.chatContainerQueueRegisterButtonDelayRemain.text( Math.floor( ( reguStreaming.queueRegisterDelay - Date.now( ) ) / 1000 ) );
+        }
+        else
+        {
+            controls.chatContainerQueueRegisterButtonDelayRemain.stop( )
+                .css( "opacity", 1 )
+                .opacityTo( "0", 1000, function( )
+                {
+                    controls.chatContainerQueueRegisterButton.attr( "src", controls.chatContainerQueueRegisterButton.attr( "data-original" ) )
+                        .attr( "title", "대기열에 영상 추가" );
+                } );
+
+            clearInterval( reguStreaming.queueRegisterDelayIntervalObj );
+            reguStreaming.queueRegisterDelayIntervalObj = null;
+            reguStreaming.queueRegisterDelay = null;
+        }
+    }, 500 );
+}
+
+reguStreaming.registerVoteDelay = function( ) {
+
+}
+
+reguStreaming.queueElementList = [ ];
+reguStreaming.queueCount = 0;
+
+reguStreaming.findQueueDataByID = function( id )
+{
+    var length = this.queueElementList.length;
+
+    for ( var i = 0; i < length; i++ )
+    {
+        var element = this.queueElementList[ i ];
+
+        if ( !!element && typeof element !== "undefined" && element.data( "queueID" ) === id ) // *NOTE: undefined 체크 필요 없음.
+        {
+            return {
+                success: true,
+                index: i,
+                element: element,
+                queueData: element.data( "queueData" )
+            }
+        }
+    }
+
+    return {
+        success: false
+    };
+}
+
+// 수정바람
+const queueRegisterFormatBase = '<div class="queueItem" id="queueItem_{0}"> \
+                <img class="queueItemThumbnail" src="{1}" /> \
+                <div class="queueItemByMe"></div> \
+			</div>'
+reguStreaming.onRegisterQueue = function( data )
+{
+    var newQueueElement;
+
+    if ( typeof data.forceIndex === "undefined" )
+    {
+        newQueueElement = $( String.format(
+                queueRegisterFormatBase,
+                this.queueCount,
+                data.mediaThumbnail
+            ) )
+            .appendTo( controls.queueVideoListContainer );
+    }
+    else
+    {
+        newQueueElement = $( String.format(
+                queueRegisterFormatBase,
+                this.queueCount,
+                data.mediaThumbnail
+            ) )
+            .insertBefore( this.queueElementList[ data.forceIndex ] );
+    }
+
+    newQueueElement.startAnimation( "flipInX 1s" )
+
+    newQueueElement.data( "queueData", data );
+    newQueueElement.data( "queueID", data.id );
+
+    if ( !data.user || reguStreaming.getConfig( "localUserID", "NULL" ) !== data.user.userID )
+    {
+        newQueueElement.find( ".queueItemByMe" )
+            .remove( );
+    }
+
+    newQueueElement.on( "mouseenter", data, function( e )
+    {
+        if ( reguStreaming.queueInformationUITimeout )
+        {
+            clearTimeout( reguStreaming.queueInformationUITimeout );
+            reguStreaming.queueInformationUITimeout = null;
+        }
+
+        // event handler data 지정 방식으로 수정 가능함
+        var localData = e.data;
+
+        controls.queueVideoInformation.stopAnimation( );
+
+        if ( !controls.queueVideoInformation.is( ":visible" ) )
+        {
+            controls.queueVideoInformation.show( )
+                .startAnimation( "fadeInUp 0.1s" );
+        }
+
+        if ( !localData.user || reguStreaming.getConfig( "localUserID", "NULL" ) !== localData.user.userID )
+            controls.queueVideoInformationRemoveHint.hide( );
+        else
+            controls.queueVideoInformationRemoveHint.show( );
+
+        controls.queueVideoInformationDuration.text( Math.floor( localData.mediaDuration )
+            .toSimpleSexyMMSS( ) );
+
+        controls.queueVideoInformationName.text( localData.mediaName )
+            .closest( "a" )
+            .attr( "href", localData.mediaProviderURL );
+        controls.queueVideoInformationBG.css( "background-image", "url( '" + localData.mediaThumbnail + "' )" );
+        controls.queueVideoInformationThumbnail.css( "background-image", "url( '" + localData.mediaThumbnail + "' )" );
+
+        controls.queueVideoInformationProfileImage.attr( "src", localData.user ? localData.user.avatar : "/images/icon/user_64.png" )
+            .off( "click" )
+            .on( "click", function( )
+            {
+                if ( localData.user )
+                    reguStreaming.userInfoContainerStatus( true, localData.user.userID );
+                else
+                    util.notification( util.notificationType.warning, "사용자 정보 없음", "이 사용자 정보는 불러올 수 없습니다." );
+            } );
+
+        controls.queueVideoInformationProfileName.text( localData.user ? localData.user.name : "서버" )
+            .off( "click" )
+            .on( "click", function( )
+            {
+                if ( localData.user )
+                    reguStreaming.userInfoContainerStatus( true, localData.user.userID );
+                else
+                    util.notification( util.notificationType.warning, "사용자 정보 없음", "이 사용자 정보는 불러올 수 없습니다." );
+            } );
+    } );
+
+    newQueueElement.on( "mouseleave", function( )
+    {
+        if ( reguStreaming.queueInformationUITimeout )
+            clearTimeout( reguStreaming.queueInformationUITimeout );
+
+        reguStreaming.queueInformationUITimeout = setTimeout( function( )
+        {
+            if ( controls.queueVideoInformation.is( ":visible" ) )
+            {
+                controls.queueVideoInformation.stopAnimation( );
+
+                controls.queueVideoInformation.startAnimation( "fadeOutDown 0.1s", function( self )
+                {
+                    self.hide( );
+                } );
+            }
+
+            reguStreaming.queueInformationUITimeout = null;
+        }, 1000 );
+    } );
+
+    if ( typeof data.forceIndex === "undefined" && Number.isInteger( data.forceIndex ) )
+        this.queueElementList.push( newQueueElement );
+    else
+        this.queueElementList.insert( data.forceIndex, newQueueElement );
+
+
+    // *TODO: queueCount 관리 필요함
+    this.queueCount = Math.clamp( this.queueCount + 1, 0, 9000 );
+}
+
+reguStreaming.onRemoveQueue = function( data )
+{
+    var
+    {
+        success,
+        index,
+        element,
+        queueData
+    } = this.findQueueDataByID( data.id );
+
+    if ( success )
+    {
+
+        var length = this.queueElementList.length;
+
+        for ( var i = index + 1; i < length; i++ )
+        {
+            this.queueElementList[ i ].startAnimation( "flipOutX 1s", function( self )
+            {
+                self.startAnimation( "zoomInRight 1s" );
+            } );
+        }
+
+        this.queueElementList.splice( index, 1 );
+
+        element.startAnimation( data.isRemoveRecent ? "zoomOutUp 1s" : "zoomOut 1s", function( self )
+        {
+            self.remove( );
+        } );
+    }
+    else
+    {
+        if ( this.debugMode )
+            console.log( "%c[ReguStreaming] Failed to process onRemoveQueue function, data is not valid! -> " + data, "color: red;" );
+    }
+
+    /*
+    if ( data.isRemoveRecent )
+    {
+
+        util.startCSSAnimation( "flipOutX 1s", e );
+        e.css( "opacity", "1" )
+            .animate(
+            {
+                opacity: "0"
+            }, 1000, function( )
+            {
+                util.startCSSAnimation( "zoomInRight 1s", $( this ) );
+                $( this )
+                    .css( "opacity", "0" );
+                $( this )
+                    .animate(
+                    {
+                        opacity: "1"
+                    }, 1000 );
+            } );
+    }
+    else
+    {
+        var
+        {
+            index,
+            element,
+            queueData
+        } = reguStreaming.findQueueDataByID( data.id );
+
+        var length = this.queueElementList.length;
+
+        for ( var i = index + 1; i < length; i++ )
+        {
+            this.queueElementList[ i ].startAnimation( "flipOutX 1s", function( self )
+            {
+                self.startAnimation( "zoomInRight 1s" );
+            } );
+        }
+
+        this.queueElementList.splice( index, 1 );
+
+        element.startAnimation( "zoomOut 1s", function( self )
+        {
+            self.remove( );
+        } );
+    }*/
+}
+
+reguStreaming.onClearQueue = function( data )
+{
+    this.queueElementList.forEach( function( v, index )
+    {
+        v.startAnimation( "flipOutX 1s", function( self )
+        {
+            self.remove( );
+        } );
+    } );
+
+    this.queueElementList = [ ];
+    this.queueCount = 0;
+}
+
+reguStreaming.onDataInitializeQueue = function( data )
+{
+    this.queueElementList = [ ];
+    this.queueCount = 0;
+    controls.queueVideoListContainer.empty( );
+
+    var queueList = data.queueList;
+    var length = queueList.length;
+
+    if ( length > 0 )
+    {
+        var fragment = $( document.createDocumentFragment( ) );
+
+        for ( var i = 0; i < length; i++ )
+        {
+            // *NOTE: 변수 선언 말고 기존 data 변수 재정의 할 시 문제가 발생하는가? (data = queueList[i] 시 queueList 변수가 이상하게 정의될 수 있음?)
+            var thisLoopData = queueList[ i ];
+
+            var newQueueElement = $( String.format(
+                    queueRegisterFormatBase,
+                    this.queueCount,
+                    thisLoopData.mediaThumbnail
+                ) )
+                .appendTo( controls.queueVideoListContainer );
+
+            newQueueElement.startAnimation( "flipInX 1s" )
+
+            newQueueElement.data( "queueData", thisLoopData );
+            newQueueElement.data( "queueID", thisLoopData.id );
+
+            if ( !thisLoopData.user || reguStreaming.getConfig( "localUserID", "NULL" ) !== thisLoopData.user.userID )
+            {
+                newQueueElement.find( ".queueItemByMe" )
+                    .remove( );
+            }
+
+            newQueueElement.on( "mouseenter", thisLoopData, function( e )
+            {
+                if ( reguStreaming.queueInformationUITimeout )
+                {
+                    clearTimeout( reguStreaming.queueInformationUITimeout );
+                    reguStreaming.queueInformationUITimeout = null;
+                }
+
+                // event handler data 지정 방식으로 수정 가능함
+                var localData = e.data;
+
+                controls.queueVideoInformation.stopAnimation( );
+
+                if ( !controls.queueVideoInformation.is( ":visible" ) )
+                {
+                    controls.queueVideoInformation.show( )
+                        .startAnimation( "fadeInUp 0.1s" );
+                }
+
+                if ( !localData.user || reguStreaming.getConfig( "localUserID", "NULL" ) !== localData.user.userID )
+                    controls.queueVideoInformationRemoveHint.hide( );
+                else
+                    controls.queueVideoInformationRemoveHint.show( );
+
+                controls.queueVideoInformationDuration.text( Math.floor( localData.mediaDuration )
+                    .toSimpleSexyMMSS( ) );
+
+                controls.queueVideoInformationName.text( localData.mediaName )
+                    .closest( "a" )
+                    .attr( "href", localData.mediaProviderURL );
+                controls.queueVideoInformationBG.css( "background-image", "url( '" + localData.mediaThumbnail + "' )" );
+                controls.queueVideoInformationThumbnail.css( "background-image", "url( '" + localData.mediaThumbnail + "' )" );
+
+                controls.queueVideoInformationProfileImage.attr( "src", localData.user ? localData.user.avatar : "/images/icon/user_64.png" )
+                    .off( "click" )
+                    .on( "click", function( )
+                    {
+                        if ( localData.user )
+                            reguStreaming.userInfoContainerStatus( true, localData.user.userID );
+                        else
+                            util.notification( util.notificationType.warning, "사용자 정보 없음", "이 사용자 정보는 불러올 수 없습니다." );
+                    } );
+
+                controls.queueVideoInformationProfileName.text( localData.user ? localData.user.name : "서버" )
+                    .off( "click" )
+                    .on( "click", function( )
+                    {
+                        if ( localData.user )
+                            reguStreaming.userInfoContainerStatus( true, localData.user.userID );
+                        else
+                            util.notification( util.notificationType.warning, "사용자 정보 없음", "이 사용자 정보는 불러올 수 없습니다." );
+                    } );
+            } );
+
+            newQueueElement.on( "mouseleave", function( )
+            {
+                if ( reguStreaming.queueInformationUITimeout )
+                    clearTimeout( reguStreaming.queueInformationUITimeout );
+
+                reguStreaming.queueInformationUITimeout = setTimeout( function( )
+                {
+                    if ( controls.queueVideoInformation.is( ":visible" ) )
+                    {
+                        controls.queueVideoInformation.stopAnimation( );
+
+                        controls.queueVideoInformation.startAnimation( "fadeOutDown 0.1s", function( self )
+                        {
+                            self.hide( );
+                        } );
+                    }
+
+                    reguStreaming.queueInformationUITimeout = null;
+                }, 1000 );
+            } );
+
+            this.queueElementList.push( newQueueElement );
+
+            // *TODO: queueCount 관리 필요함
+            this.queueCount = Math.clamp( this.queueCount + 1, 0, 9000 );
+        }
+
+        fragment.appendTo( controls.queueVideoListContainer );
+    }
+}
 
 // 여기 최적화 필요함.,.
 // id 시스템 관리 넣기
 //https://www.zerocho.com/category/jQuery/post/57c3a8821efc521700a70918
 socket.on( "RS.queueEvent", function( data )
 {
+    console.log( "[ReguStreaming] Queue event [" + data.type + "] received." );
+
     if ( data.type == "register" )
     {
-        var newObj = $( String.format(
-                queueEventString,
-                queueCount,
-                data.mediaThumbnail
-            ) )
-            .appendTo( controls.queueVideoListContainer );
-
-        util.startCSSAnimation( "flipInX 1s", newObj );
-
-        // var authorElement = newObj.find( ".queueItemAuthor" );
-
-        // if ( data.user )
-        // {
-        //     newObj.data( "userID", data.user.userID );
-
-        //     authorElement.on( "click", function( )
-        //     {
-        //         reguStreaming.userInfoContainerStatus( true, newObj );
-        //     } );
-        // }
-        // else
-        // authorElement.remove( );
-
-        // var titleElement = newElement.find( ".queueItemTitle" );
-
-        // if ( titleElement )
-        // textFit( titleElement );
-
-        newObj.on( "mouseenter", function( )
-        {
-            if ( !controls.queueVideoInformation.is( ":visible" ) )
-                controls.queueVideoInformation.show( );
-
-            controls.queueVideoInformationName.text( data.mediaName )
-                .closest( "a" )
-                .attr( "href", data.mediaProviderURL );
-            controls.queueVideoInformationBG.css( "background-image", "url( '" + data.mediaThumbnail + "' )" );
-            controls.queueVideoInformationThumbnail.css( "background-image", "url( '" + data.mediaThumbnail + "' )" );
-
-            var thisIndex = queueListClient.indexOf( newObj );
-            var timeleft = 0;
-
-            queueListClient.forEach( function( value, index )
-            {
-                if ( thisIndex > index ) return;
-
-                timeleft += value.mediaDuration;
-            } );
-
-            controls.queueVideoInformationTimeleft.text( "이 영상 재생까지 " + timeleft + "초 남았습니다." );
-        } );
-
-        newObj.on( "mouseleave", function( )
-        {
-            if ( controls.queueVideoInformation.is( ":visible" ) )
-                controls.queueVideoInformation.hide( );
-        } );
-
-        queueListClient.push( newObj );
-
-        newObj.data( "queueData", data );
-        newObj.data( "index", queueListClient.length - 1 );
-
-        queueCount = Math.clamp( queueCount + 1, 0, 1000 ); // 숫자 수정바람
+        reguStreaming.onRegisterQueue( data );
     }
-    // else if ( data.type == "converted" )
+    else if ( data.type == "remove" )
+    {
+        reguStreaming.onRemoveQueue( data );
+    }
+    else if ( data.type == "clear" )
+    {
+        reguStreaming.onClearQueue( data );
+    }
+    // else if ( data.type == "userVoteRefresh" )
     // {
-    //     var e = queueListClient[ data.index ];
+    //     var voteList = data.voteList;
 
-    //     if ( !e ) return;
-
-    //     var convertingElement = e.find( ".queueContainerVideoChildConverting" );
-
-    //     if ( convertingElement )
-    //     {
-    //         convertingElement.css( "opacity", "1" );
-    //         convertingElement.animate(
-    //         {
-    //             opacity: "0"
-    //         }, 500, function( )
-    //         {
-    //             $( this )
-    //                 .remove( );
-    //         } );
-    //     }
+    //     console.log( voteList );
     // }
-    else if ( data.type == "removeRecent" )
+    else if ( data.type == "dataInitialize" )
     {
-        var element = queueListClient[ 0 ];
-
-        if ( element )
-        {
-            for ( var i = 1; i < queueListClient.length; i++ )
-            {
-                var e = queueListClient[ i ];
-
-                if ( !e ) continue;
-
-                util.startCSSAnimation( "flipOutX 1s", e );
-                e.css( "opacity", "1" );
-                e.animate(
-                {
-                    opacity: "0"
-                }, 1000, function( )
-                {
-                    util.startCSSAnimation( "zoomInUp 1s", $( this ) );
-                    $( this )
-                        .css( "opacity", "0" );
-                    $( this )
-                        .animate(
-                        {
-                            opacity: "1"
-                        }, 1000 );
-                } );
-            }
-
-            util.startCSSAnimation( "zoomOutUp 1s", element );
-
-            element.css( "opacity", "1" );
-            element.animate(
-            {
-                opacity: "0"
-            }, 1000, function( )
-            {
-                element.remove( );
-                queueListClient.splice( 0, 1 );
-            } );
-        }
-    }
-    else if ( data.type == "removeAt" )
-    {
-        var element = queueListClient[ data.index ];
-
-        if ( typeof element != "undefined" )
-        {
-            element.css( "opacity", "1" );
-            element.animate(
-            {
-                opacity: "0"
-            }, 500, function( )
-            {
-                $( this )
-                    .remove( );
-                queueListClient.splice( data.index, 1 );
-            } );
-        }
-    }
-    else if ( data.type == "userVoteRefresh" )
-    {
-        var voteList = data.voteList;
-
-        console.log( voteList );
-    }
-    else if ( data.type == "dataReq" )
-    {
-        queueCount = 0;
-        queueListClient = [ ];
-        controls.queueVideoListContainer.empty( );
-
-        var queueList = data.queueList;
-        var queueListLength = queueList.length;
-
-        if ( queueListLength > 0 )
-        {
-            var fragment = $( document.createDocumentFragment( ) );
-
-            for ( var i = 0; i < queueListLength; i++ )
-            {
-                var thisData = queueList[ i ];
-
-                var newObj = $( String.format(
-                        queueEventString,
-                        queueCount,
-                        thisData.mediaThumbnail
-                    ) )
-                    .appendTo( fragment );
-
-
-                // var authorElement = newObj.find( ".queueItemAuthor" );
-
-                // if ( thisData.user )
-                // {
-                //     newObj.data( "userID", thisData.user.userID );
-
-                //     authorElement.on( "click", function( )
-                //     {
-                //         reguStreaming.userInfoContainerStatus( true, newObj );
-                //     } );
-                // }
-                // else
-                //     authorElement.text( "test님이 추가함" );
-                // else
-                //     authorElement.remove( );
-
-                // var titleElement = newElement.find( ".queueItemTitle" );
-
-                // if ( titleElement )
-                // textFit( titleElement );
-
-                util.startCSSAnimation( "zoomInUp 1s", newObj );
-
-                newObj.data( "queueData", thisData );
-                newObj.data( "index", i );
-
-                newObj.on( "mouseenter", function( )
-                {
-                    if ( reguStreaming.queueInformationUITimeout )
-                    {
-                        clearTimeout( reguStreaming.queueInformationUITimeout );
-                        reguStreaming.queueInformationUITimeout = null;
-                    }
-
-                    var localData = $( this )
-                        .data( "queueData" );
-
-                    util.stopCSSAnimation( controls.queueVideoInformation );
-
-                    if ( !controls.queueVideoInformation.is( ":visible" ) )
-                    {
-                        controls.queueVideoInformation.show( );
-                        util.startCSSAnimation( "fadeInUp 0.1s", controls.queueVideoInformation );
-                    }
-
-                    controls.queueVideoInformationName.text( localData.mediaName )
-                        .closest( "a" )
-                        .attr( "href", localData.mediaProviderURL );
-                    controls.queueVideoInformationBG.css( "background-image", "url( '" + localData.mediaThumbnail + "' )" );
-                    controls.queueVideoInformationThumbnail.css( "background-image", "url( '" + localData.mediaThumbnail + "' )" );
-
-                    var thisIndex = $( this )
-                        .data( "index" );
-                    var timeleft = 0;
-                    var video = controls.videoContainer.get( 0 );
-
-                    reguStreaming.queueInformationCurrentShowingIndex = thisIndex;
-
-                    if ( thisIndex === 0 )
-                        timeleft = video.duration - video.currentTime;
-                    else
-                    {
-                        for ( var i = 0; i <= thisIndex; i++ )
-                        {
-                            var self = queueListClient[ i ];
-
-                            timeleft += self.data( "queueData" )
-                                .mediaDuration;
-                        }
-
-                        timeleft -= video.currentTime;
-                    }
-
-                    controls.queueVideoInformationTimeleft.text( "이 영상 재생까지 " + Math.floor( timeleft )
-                        .toSexyMMSS( ) + " 남았습니다." );
-                } );
-
-                newObj.on( "mouseleave", function( )
-                {
-                    if ( reguStreaming.queueInformationUITimeout )
-                        clearTimeout( reguStreaming.queueInformationUITimeout );
-
-                    reguStreaming.queueInformationUITimeout = setTimeout( function( )
-                    {
-                        if ( controls.queueVideoInformation.is( ":visible" ) )
-                        {
-                            util.stopCSSAnimation( controls.queueVideoInformation );
-
-                            util.startCSSAnimation( "fadeOutDown 0.1s", controls.queueVideoInformation, function( )
-                            {
-                                controls.queueVideoInformation.hide( );
-                            } );
-                        }
-
-                        reguStreaming.queueInformationUITimeout = null;
-                    }, 1000 );
-                } );
-
-                queueListClient.push( newObj );
-                queueCount = Math.clamp( queueCount + 1, 0, 1000 ); // 숫자 수정바람
-            }
-
-            fragment.appendTo( controls.queueVideoListContainer );
-        }
+        reguStreaming.onDataInitializeQueue( data );
     }
 } );
 
 let chatMessageCount = 0;
 
-function imageOnLoaded( )
+reguStreaming.onLoadedVideoChat = function( )
+{
+    controls.chatBoxInner
+        .animate(
+        {
+            scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+        }, 300, "swing" );
+}
+
+reguStreaming.onLoadedImageChat = function( )
 {
     controls.chatBoxInner
         .animate(
@@ -1168,77 +1816,184 @@ function imageOnLoaded( )
 
 reguStreaming.chatFormatBase = {
     def: '<div class="chatMessageContainer" id="chatMessageContainer_{0}"> \
-        <img src="{1}" alt="Profile Image" class="chatProfileAvatar" /> \
-            <p class="chatProfileName"></p> \
-            <p class="chatReceivedTime">{2}</p> \
-            <p class="chatMessage"></p> \
+            <div class="chatMessageContainer-profile nodraggable selectable"> \
+                <img src="{1}" alt="Profile Image" class="chatMessageContainer-profile-avatar" /> \
+                <div class="chatMessageContainer-profile-name">{2}</div> \
+            </div> \
+            <div class="chatMessageContainer-time nodraggable">{3}</div> \
+            <div class="chatMessageContainer-message"></div> \
         </div>',
     sys: '<div class="chatMessageContainer" id="chatMessageContainer_{0}"> \
-            <span class="glyphicon glyphicon-warning-sign" id="sysMessageTypeIcon"></span> \
-            <p class="chatMessage" style="margin: 12px;">{1}</p> \
+            <span class="chatMessageContainer-systemIcon"></span> \
+            <div class="chatMessageContainer-time nodraggable">{1}</div> \
+            <div class="chatMessageContainer-message" style="font-size: 12px;">{2}</div> \
         </div>',
-    img: '<div class="chatMessageContainer" id="chatMessageContainer_{0}"> \
-        <img src="{1}" alt="Profile Image" class="chatProfileAvatar" /> \
-            <p class="chatProfileName"></p> \
-            <p class="chatReceivedTime">{2}</p> \
-            <div class="chatImageAdult"><img class="chatImage" style="object-fit: fit; width: 100%; padding: 8px; padding-top: 0; cursor: pointer;" onclick="reguStreaming.onClickChatImage( this );" onload="imageOnLoaded( );" src="{3}" /></div>\
+    video: '<div class="chatMessageContainer" id="chatMessageContainer_{0}"> \
+        <div class="chatMessageContainer-profile nodraggable selectable"> \
+            <img src="{1}" alt="Profile Image" class="chatMessageContainer-profile-avatar" /> \
+            <div class="chatMessageContainer-profile-name">{2}</div> \
+        </div> \
+        <div class="chatMessageContainer-time nodraggable">{3}</div> \
+        <video class="chatMessageContainer-video selectable" controls style="" onclick="" onload="reguStreaming.onLoadedVideoChat( );"> \
+            <source src="{4}" type="{5}" /> \
+        </video> \
+    </div>',
+    image: '<div class="chatMessageContainer" id="chatMessageContainer_{0}"> \
+            <div class="chatMessageContainer-profile nodraggable selectable"> \
+                <img src="{1}" alt="Profile Image" class="chatMessageContainer-profile-avatar" /> \
+                <div class="chatMessageContainer-profile-name">{2}</div> \
+            </div> \
+            <div class="chatMessageContainer-time nodraggable">{3}</div> \
+            <div class="chatMessageContainer-adultOverlay"> \
+                <img class="chatMessageContainer-image selectable" style="" onclick="reguStreaming.onClickChatImage( this );" onload="reguStreaming.onLoadedImageChat( );" src="{4}" /> \
+            </div> \
+            <div class="chatMessageContainer-adultText">수위 이미지로 감지되었습니다<br />클릭하면 열람합니다.</div> \
+        </div>',
+    raw: '<div class="chatMessageContainer" id="chatMessageContainer_{0}"> \
+        <div class="chatMessageContainer-profile nodraggable selectable"> \
+            <img src="{1}" alt="Profile Image" class="chatMessageContainer-profile-avatar" /> \
+            <div class="chatMessageContainer-profile-name">{2}</div> \
+        </div> \
+        <div class="chatMessageContainer-time nodraggable">{3}</div> \
+        <div class="chatMessageContainer-raw"> \
+             <div class="chatMessageContainer-raw-fileInformation"> \
+                <span class="glyphicon glyphicon-file chatMessageContainer-raw-fileInformation-icon"></span> \
+                {4} \
+                <div class="chatMessageContainer-raw-download"> \
+                    <span class="glyphicon glyphicon-download-alt chatMessageContainer-raw-download-icon"></span> \
+                    <a class="chatMessageContainer-raw-download-link" href="{5}" target="_blank">다운로드</a> \
+                </div> \
+             </div> \
+        </div> \
         </div>'
 }
 reguStreaming.currentChatMessageCount = 0;
 reguStreaming.linkRegex = /(\b(https?|ftp|file):\/\/[-A-Z0-9+&@#\/%?=~_|!:,.;]*[-A-Z0-9+&@#\/%=~_|])/ig; // http://talkerscode.com/webtricks/convert-url-text-into-clickable-html-links-using-javascript.php
 
-socket.on( "RS.chat", function( data )
+reguStreaming.registerSpinnerImageUpload = function( fileData ) {
+
+}
+
+reguStreaming.onPostChatHandler = function( data )
 {
-    // var currentChatCount = reguStreaming.currentChatMessageCount;
+    if ( data.code !== 0 && typeof data.code !== "undefined" )
+    {
+        let reason;
+        switch ( data.code )
+        {
+            case 1:
+                reason = "채팅 메세지는 1자 이상 200자 이하 되어야 합니다.";
+                break;
+            case 2:
+                reason = "채팅 메세지에 입력할 수 없는 문장이 있습니다.";
+                break;
+            case 3:
+                reason = "손님 계정으로는 채팅을 입력하실 수 없습니다.";
+                break;
+            case 4:
+                reason = "현재 서버 설정으로 인해 채팅을 하실 수 없습니다.";
+                break;
+            case 5:
+                reason = "현재 채널 설정으로 인해 채팅을 하실 수 없습니다.";
+                break;
+            default:
+                reason = "정의되지 않은 오류가 발생했습니다.";
+        }
+
+        util.notification( util.notificationType.warning, "채팅 불가", reason, 2500 );
+
+        return;
+    }
+
     var currentTime = new Date( );
     var currentTimeString = ( currentTime.getHours( ) < 12 ? "AM " : "PM " ) + ( currentTime.getHours( ) % 12 || 12 ) + ":" + ( currentTime.getMinutes( ) < 10 ? ( "0" + currentTime.getMinutes( ) ) : currentTime.getMinutes( ) );
 
-    if ( data.type == "img" )
+    if ( data.type == "file" )
     {
-        var newObj = $( String.format(
-                reguStreaming.chatFormatBase.img,
-                reguStreaming.currentChatMessageCount,
-                data.profileImage,
-                currentTimeString,
-                "/files/" + data.fileID
-            ) )
-            .appendTo( controls.chatBoxInner );
+        var localClientData = reguStreaming.getLocalClientDataByID( data.userID );
 
-        newObj.data( "userID", data.userID );
-        util.startCSSAnimation( "zoomInRight 0.3s", newObj );
-
-        var childAvatar = newObj.children( )
-            .eq( 0 );
-        var childName = newObj.children( )
-            .eq( 1 );
-
-        childAvatar.on( "click", function( )
+        if ( !localClientData )
         {
-            reguStreaming.userInfoContainerStatus( true, newObj );
-        } );
-        childName.on( "click", function( )
-        {
-            reguStreaming.userInfoContainerStatus( true, newObj );
-        } );
-
-        childName.text( data.name );
-
-        if ( data.isAdult )
-        {
-            newObj.children( )
-                .eq( 3 )
-                .css(
-                {
-                    "filter": "blur( 5px )",
-                    "-webkit-filter": "blur( 5px )"
-                } )
-                .attr( "title", "성인 이미지로 판정되었습니다, 보시려면 클릭하세요." );
+            console.log( "%c[ReguStreaming] Failed to parse Chat Image! Local client data is not valid! -> " + data.userID, "color: red;" );
+            return;
         }
 
-        if ( data.isAdmin )
+        var newObj;
+
+        if ( data.fileType === 0 )
         {
-            newObj.css( "background-image", "linear-gradient(to right, rgba(65, 124, 127, 0.5), rgba(70, 70, 70, 0.5))" );
-            childName.css( "text-shadow", "0px 0px 12px rgba( 91, 216, 222, 1 )" );
+            newObj = $( String.format(
+                    reguStreaming.chatFormatBase.raw,
+                    reguStreaming.currentChatMessageCount,
+                    localClientData.avatar,
+                    localClientData.name,
+                    currentTimeString,
+                    data.fileName,
+                    "/files/" + data.fileID
+                ) )
+                .appendTo( controls.chatBoxInner );
+
+            controls.chatBoxInner.stop( )
+                .animate(
+                {
+                    scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+                }, 300, "swing" );
+        }
+        else if ( data.fileType === 1 )
+        {
+            newObj = $( String.format(
+                    reguStreaming.chatFormatBase.image,
+                    reguStreaming.currentChatMessageCount,
+                    localClientData.avatar,
+                    localClientData.name,
+                    currentTimeString,
+                    "/files/" + data.fileID
+                ) )
+                .appendTo( controls.chatBoxInner );
+        }
+        else if ( data.fileType === 2 )
+        {
+            newObj = $( String.format(
+                    reguStreaming.chatFormatBase.video,
+                    reguStreaming.currentChatMessageCount,
+                    localClientData.avatar,
+                    localClientData.name,
+                    currentTimeString,
+                    "/files/" + data.fileID,
+                    data.mimeType
+                ) )
+                .appendTo( controls.chatBoxInner );
+
+            controls.chatBoxInner
+                .animate(
+                {
+                    scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+                }, 300, "swing" );
+        }
+
+        newObj.data( "userID", data.userID )
+            .startAnimation( "slideInRight 0.3s" );
+
+        newObj.find( ".chatMessageContainer-profile" )
+            .on( "click", function( )
+            {
+                reguStreaming.userInfoContainerStatus( true, newObj.data( "userID" ) );
+            } );
+
+        if ( data.fileType === 1 )
+        {
+            if ( data.isAdult )
+            {
+                newObj.find( ".chatMessageContainer-adultOverlay" )
+                    .css(
+                    {
+                        "filter": "blur( 5px )",
+                        "-webkit-filter": "blur( 5px )"
+                    } );
+            }
+            else
+                newObj.find( ".chatMessageContainer-adultText" )
+                .remove( );
         }
 
         setTimeout( function( obj )
@@ -1259,49 +2014,19 @@ socket.on( "RS.chat", function( data )
         var newObj = $( String.format(
                 reguStreaming.chatFormatBase.sys,
                 reguStreaming.currentChatMessageCount,
-                data.message.replace( reguStreaming.linkRegex, "<a class='aRegu' onclick='return reguStreaming.confirmChatLink( this );' target='_blank' href='$1'>$1</a>" )
+                currentTimeString,
+                data.message.replace( reguStreaming.linkRegex, "<a onclick='return reguStreaming.confirmChatLink( this );' target='_blank' href='$1'>$1</a>" )
             ) )
             .appendTo( controls.chatBoxInner );
 
-        util.startCSSAnimation( "zoomInRight 0.3s", newObj );
-
-        newObj.find( ".chatMessage" )
-            .css( "font-size", "12px" );
-        newObj.css( "background-color", "rgba( 255, 255, 255, 0.9 )" );
+        newObj.startAnimation( "slideInRight 0.3s" );
 
         if ( data.icon )
-            newObj.find( "#sysMessageTypeIcon" )
-            .attr( "class", data.icon );
+            newObj.find( ".chatMessageContainer-systemIcon" )
+            .addClass( data.icon );
         else
-            newObj.find( "#sysMessageTypeIcon" )
+            newObj.find( ".chatMessageContainer-systemIcon" )
             .remove( );
-
-        /*
-        // normal, red, green, blue
-        if ( data.color === 0 )
-        {
-            newObj.find( "#sysMessageTypeIcon" )
-                .remove( );
-        }
-        else if ( data.color === 1 )
-        {
-            // newObj.css( "background-image", "linear-gradient( to right, rgba(235, 177, 177, 0.3), rgba(70, 70, 70, 0.5))" );
-            newObj.find( "#sysMessageTypeIcon" )
-                .attr( "class", "glyphicon glyphicon-warning-sign" );
-        }
-        else if ( data.color === 2 )
-        {
-            newObj.find( "#sysMessageTypeIcon" )
-            .attr( "class", "glyphicon glyphicon-ok" );
-        }
-        // newObj.css( "background-image", "linear-gradient( to right, rgba(177, 235, 177, 0.3), rgba(70, 70, 70, 0.5))" );
-        else if ( data.color === 3 )
-        {
-            newObj.find( "#sysMessageTypeIcon" )
-            .attr( "class", "glyphicon glyphicon-warning-sign" );
-        }
-        // newObj.css( "background-image", "linear-gradient( to right, rgba(177, 177, 235, 0.3), rgba(70, 70, 70, 0.5))" );
-*/
 
         controls.chatBoxInner.stop( )
             .animate(
@@ -1322,44 +2047,31 @@ socket.on( "RS.chat", function( data )
                 } );
         }, 1000 * 25, newObj );
     }
-    else
+    else if ( data.type == "discord" )
     {
         var newObj = $( String.format(
                 reguStreaming.chatFormatBase.def,
                 reguStreaming.currentChatMessageCount,
-                data.profileImage,
+                data.avatar,
+                data.name,
                 currentTimeString
             ) )
             .appendTo( controls.chatBoxInner );
 
-        newObj.data( "userID", data.userID );
-        util.startCSSAnimation( "zoomInRight 0.3s", newObj );
+        newObj.data( "userID", "discord" )
+            .startAnimation( "slideInRight 0.3s" );
 
-        var childAvatar = newObj.children( )
-            .eq( 0 );
-        var childName = newObj.children( )
-            .eq( 1 );
+        newObj.find( ".chatMessageContainer-profile-name" )
+            .css( "color", "#4845ff" );
 
-        childAvatar.on( "click", function( )
-        {
-            reguStreaming.userInfoContainerStatus( true, newObj );
-        } );
-        childName.on( "click", function( )
-        {
-            reguStreaming.userInfoContainerStatus( true, newObj );
-        } );
+        newObj.find( ".chatMessageContainer-profile" )
+            .on( "click", function( )
+            {
+                reguStreaming.userInfoContainerStatus( true, "discord" );
+            } );
 
-        childName.text( data.name );
-
-        newObj.children( )
-            .eq( 3 )
-            .html( data.message.replace( reguStreaming.linkRegex, "<a class='aRegu' onclick='return reguStreaming.confirmChatLink( this );' target='_blank' href='$1'>$1</a>" ) );
-
-        if ( data.isAdmin )
-        {
-            newObj.css( "background-image", "linear-gradient(to right, rgba(65, 124, 127, 0.5), rgba(70, 70, 70, 0.5))" );
-            childName.css( "text-shadow", "0px 0px 12px rgba( 91, 216, 222, 1 )" );
-        }
+        newObj.find( ".chatMessageContainer-message" )
+            .html( data.message.replace( reguStreaming.linkRegex, "<a onclick='return reguStreaming.confirmChatLink( this );' target='_blank' href='$1'>$1</a>" ) );
 
         controls.chatBoxInner.stop( )
             .animate(
@@ -1380,36 +2092,60 @@ socket.on( "RS.chat", function( data )
                 } );
         }, 1000 * 20, newObj );
     }
-
-    reguStreaming.currentChatMessageCount++;
-} );
-
-// ChatManager.statusCode = {
-//     success: 0,
-//     lengthError: 1,
-//     xssError: 2,
-//     isGuestError: 3
-// }
-socket.on( "RS.chatResult", function( data )
-{
-    var reason;
-    switch ( data )
+    else if ( data.type == "text" )
     {
-        case 1:
-            reason = "채팅 메세지는 1자 이상 200자 이하 되어야 합니다.";
-            break;
-        case 2:
-            reason = "채팅 메세지에 입력할 수 없는 문장이 있습니다.";
-            break;
-        case 3:
-            reason = "손님 계정으로는 채팅을 입력하실 수 없습니다.";
-            break;
-        default:
-            reason = "정의되지 않은 오류가 발생했습니다.";
+        var localClientData = reguStreaming.getLocalClientDataByID( data.userID );
+
+        if ( !localClientData )
+        {
+            console.log( "%c[ReguStreaming] Failed to parse Chat message! Local client data is not valid! -> " + data.userID, "color: red;" );
+            return;
+        }
+
+        var newObj = $( String.format(
+                reguStreaming.chatFormatBase.def,
+                reguStreaming.currentChatMessageCount,
+                localClientData.avatar,
+                localClientData.name,
+                currentTimeString
+            ) )
+            .appendTo( controls.chatBoxInner );
+
+        newObj.data( "userID", data.userID )
+            .startAnimation( "slideInRight 0.3s" );
+
+        newObj.find( ".chatMessageContainer-profile" )
+            .on( "click", function( )
+            {
+                reguStreaming.userInfoContainerStatus( true, newObj.data( "userID" ) );
+            } );
+
+        newObj.find( ".chatMessageContainer-message" )
+            .html( data.message.replace( reguStreaming.linkRegex, "<a onclick='return reguStreaming.confirmChatLink( this );' target='_blank' href='$1'>$1</a>" ) );
+
+        controls.chatBoxInner.stop( )
+            .animate(
+            {
+                scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+            }, 300, "swing" );
+
+        setTimeout( function( obj )
+        {
+            if ( obj )
+                obj.animate(
+                {
+                    opacity: "0"
+                }, 5000, function( )
+                {
+                    $( this )
+                        .remove( );
+                } );
+        }, 1000 * 25, newObj );
     }
 
-    util.notification( util.notificationType.warning, "채팅 불가", reason, 2000 );
-} );
+    reguStreaming.currentChatMessageCount++;
+    reguStreaming.playChatSound( );
+}
 
 reguStreaming.confirmChatLink = function( self )
 {
@@ -1422,29 +2158,288 @@ reguStreaming.confirmChatLink = function( self )
 
     return false;
 }
-let anotherClientData = [ ];
-
-// *TODO;
-// under construction;
-socket.on( "clientDataRefresh", function( data )
-{
-    switch ( data.command )
-    {
-        case "register":
-            anotherClientData.push( data.data );
-            break;
-        case "update":
-            // not working;
-            anotherClientData[ data.index ] = data.newData;
-            break;
-    }
-} );
 
 socket.on( "RS.modal", function( data )
 {
-    util.showModal( data.title, data.message, data.cancelText || "닫기", null, null, null, true );
+    //title, body, closeText, confirmText, onClose, onConfirm, isSingleButton, bodyStyle
+    util.showModal( data.title, data.body, data.closeText || "닫기", null, null, null, true );
 } );
 
+socket.on( "RS.chat", function( data )
+{
+    if ( data.code !== 0 && typeof data.code !== "undefined" )
+    {
+        let reason;
+        switch ( data.code )
+        {
+            case 1:
+                reason = "채팅 메세지는 1자 이상 200자 이하 되어야 합니다.";
+                break;
+            case 2:
+                reason = "채팅 메세지에 입력할 수 없는 문장이 있습니다.";
+                break;
+            case 3:
+                reason = "손님 계정으로는 채팅을 입력하실 수 없습니다.";
+                break;
+            case 4:
+                reason = "현재 서버 설정으로 인해 채팅을 하실 수 없습니다.";
+                break;
+            case 5:
+                reason = "현재 채널 설정으로 인해 채팅을 하실 수 없습니다.";
+                break;
+            default:
+                reason = "정의되지 않은 오류가 발생했습니다.";
+        }
+
+        util.notification( util.notificationType.warning, "채팅 불가", reason, 2000 );
+
+        return;
+    }
+
+    var currentTime = new Date( );
+    var currentTimeString = ( currentTime.getHours( ) < 12 ? "AM " : "PM " ) + ( currentTime.getHours( ) % 12 || 12 ) + ":" + ( currentTime.getMinutes( ) < 10 ? ( "0" + currentTime.getMinutes( ) ) : currentTime.getMinutes( ) );
+
+    if ( data.type == "file" )
+    {
+        var localClientData = reguStreaming.getLocalClientDataByID( data.userID );
+
+        if ( !localClientData )
+        {
+            console.log( "%c[ReguStreaming] Failed to parse Chat Image! Local client data is not valid! -> " + data.userID, "color: red;" );
+            return;
+        }
+
+        var newObj;
+
+        if ( data.fileType === 0 )
+        {
+            newObj = $( String.format(
+                    reguStreaming.chatFormatBase.raw,
+                    reguStreaming.currentChatMessageCount,
+                    localClientData.avatar,
+                    localClientData.name,
+                    currentTimeString,
+                    data.fileName,
+                    "/files/" + data.fileID
+                ) )
+                .appendTo( controls.chatBoxInner );
+
+            controls.chatBoxInner.stop( )
+                .animate(
+                {
+                    scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+                }, 300, "swing" );
+        }
+        else if ( data.fileType === 1 )
+        {
+            newObj = $( String.format(
+                    reguStreaming.chatFormatBase.image,
+                    reguStreaming.currentChatMessageCount,
+                    localClientData.avatar,
+                    localClientData.name,
+                    currentTimeString,
+                    "/files/" + data.fileID
+                ) )
+                .appendTo( controls.chatBoxInner );
+        }
+        else if ( data.fileType === 2 )
+        {
+            newObj = $( String.format(
+                    reguStreaming.chatFormatBase.video,
+                    reguStreaming.currentChatMessageCount,
+                    localClientData.avatar,
+                    localClientData.name,
+                    currentTimeString,
+                    "/files/" + data.fileID,
+                    data.mimeType
+                ) )
+                .appendTo( controls.chatBoxInner );
+
+            controls.chatBoxInner
+                .animate(
+                {
+                    scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+                }, 300, "swing" );
+        }
+
+        newObj.data( "userID", data.userID )
+            .startAnimation( "slideInRight 0.3s" );
+
+        newObj.find( ".chatMessageContainer-profile" )
+            .on( "click", function( )
+            {
+                reguStreaming.userInfoContainerStatus( true, newObj.data( "userID" ) );
+            } );
+
+        if ( data.fileType === 1 )
+        {
+            if ( data.isAdult )
+            {
+                newObj.find( ".chatMessageContainer-adultOverlay" )
+                    .css(
+                    {
+                        "filter": "blur( 5px )",
+                        "-webkit-filter": "blur( 5px )"
+                    } );
+            }
+            else
+                newObj.find( ".chatMessageContainer-adultText" )
+                .remove( );
+        }
+
+        setTimeout( function( obj )
+        {
+            if ( obj )
+                obj.animate(
+                {
+                    opacity: "0"
+                }, 5000, function( )
+                {
+                    $( this )
+                        .remove( );
+                } );
+        }, 1000 * 25, newObj );
+    }
+    else if ( data.type == "system" )
+    {
+        var newObj = $( String.format(
+                reguStreaming.chatFormatBase.sys,
+                reguStreaming.currentChatMessageCount,
+                currentTimeString,
+                data.message.replace( reguStreaming.linkRegex, "<a onclick='return reguStreaming.confirmChatLink( this );' target='_blank' href='$1'>$1</a>" )
+            ) )
+            .appendTo( controls.chatBoxInner );
+
+        newObj.startAnimation( "slideInRight 0.3s" );
+
+        if ( data.icon )
+            newObj.find( ".chatMessageContainer-systemIcon" )
+            .addClass( data.icon );
+        else
+            newObj.find( ".chatMessageContainer-systemIcon" )
+            .remove( );
+
+        controls.chatBoxInner.stop( )
+            .animate(
+            {
+                scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+            }, 300, "swing" );
+
+        setTimeout( function( obj )
+        {
+            if ( obj )
+                obj.animate(
+                {
+                    opacity: "0"
+                }, 5000, function( )
+                {
+                    $( this )
+                        .remove( );
+                } );
+        }, 1000 * 25, newObj );
+    }
+    else if ( data.type == "discord" )
+    {
+        var newObj = $( String.format(
+                reguStreaming.chatFormatBase.def,
+                reguStreaming.currentChatMessageCount,
+                data.avatar,
+                data.name,
+                currentTimeString
+            ) )
+            .appendTo( controls.chatBoxInner );
+
+        newObj.data( "userID", "discord" )
+            .startAnimation( "slideInRight 0.3s" );
+
+        newObj.find( ".chatMessageContainer-profile-name" )
+            .css( "color", "#4845ff" );
+
+        newObj.find( ".chatMessageContainer-profile" )
+            .on( "click", function( )
+            {
+                reguStreaming.userInfoContainerStatus( true, "discord" );
+            } );
+
+        newObj.find( ".chatMessageContainer-message" )
+            .html( data.message.replace( reguStreaming.linkRegex, "<a onclick='return reguStreaming.confirmChatLink( this );' target='_blank' href='$1'>$1</a>" ) );
+
+        controls.chatBoxInner.stop( )
+            .animate(
+            {
+                scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+            }, 300, "swing" );
+
+        setTimeout( function( obj )
+        {
+            if ( obj )
+                obj.animate(
+                {
+                    opacity: "0"
+                }, 5000, function( )
+                {
+                    $( this )
+                        .remove( );
+                } );
+        }, 1000 * 20, newObj );
+    }
+    else if ( data.type == "text" )
+    {
+        var localClientData = reguStreaming.getLocalClientDataByID( data.userID );
+
+        if ( !localClientData )
+        {
+            console.log( "%c[ReguStreaming] Failed to parse Chat message! Local client data is not valid! -> " + data.userID, "color: red;" );
+            return;
+        }
+
+        var newObj = $( String.format(
+                reguStreaming.chatFormatBase.def,
+                reguStreaming.currentChatMessageCount,
+                localClientData.avatar,
+                localClientData.name,
+                currentTimeString
+            ) )
+            .appendTo( controls.chatBoxInner );
+
+        newObj.data( "userID", data.userID )
+            .startAnimation( "slideInRight 0.3s" );
+
+        newObj.find( ".chatMessageContainer-profile" )
+            .on( "click", function( )
+            {
+                reguStreaming.userInfoContainerStatus( true, newObj.data( "userID" ) );
+            } );
+
+        newObj.find( ".chatMessageContainer-message" )
+            .html( data.message.replace( reguStreaming.linkRegex, "<a onclick='return reguStreaming.confirmChatLink( this );' target='_blank' href='$1'>$1</a>" ) );
+
+        controls.chatBoxInner.stop( )
+            .animate(
+            {
+                scrollTop: controls.chatBoxInner[ 0 ].scrollHeight
+            }, 300, "swing" );
+
+        setTimeout( function( obj )
+        {
+            if ( obj )
+                obj.animate(
+                {
+                    opacity: "0"
+                }, 5000, function( )
+                {
+                    $( this )
+                        .remove( );
+                } );
+        }, 1000 * 25, newObj );
+    }
+
+    reguStreaming.currentChatMessageCount++;
+    reguStreaming.playChatSound( );
+} );
+
+/*
+*NOTE: Deprecated!
 socket.on( "regu.notification", function( data )
 {
     util.notification( data.type || util.notificationType.info,
@@ -1463,33 +2458,120 @@ socket.on( "serverNotification", function( data )
         0,
         true
     );
-} );
+} );*/
 
-reguStreaming.roomPlayerFormatBase = '';
+reguStreaming.roomPlayerFormatBase = '<div class="innerHeader-roomPlayersContainer-item selectable"> \
+    <img class="innerHeader-roomPlayersContainer-item-avatar" src="{0}" /> \
+</div>';
 
-socket.on( "regu.clientCountUpdate", function( data )
+reguStreaming.localClientData = {};
+reguStreaming.roomPlayerItemList = [ ];
+
+reguStreaming.getLocalClientDataByID = function( id )
 {
-    // controls.currentRoomInformation.html( data.roomTitle + " 채널 : " + data.count + "명" );
+    if ( id === reguStreaming.getConfig( "localUserID", "NULL" ) )
+        return reguStreaming.getConfig( "localUserInfo", null );
+    else
+        return this.localClientData[ id ];
+}
 
-
-    if ( data.type === "new" )
+reguStreaming.onUpdateClientData = function( type, data )
+{
+    if ( type === "new" )
     {
         var newObj = $( String.format(
-                reguStreaming.roomPlayerFormatBase,
-                ""
+                this.roomPlayerFormatBase,
+                data.avatar
             ) )
             .appendTo( controls.innerHeaderRoomPlayersContainer );
+
+        newObj.data( "id", data.userID );
+        newObj.on( "click", data, function( e )
+        {
+            var localData = e.data;
+
+            reguStreaming.userInfoContainerStatus( true, localData.userID );
+        } );
+
+        this.roomPlayerItemList.push( newObj );
+    }
+    else if ( type === "remove" )
+    {
+        var length = this.roomPlayerItemList.length;
+
+        for ( var i = 0; i < length; i++ )
+        {
+            if ( this.roomPlayerItemList[ i ] && this.roomPlayerItemList[ i ].data( "id" ) === data )
+            {
+                this.roomPlayerItemList[ i ].remove( );
+                this.roomPlayerItemList.splice( i, 1 );
+                break;
+            }
+        }
+    }
+    else if ( type === "initialize" )
+    {
+        controls.innerHeaderRoomPlayersContainer.empty( );
+        this.roomPlayerItemList = [ ];
+
+        var keys = Object.keys( data );
+        var length = keys.length;
+
+        for ( var i = 0; i < length; i++ )
+        {
+            var local = data[ keys[ i ] ];
+
+            var newObj = $( String.format(
+                    this.roomPlayerFormatBase,
+                    local.avatar
+                ) )
+                .appendTo( controls.innerHeaderRoomPlayersContainer );
+
+            newObj.data( "id", local.userID );
+            newObj.on( "click", local, function( e )
+            {
+                var localData = e.data;
+
+                reguStreaming.userInfoContainerStatus( true, localData.userID );
+            } );
+
+            this.roomPlayerItemList.push( newObj );
+        }
+    }
+
+    controls.innerHeaderRoomPlayersCount.text( "접속자 " + ( Object.keys( this.localClientData )
+        .length + 1 ) + "명" );
+}
+
+// *TODO: sort 추가바람.
+socket.on( "RS.clientDataEvent", function( data )
+{
+    if ( data.type === "new" )
+    {
+        reguStreaming.localClientData[ data.targetClientData.userID ] = data.targetClientData;
+        reguStreaming.onUpdateClientData( "new", data.targetClientData );
     }
     else if ( data.type === "remove" )
     {
+        var index = data.id;
 
+        if ( reguStreaming.localClientData[ index ] )
+        {
+            reguStreaming.localClientData[ index ] = null;
+            delete reguStreaming.localClientData[ index ];
+            reguStreaming.onUpdateClientData( "remove", index );
+        }
+        else
+        {
+            if ( reguStreaming.debugMode )
+                console.log( "%c[ReguStreaming] ERROR: Client data remove failed. Unknown index " + index, "color: red;" );
+        }
     }
-
-    // controls.currentRoomInformation.css( "opacity", "0" );
-    // controls.currentRoomInformation.animate(
-    // {
-    //     opacity: "1"
-    // }, 1000 );
+    else if ( data.type === "initialize" )
+    {
+        reguStreaming.localClientData = data.allClientData;
+        reguStreaming.onUpdateClientData( "initialize", data.allClientData );
+    }
 } );
 
 socket.on( "disconnect", function( data )
@@ -1497,14 +2579,40 @@ socket.on( "disconnect", function( data )
     if ( reguStreaming.getConfig( "forceDisconnected", false ) ) return;
 
     if ( !reguStreaming.getActiveProcessBackground( ) )
-        reguStreaming.setActiveProcessBackground( true, null, "서버와의 연결을 다시 시도하고 있습니다 ..." );
+    {
+        if ( data === "io server disconnect" )
+            reguStreaming.setActiveProcessBackground( true, null, "서버와의 연결이 끊겼습니다." );
+        else if ( data === "transport close" )
+            reguStreaming.setActiveProcessBackground( true, null, "서버와의 연결이 끊겼습니다, 다시 연결하고 있습니다 ..." );
+    }
 
-    console.log( "[ReguStreaming] ERROR: Connection to the server has been lost." );
+    console.log( "%c[ReguStreaming] ERROR: Connection to the server has been lost. (reason: " + data + ")", "color: red; font-size: 15px;" );
 } );
 
-socket.on( "reconnect_attempt", function( attemptNumber )
+socket.on( "RS.disconnect", function( data )
 {
+    socket.disconnect( );
+
+    $( window )
+        .off( "beforeunload" );
+    localStorage.setItem( "regustreaming.forceDisconnectReason", "알 수 없는 오류" );
+    document.location = "/?forceDisconnect";
+} );
+
+socket.on( "reconnecting", function( attemptNumber )
+{
+    if ( reguStreaming.getActiveProcessBackground( ) )
+        reguStreaming.setActiveProcessBackground( true, null, "서버에 다시 연결하는 중 ... <p style='font-size: 12px;'>(" + attemptNumber + "번 시도함)</p>", true );
+
     console.log( "[ReguStreaming] Reconnecting to server ... [" + attemptNumber + "]" );
+} );
+
+socket.on( "reconnect_error", function( err )
+{
+    if ( reguStreaming.getActiveProcessBackground( ) )
+        reguStreaming.setActiveProcessBackground( true, null, "서버에 일시적으로 연결할 수 없는 상태입니다. <p style='font-size: 12px; text-shadow: 0 0 16px red;'>(" + err + ")</p><br />잠시 후 다시 연결을 시도합니다.", true );
+
+    console.log( "%c[ReguStreaming] ERROR: Failed to reconnecting to Server ... (err: " + err + ")", "color: red; font-size: 15px;" );
 } );
 
 socket.on( "reconnect", function( attemptNumber )
@@ -1527,7 +2635,13 @@ reguStreaming.providerType = {
     KakaoTV: 4,
     Niconico: 5
 };
+reguStreaming.playerType = {
+    both: 0,
+    videoOnly: 1
+}
+
 reguStreaming.mediaProvider = reguStreaming.providerType.Null;
+reguStreaming.playerMode = reguStreaming.playerType.both;
 
 reguStreaming.getLocalStorageVolume = function( )
 {
@@ -1537,6 +2651,10 @@ reguStreaming.getLocalStorageVolume = function( )
 reguStreaming.setVolume = function( volume )
 {
     controls.videoContainer.prop( "volume", volume / 100 );
+
+    if ( reguStreaming.audioObj )
+        reguStreaming.audioObj.volume = volume / 100;
+
     localStorage.setItem( "RS.audioVolume", volume / 100 );
 }
 
@@ -1565,11 +2683,11 @@ reguStreaming.setVolume = function( volume )
 // 여기 다시 짜기!
 socket.on( "RS.mediaPlay", function( data )
 {
-    console.log( "RS.mediaPlay" );
-    console.log( data );
-
     if ( data.empty )
     {
+        controls.videoContainer.get( 0 )
+            .autoplay = false;
+
         // canvas
         if ( controls.canvas.is( ":visible" ) )
             controls.canvas.stop( )
@@ -1618,7 +2736,19 @@ socket.on( "RS.mediaPlay", function( data )
                     .hide( );
             } );
 
-        controls.videoPositionFullBar.css( "width", "0%" );
+        // videoProvider
+        if ( controls.videoProvider.is( ":visible" ) )
+            controls.videoProvider.stop( )
+            .animate(
+            {
+                opacity: "0"
+            }, 1000, function( )
+            {
+                $( this )
+                    .hide( );
+            } );
+
+        controls.videoPositionBarFull.css( "width", "0%" );
 
         if ( controls.videoPositionBar.is( ":visible" ) )
             controls.videoPositionBar.stop( )
@@ -1638,13 +2768,23 @@ socket.on( "RS.mediaPlay", function( data )
     }
     else
     {
-        controls.videoPositionFullBar.css( "width", "100%" );
+        controls.videoPositionBarFull.css( "width", "100%" );
         controls.videoPositionBar.show( )
             .stop( )
             .animate(
             {
                 opacity: "1"
             }, 1000 );
+
+        if ( data.colorTheme && reguStreaming.serverConfig.roomConfig.video_position_bar_style === "random" )
+        {
+            var colorBuild = data.colorTheme.r + ", " + data.colorTheme.g + ", " + data.colorTheme.b;
+
+            controls.videoPositionBar.css( "background-color", "rgba( " + colorBuild + ", 0.3" );
+
+            controls.videoPositionBarFull.css( "background-color", "rgb( " + colorBuild + " )" );
+            controls.videoPositionBarFull.css( "box-shadow", "0px 0px 16px rgb( " + colorBuild + " )" );
+        }
 
         // videoTitle
         if ( controls.videoTitle.is( ":visible" ) )
@@ -1686,6 +2826,42 @@ socket.on( "RS.mediaPlay", function( data )
                 } );
         }
 
+        // videoProvider
+        if ( controls.videoProvider.is( ":visible" ) )
+        {
+            controls.videoProvider.stop( )
+                .animate(
+                {
+                    opacity: "0"
+                }, 1000, function( )
+                {
+                    var style = reguStreaming.getVideoProviderStyleByID( data.mediaProvider );
+
+                    $( this )
+                        .text( style.name )
+                        .css( "background-color", style.backgroundColor )
+                        .stop( )
+                        .animate(
+                        {
+                            opacity: "1"
+                        }, 1000 );
+                } );
+        }
+        else
+        {
+            var style = reguStreaming.getVideoProviderStyleByID( data.mediaProvider );
+
+            controls.videoProvider.text( style.name )
+                .css( "background-color", style.backgroundColor )
+                .css( "opacity", 0 )
+                .show( )
+                .stop( )
+                .animate(
+                {
+                    opacity: "1"
+                }, 1000 );
+        }
+
         if ( data.user )
         {
             // videoRequesterInformation
@@ -1712,7 +2888,7 @@ socket.on( "RS.mediaPlay", function( data )
                     .on( "click", function( )
                     {
                         reguStreaming.userInfoContainerStatus( true, data.user.userID );
-                    } )
+                    } );
             }
             else
             {
@@ -1731,7 +2907,7 @@ socket.on( "RS.mediaPlay", function( data )
                     .on( "click", function( )
                     {
                         reguStreaming.userInfoContainerStatus( true, data.user.userID );
-                    } )
+                    } );
             }
         }
         else
@@ -1767,29 +2943,47 @@ socket.on( "RS.mediaPlay", function( data )
 
         util.htmlNotification( "현재 재생 중 : " + data.mediaName, data.mediaThumbnail, true, 10 * 1000 );
 
-        controls.videoContainer.prop( "muted", false );
-        controls.videoContainer.load( );
+        controls.videoContainer.get( 0 )
+            .autoplay = true;
 
-        var playAction = controls.videoContainer.get( 0 )
-            .play( );
-
-        playAction.then( function( )
-            {
-                controls.videoAutoPlayAgree.hide( );
-            } )
-            .catch( function( err )
-            {
-                controls.videoAutoPlayAgree.show( );
-                controls.videoContainer.prop( "muted", true );
-                controls.videoContainer.get( 0 )
-                    .play( );
-            } );
+        controls.videoContainer.prop( "muted", true );
+        controls.videoContainer.get( 0 )
+            .load( );
 
         controls.videoContainer.get( 0 )
             .currentTime = data.mediaPosition;
 
         controls.videoContainer.get( 0 )
             .playbackRate = reguStreaming.serverConfig.roomConfig.playbackRate || 1.0;
+
+        if ( data.mediaSoundContentURL )
+        {
+            reguStreaming.playerMode = reguStreaming.playerType.both;
+        }
+        else
+            reguStreaming.playerMode = reguStreaming.playerType.videoOnly;
+
+        if ( !reguStreaming.audioObj )
+        {
+            var roomID = reguStreaming.getConfig( "roomID", null );
+            var audioObj = new Audio( );
+
+            audioObj.volume = reguStreaming.getLocalStorageVolume( );
+            audioObj.loop = false;
+            // audioObj.crossOrigin = "anonymous";
+            audioObj.src = "/sound/" + roomID;
+            audioObj.pause( );
+
+
+            reguStreaming.audioObj = audioObj;
+
+            reguStreaming.canvasInitialize( );
+        }
+
+        reguStreaming.audioObj.load( );
+        reguStreaming.audioObj.pause( );
+        reguStreaming.audioObj.playbackRate = reguStreaming.serverConfig.roomConfig.playbackRate || 1.0;
+        reguStreaming.audioObj.currentTime = data.mediaPosition;
     }
 
     if ( !reguStreaming.canvasRendering )
@@ -1798,8 +2992,8 @@ socket.on( "RS.mediaPlay", function( data )
         reguStreaming.canvasRendering = true;
     }
 
-    reguStreaming.cloudReset( );
-    reguStreaming.captionReset( );
+    reguStreaming.tvpleCloudClear( );
+    reguStreaming.captionClear( );
 
     reguStreaming.mediaProvider = data.mediaProvider;
 
@@ -1809,10 +3003,52 @@ socket.on( "RS.mediaPlay", function( data )
             reguStreaming.captionInitialize( );
             break;
         case reguStreaming.providerType.Tvple:
-            reguStreaming.cloudInitialize( data.cloud );
+            reguStreaming.tvpleCloudInitialize( data.cloud );
             break;
     }
 } );
+
+reguStreaming.getVideoProviderStyleByID = function( id )
+{
+    switch ( id )
+    {
+        case 0:
+            return {
+                name: "Youtube",
+                backgroundColor: "rgb(255, 50, 50)"
+            };
+        case 1:
+            return {
+                name: "Ani24",
+                backgroundColor: "#3366CF"
+            };
+        case 2:
+            return {
+                name: "Tvple",
+                backgroundColor: "#28a4c9"
+            };
+        case 3:
+            return {
+                name: "Direct",
+                backgroundColor: "rgb(131, 223, 46)"
+            };
+        case 4:
+            return {
+                name: "KakaoTV",
+                backgroundColor: "#f7d715"
+            };
+        case 5:
+            return {
+                name: "Youtube",
+                backgroundColor: "#272727"
+            };
+        default:
+            return {
+                name: "Unknown",
+                backgroundColor: "black"
+            };
+    }
+}
 
 socket.on( "RS.sendError", function( data )
 {
@@ -1869,6 +3105,21 @@ socket.on( "RS.setMediaPos", function( data )
 {
     controls.videoContainer.get( 0 )
         .currentTime = Number( data ) || 0;
+
+    if ( controls.videoContainer.get( 0 )
+        .paused )
+    {
+        controls.videoContainer.get( 0 )
+            .play( );
+    }
+
+    if ( reguStreaming.audioObj )
+    {
+        reguStreaming.audioObj.currentTime = Number( data ) || 0;
+
+        if ( reguStreaming.audioObj.paused )
+            reguStreaming.audioObj.play( );
+    }
 } );
 
 function controlDisableTemp( element, delay )
@@ -1900,20 +3151,28 @@ function urlParameters( url, paramName )
 
 reguStreaming.getActiveProcessBackground = function( )
 {
-    return $( ".processBackground" )
+    // *NOTE: defineControls 전에 호출될 수 있기 때문
+    return ( controls.processBackground || $( ".processBackground" ) )
         .is( ":visible" );
 }
 
-reguStreaming.setActiveProcessBackground = function( status, callback, text, noAnimate )
+reguStreaming.setActiveProcessBackground = function( status, callback, text, noAnimate, customIcon )
 {
-    var e = $( ".processBackground" );
-
-    // e.stop( );
+    var e = controls.processBackground || $( ".processBackground" );
 
     if ( status )
     {
-        e.find( ".processBackgroundText" )
-            .text( text || "잠시만 기다려주세요!" );
+        var childs = e.children( );
+
+        if ( customIcon )
+            childs.eq( 0 )
+            .css( "background-image", customIcon );
+        else
+            childs.eq( 0 )
+            .css( "background-image", "var(--loading-icon)" );
+
+        childs.eq( 1 )
+            .html( text || "잠시만 기다려주세요!" );
 
         if ( noAnimate )
             e.show( )
@@ -1952,104 +3211,66 @@ reguStreaming.setActiveProcessBackground = function( status, callback, text, noA
 
 reguStreaming.settingContainerStatus = function( status )
 {
-    var element = controls.settingContainer;
+    var e = controls.settingContainer;
 
     if ( status )
     {
-        setStatusDialogBackground( true, function( )
-        {
-            element.css( "opacity", "1" );
-            element.css( "animation", "fadeInUp 0.5s" );
-            element.show( );
-            element.animate(
+        e.find( ".dialogContainer-titleBar-close" )
+            .off( "close" )
+            .on( "click", function( )
             {
-                opacity: "1"
-            }, 500 );
+                reguStreaming.settingContainerStatus( false );
+            } );
+
+        this.setShowDialogBackground( true, function( )
+        {
+            e.show( )
+                .startAnimation( "zoomInDown 0.7s" );
         } );
     }
     else
     {
-        setStatusDialogBackground( false, function( )
+        this.setShowDialogBackground( false, function( )
         {
-            element.css( "animation", "fadeOutDown 0.5s" );
-            element.css( "opacity", "1" );
-            element.animate(
+            e.startAnimation( "zoomOutUp 0.7s", function( )
             {
-                opacity: "0"
-            }, 500, function( )
-            {
-                element.hide( );
+                e.hide( );
             } );
         } );
     }
 }
 
-socket.on( "RS.receiveUserInformation", function( data )
-{
-    var e = controls.userInfoContainer;
+socket.on( "RS.receiveUserInformation", function( data ) {
 
-    e.find( "#userInfoContainerProfileImage" )
-        .attr( "src", data.avatar );
-    e.find( "#userInfoContainerProfileName" )
-        .text( data.name );
-    e.find( "#userInfoContainerProfileIP" )
-        .text( data.ipAddress );
-
-    e.find( "#userInfoContainerProfileProvider" )
-        .text( data.provider );
-
-    var rankElement = e.find( "#userInfoContainerProfileRank" );
-
-    switch ( data.rank )
-    {
-        case "admin":
-            rankElement.text( "*관리자*" );
-            rankElement.css( "color", "rgb( 235, 50, 50 )" )
-
-            break;
-        case "moderator":
-            rankElement.text( "*모더레이터*" );
-            rankElement.css( "color", "rgb( 235, 235, 50 )" )
-
-            break;
-        case "user":
-            rankElement.text( "유저" );
-
-            break;
-        default:
-            rankElement.text( "알 수 없음" );
-            break;
-    }
-
-    setStatusDialogBackground( true, function( )
-    {
-        e.show( );
-        util.startCSSAnimation( "zoomInUp 0.5s", e );
-    } );
 } );
 
-reguStreaming.clickedChatMessageTemp = null;
 reguStreaming.uploadedImageSizeCache = {};
 
 reguStreaming.onClickChatImage = function( self )
 {
-    self = $( self );
+    /*self = $( self )
+        .get( 0 );
+
+    console.log( self );
+    console.log( self.naturalWidth + "/" + self.naturalHeight )
 
     var img = new Image( );
     img.src = self.attr( "src" );
     img.onload = function( )
     {
-        var imgPopup = window.open( self.attr( "src" ), "_blank", "left=50, top=50, width=" + this.width + "; height=" + this.height + "" );
+        
+    }*/
 
-        if ( imgPopup === null )
+    var imgPopup = window.open( $( self )
+        .attr( "src" ), "_blank", "toolbar=yes, resizable=yes, width=" + self.naturalWidth + ", height=" + self.naturalHeight );
 
-            util.notification( util.notificationType.warning, "팝업 차단 감지 :", "이미지를 새 창에서 보시려면 팝업 차단을 해제해주세요." );
-        else
+    if ( imgPopup === null )
+        util.notification( util.notificationType.warning, "팝업 차단 감지 :", "이미지를 새 창에서 보시려면 팝업 차단을 해제해주세요." );
+    else
+    {
+        imgPopup.onload = function( )
         {
-            imgPopup.onload = function( )
-            {
-                imgPopup.document.title = "이미지 새창에서 보기";
-            }
+            imgPopup.document.title = "이미지 새 창에서 보기";
         }
     }
 }
@@ -2057,6 +3278,94 @@ reguStreaming.onClickChatImage = function( self )
 reguStreaming.reportUser = function( )
 {
     // util.notification( util.notificationType.warning, "사용자 신고 불가 :", "이 사용자를 신고할 권한이 없습니다." );
+}
+
+reguStreaming.onRequestUserInformationData = function( data )
+{
+    var e = controls.userInfoContainer;
+
+    e.find( ".dialogContainer-titleBar-close" )
+        .off( "close" )
+        .on( "click", function( )
+        {
+            reguStreaming.userInfoContainerStatus( false );
+        } );
+
+    if ( data.code === 0 )
+    {
+        e.find( "#userInfoContainerProfileImage" )
+            .attr( "src", data.avatar );
+        e.find( "#userInfoContainerProfileName" )
+            .text( data.name )
+            .attr( "data-userID", data.userID );
+
+        e.find( "#userInfoContainerProfileIP" )
+            .text( data.ipAddress );
+
+        var provider = "";
+
+        switch ( data.provider )
+        {
+            case "naver":
+                provider = "네이버";
+                break;
+            case "steam":
+                provider = "스팀";
+                break;
+            case "kakao":
+                provider = "카카오";
+                break;
+            case "google":
+                provider = "구글";
+                break;
+            case "twitter":
+                provider = "트위터";
+                break;
+            case "instagram":
+                provider = "인스타그램"; // 속엔... 문제야 문제.... 온 세상 속..ㅇ..
+                break;
+            case "facebook":
+                provider = "페이스북";
+                break;
+            case "guest":
+                provider = "손님";
+                break;
+        }
+
+        e.find( "#userInfoContainerProfileProvider" )
+            .text( provider + " 계정으로 로그인함" );
+
+        var rankElement = e.find( "#userInfoContainerProfileRank" );
+
+        if ( data.rank === "admin" || data.rank === "moderator" )
+            e.find( "#userInfoContainerProfileRank" )
+            .show( );
+        else
+            e.find( "#userInfoContainerProfileRank" )
+            .hide( );
+    }
+    else
+    {
+        e.find( "#userInfoContainerProfileImage" )
+            .attr( "src", "/images/avatar/guest_184.png" );
+        e.find( "#userInfoContainerProfileName" )
+            .text( "접속 종료한 사용자" )
+            .attr( "data-userID", "Unknown" );
+        e.find( "#userInfoContainerProfileIP" )
+            .text( "***.***.***.***" );
+
+        e.find( "#userInfoContainerProfileProvider" )
+            .text( "알 수 없음" );
+
+        e.find( "#userInfoContainerProfileRank" )
+            .hide( );
+    }
+
+    this.setShowDialogBackground( true, function( )
+    {
+        e.show( )
+            .startAnimation( "zoomInDown 0.7s" );
+    } );
 }
 
 reguStreaming.userInfoContainerStatus = function( status, baseElement )
@@ -2084,28 +3393,38 @@ reguStreaming.userInfoContainerStatus = function( status, baseElement )
             }
             else if ( userID === "discord" )
             {
-                util.notification( util.notificationType.warning, "사용자 정보 없음", "이 사용자는 외부 서비스를 이용하고 있습니다, 정보를 불러올 수 없습니다." );
+                util.notification( util.notificationType.info, "사용자 정보 없음", "이 사용자는 외부 서비스를 사용합니다, 정보를 불러올 수 없습니다." );
                 return;
             }
 
-            // if ( !reguStreaming.getActiveProcessBackground( ) )
-            //     reguStreaming.setActiveProcessBackground( true );
+            //function( status, callback, text, noAnimate )
+            if ( !this.getActiveProcessBackground( ) )
+                this.setActiveProcessBackground( true, null, "사용자 정보 요청하는 중 ..." );
 
-            socket.emit( "RS.requestUserInformation",
+            socket.emit( "RS.requestUserInformation", userID.toString( ), function( result )
             {
-                userID: userID.toString( )
+                if ( reguStreaming.getActiveProcessBackground( ) )
+                    reguStreaming.setActiveProcessBackground( false );
+
+                if ( result && result.code >= 2 )
+                {
+                    util.notification( util.notificationType.warning, "사용자 정보 없음", "이 사용자 정보는 불러올 수 없습니다, 요청이 거부되었습니다." );
+                    return;
+                }
+
+                reguStreaming.onRequestUserInformationData( result );
             } );
         }
         else
         {
-            util.notification( util.notificationType.warning, "사용자 정보 오류 :", "알 수 없는 사용자입니다." );
+            util.notification( util.notificationType.warning, "사용자 정보 오류 :", "이 사용자 정보는 올바르지 않습니다." );
         }
     }
     else
     {
-        setStatusDialogBackground( false, function( )
+        this.setShowDialogBackground( false, function( )
         {
-            util.startCSSAnimation( "zoomOutDown 0.5s", e, function( )
+            e.startAnimation( "zoomOutUp 0.7s", function( )
             {
                 e.hide( );
             } );
@@ -2115,17 +3434,44 @@ reguStreaming.userInfoContainerStatus = function( status, baseElement )
 
 reguStreaming.queueSkipVote = function( )
 {
-    util.showModal( "투표 시작", "영상 스킵 투표를 시작하시겠습니까? 65% 이상 찬성하면 영상이 스킵됩니다.", "취소", "투표 시작", null, function( )
+    if ( this.queueContinueVoteDelay ) return;
+
+    util.showModal( "투표 시작", "영상 스킵 투표를 시작하시겠습니까? 65% 이상 찬성하면 다음 영상을 재생합니다.", "취소", "투표 시작", null, function( )
     {
-        socket.emit( "regu.voteRegister" );
+        socket.emit( "RS.voteRegister" );
     } );
 }
 
 reguStreaming.voteSend = function( flag )
 {
-    socket.emit( "regu.voteStackFlag",
+    socket.emit( "RS.voteStackFlag",
     {
         flag: flag
+    } );
+}
+
+reguStreaming.callAdministrator = function( )
+{
+    util.showModal( "기능 사용 불가", "현재 이 기능을 사용하실 수 없습니다. (NotImplemented)", null, null, null, null, true, null );
+
+    return;
+
+    $.ajax(
+    {
+        url: "/api/call",
+        type: "get",
+        dataType: "json",
+        success: function( data )
+        {
+            if ( data.result === "success" )
+            {
+                util.showModal( "관리자 호출 완료", "관리자가 호출되었습니다, 곧 응답이 있을 예정입니다.", null, null, null, null, true, null );
+            }
+            else if ( data.result === "error" )
+            {
+                util.showModal( "관리자 호출 불가", data.reason, null, null, null, null, true, null );
+            }
+        }
     } );
 }
 
@@ -2133,7 +3479,7 @@ reguStreaming.queueContainerStatus = function( status )
 {
     if ( status && this.serverConfig.roomConfig.disallow_queue_request )
     {
-        util.notification( util.notificationType.warning, "영상 추가 불가", "이 채널에서는 영상 추가를 하실 수 없습니다.", 1500 );
+        util.notification( util.notificationType.warning, "대기열 등록 불가", "이 채널의 정책으로 인해 대기열 등록을 하실 수 없습니다.", 3000 );
         return;
     }
 
@@ -2143,10 +3489,17 @@ reguStreaming.queueContainerStatus = function( status )
     {
         if ( this.queueRegisterDelay ) return;
 
-        setStatusDialogBackground( true, function( )
+        e.find( ".dialogContainer-titleBar-close" )
+            .off( "close" )
+            .on( "click", function( )
+            {
+                reguStreaming.queueContainerStatus( false );
+            } );
+
+        this.setShowDialogBackground( true, function( )
         {
-            e.show( );
-            util.startCSSAnimation( "zoomInUp 0.5s", e );
+            e.show( )
+                .startAnimation( "zoomInDown 0.7s" );
         } );
     }
     else
@@ -2155,9 +3508,9 @@ reguStreaming.queueContainerStatus = function( status )
         if ( this.getActiveProcessBackground( ) )
             this.setActiveProcessBackground( false );
 
-        setStatusDialogBackground( false, function( )
+        this.setShowDialogBackground( false, function( )
         {
-            util.startCSSAnimation( "zoomOutDown 0.5s", e, function( )
+            e.startAnimation( "zoomOutUp 0.7s", function( )
             {
                 e.hide( );
             } );
@@ -2165,33 +3518,26 @@ reguStreaming.queueContainerStatus = function( status )
     }
 }
 
-function setStatusDialogBackground( status, callback )
+reguStreaming.setShowDialogBackground = function( status, callback )
 {
-    var e = $( ".dialogBackground" );
+    var e = controls.dialogBackground;
 
     if ( status )
     {
-        e.show( );
-        e.css( "opacity", "0" );
-        e.animate(
-        {
-            opacity: "1"
-        }, 500 );
+        e.show( )
+            .css( "opacity", "0" )
+            .opacityTo( "1", 500 );
 
         if ( callback )
             callback( );
     }
     else
     {
-        e.css( "opacity", "1" );
-        e.animate(
-        {
-            opacity: "0"
-        }, 500, function( )
-        {
-            $( this )
-                .hide( );
-        } )
+        e.css( "opacity", "1" )
+            .opacityTo( "0", 500, function( )
+            {
+                e.hide( );
+            } )
 
         if ( callback )
             callback( );
@@ -2201,8 +3547,9 @@ function setStatusDialogBackground( status, callback )
 reguStreaming.defineControls = function( )
 {
     var keys = Object.keys( controls );
+    var length = keys.length;
 
-    for ( var i = 0; i < keys.length; i++ )
+    for ( var i = 0; i < length; i++ )
     {
         controls[ keys[ i ] ] = $( "#" + keys[ i ] );
     }
@@ -2231,7 +3578,7 @@ reguStreaming.queueRegister = function( )
             if ( !reguStreaming.getActiveProcessBackground( ) )
                 reguStreaming.setActiveProcessBackground( true, null, "영상을 대기열에 추가하고 있습니다 ..." );
 
-            socket.emit( "regu.queueRegister",
+            socket.emit( "RS.queueRegister",
             {
                 url: url,
                 start: ( min * 60 ) + sec
@@ -2285,80 +3632,412 @@ reguStreaming.queueRegister = function( )
     }
 }
 
-reguStreaming.localConfig = {};
+reguStreaming.clientExtraVar = {};
 reguStreaming.serverConfig = {
     roomConfig:
     {}
 };
-reguStreaming.onLocalConfigChanged = function( configName, value ) {
+reguStreaming.userSetting = {};
 
+reguStreaming.onClientExtraVarChanged = function( varName, value ) {
+
+}
+
+reguStreaming.getUserSetting = function( id, defaultValue )
+{
+    if ( !this.userSetting.hasOwnProperty( id ) || typeof this.userSetting[ id ] === "undefined" )
+        return defaultValue;
+
+    return this.userSetting[ id ];
+}
+
+reguStreaming.defineUserSetting = function( )
+{
+    var self = this;
+    $( "div.settingContainer-item[data-config]" )
+        .each( function( i, v )
+        {
+            v = $( v );
+
+            console.log( i );
+            console.log( v );
+
+            var configObj = v.find( "*[data-option]" );
+            var configID = v.attr( "data-config" );
+            var configDefault = v.attr( "data-config-default" );
+
+            console.log( configObj );
+            console.log( configID + ", " + configDefault );
+
+            if ( configObj )
+            {
+                if ( configID )
+                {
+                    if ( typeof configDefault === "undefined" )
+                    {
+                        reguStreaming.printError( "Failed to initialize UserSetting! (err: config ID [" + configID + "] parameter configDefault is undefined value.)" );
+
+                        util.notification( util.notificationType.danger,
+                            "초기화 오류",
+                            "초기화를 실패했습니다, 다시 접속하세요.",
+                            0,
+                            true
+                        );
+
+                        socket.disconnect( );
+
+                        return false;
+                    }
+
+                    var configValue = self.getUserSetting( configID, configDefault );
+
+                    console.log( "val: " + configValue );
+
+                    switch ( configObj.attr( "class" ) )
+                    {
+                        case "settingContainer-item-switch":
+                            configObj.find( "input[type='checkbox']" )
+                                .prop( "checked", configValue === "true" ? true : false );
+
+                            console.log( configObj.find( "input[type='checkbox']" ) );
+                            console.log( "success" );
+                            break;
+                        case "settingContainer-item-select":
+                            configObj.find( "select" )
+                                .val( configValue );
+                    }
+                }
+                else
+                {
+                    reguStreaming.printError( "Failed to initialize UserSetting! (err: config ID is undefined value.)" );
+
+                    util.notification( util.notificationType.danger,
+                        "초기화 오류",
+                        "초기화를 실패했습니다, 다시 접속하세요.",
+                        0,
+                        true
+                    );
+
+                    socket.disconnect( );
+
+                    return false;
+                }
+            }
+            else
+            {
+                reguStreaming.printError( "Failed to initialize UserSetting! (err: config Obj is undefined value.)" );
+
+                util.notification( util.notificationType.danger,
+                    "초기화 오류",
+                    "초기화를 실패했습니다, 다시 접속하세요.",
+                    0,
+                    true
+                );
+
+                socket.disconnect( );
+
+                return false;
+            }
+        } );
 }
 
 reguStreaming.initialize = function( )
 {
-    var roomConfig = reguStreaming.serverConfig.roomConfig;
+    var userSetting = this.userSetting;
+
+    if ( util.isEmptyObject( userSetting ) )
+    {
+        // userSetting = reguStreaming.getDefaultUserSetting( );
+    }
+
+    reguStreaming.defineUserSetting( );
+
+    var roomConfig = this.serverConfig.roomConfig;
 
     if ( roomConfig.disallow_queue_request )
         controls.chatContainerQueueRegisterButton.hide( );
     else
         controls.chatContainerQueueRegisterButton.show( );
 
-    if ( roomConfig.video_position_bar_color )
-        controls.videoPositionBar.css( "background-color", roomConfig.video_position_bar_color );
-
-    if ( roomConfig.video_position_bar_full_color )
+    if ( roomConfig.video_position_bar_style !== "random" )
     {
-        controls.videoPositionFullBar.css( "background-color", roomConfig.video_position_bar_full_color );
-        controls.videoPositionFullBar.css( "box-shadow", "0px 0px 16px " + roomConfig.video_position_bar_full_color );
+        if ( roomConfig.video_position_bar_color )
+            controls.videoPositionBar.css( "background-color", roomConfig.video_position_bar_color );
+
+        if ( roomConfig.video_position_bar_full_color )
+        {
+            controls.videoPositionBarFull.css( "background-color", roomConfig.video_position_bar_full_color );
+            controls.videoPositionBarFull.css( "box-shadow", "0px 0px 16px " + roomConfig.video_position_bar_full_color );
+        }
     }
 }
 
-reguStreaming.settingButtonClicked = function( )
-{
-    this.settingContainerStatus( true );
-}
 
 reguStreaming.registerTimer = function( )
 {
+    // setInterval( function( )
+    // {
+    //     if ( !socket.connected ) return;
+
+    //     socket.emit( "RS.requestClientCount" );
+    // }, 30 * 1000 );
+
     setInterval( function( )
     {
-        if ( !socket.connected ) return;
-
-        socket.emit( "RS.requestClientCount" );
-    }, 30 * 1000 );
+        reguStreaming.ajaxServiceStatus( );
+    }, 120 * 1000 );
 }
 
-socket.on( "regu.client.configChanged", function( data )
+reguStreaming.ajaxServiceStatus = function( )
 {
-    reguStreaming.localConfig[ data.configName ] = data.configValue;
-    reguStreaming.onLocalConfigChanged( data.configName, data.configValue );
+    $.ajax(
+    {
+        url: "/api/serviceStatus",
+        type: "get",
+        dataType: "json",
+        success: function( data )
+        {
+            reguStreaming.setConfig( "serviceNotification", data.notification );
+
+            controls.innerHeaderServiceNotification.empty( );
+
+            if ( data.notification.length !== 0 )
+                reguStreaming.buildServiceNotification( data.notification );
+            else
+            {
+                if ( controls.innerHeaderServiceStatus.is( ":visible" ) )
+                {
+                    controls.innerHeaderServiceStatus.stop( )
+                        .opacityTo( "0", 1000, function( self )
+                        {
+                            self.hide( );
+                        } );
+                }
+            }
+        }
+    } );
+}
+
+reguStreaming.playChatSound = function( )
+{
+    if ( !this.chatSoundObj )
+    {
+        var obj = new Audio( );
+        obj.src = "/sounds/chat.mp3";
+        obj.volume = 0.3;
+        obj.autoplay = false;
+        obj.preload =
+
+            this.chatSoundObj = obj;
+    }
+
+    var playPromise = this.chatSoundObj.play( );
+
+    playPromise.catch( function( e )
+    {
+        if ( reguStreaming.debugMode )
+            console.log( "%c[ReguStreaming] Failed to play chat sound. [AutoPlay policy]", "color: red;" );
+    } );
+}
+
+const serviceNotificationChildHTML = '<div class="innerHeader-serviceNotification-item" id="serviceNotificationItem_{0}" );"> \
+				<p class="innerHeader-serviceNotification-item-title">{1}</p> \
+                <p class="innerHeader-serviceNotification-item-message">{2}</p> \
+            </div>';
+
+reguStreaming.buildServiceNotification = function( data )
+{
+    var length = data.length;
+    var typeHighest = 0;
+
+    data.sort( function( a, b )
+    {
+        return a.type > b.type ? -1 : a.type < b.type ? 1 : 0;
+    } );
+
+    for ( var i = 0; i < length; i++ )
+    {
+        var newObj = $( String.format(
+                serviceNotificationChildHTML,
+                0,
+                data[ i ].title,
+                data[ i ].message
+            ) )
+            .appendTo( controls.innerHeaderServiceNotification );
+
+        if ( data[ i ].type > typeHighest )
+            typeHighest = data[ i ].type;
+
+        var color;
+
+        switch ( data[ i ].type )
+        {
+            case 0:
+                color = "rgb( 56, 110, 156 )";
+                break;
+            case 1:
+                color = "rgb( 255, 141, 58 )";
+                break;
+            case 2:
+                color = "rgb( 202, 64, 61 )";
+                break;
+            default:
+                color = "rgb( 56, 110, 156 )";
+        }
+
+        newObj.find( ".innerHeader-serviceNotification-item-title" )
+            .css(
+            {
+                "background-color": color,
+                "box-shadow": "0 0 16px " + color
+            } );
+    }
+
+    // ServiceManager.notificationType = {
+    //     info: 0,
+    //     warning: 1,
+    //     danger: 2
+    // };
+
+    switch ( typeHighest )
+    {
+        case 0:
+            controls.innerHeaderServiceStatus.attr( "src", "images/service/info.png" );
+            controls.innerHeaderServiceStatus.css( "animation", "innerHeaderServiceStatusInfo 1s infinite" );
+
+            controls.innerHeaderServiceNotification.attr( "data-highesttype", "info" );
+            break;
+        case 1:
+            controls.innerHeaderServiceStatus.attr( "src", "images/service/warning.png" );
+            controls.innerHeaderServiceStatus.css( "animation", "innerHeaderServiceStatusWarning 1s infinite" );
+
+            controls.innerHeaderServiceNotification.attr( "data-highesttype", "warning" );
+            break;
+        case 2:
+            controls.innerHeaderServiceStatus.attr( "src", "images/service/danger.png" );
+            controls.innerHeaderServiceStatus.css( "animation", "innerHeaderServiceStatusDanger 1s infinite" );
+
+            controls.innerHeaderServiceNotification.attr( "data-highesttype", "danger" );
+            break;
+    }
+
+    if ( !controls.innerHeaderServiceStatus.is( ":visible" ) )
+    {
+        controls.innerHeaderServiceStatus.stop( )
+            .show( )
+            .css( "opacity", "0" )
+            .opacityTo( "1", 1000 );
+    }
+
+    if ( typeHighest > reguStreaming.getConfig( "serviceStatusLastType", 0 ) )
+    {
+        reguStreaming.setConfig( "serviceStatusNeverOpened", true );
+        reguStreaming.setConfig( "serviceStatusLastType", typeHighest )
+    }
+
+    if ( !controls.innerHeaderServiceNotification.is( ":visible" ) && typeHighest > 0 && reguStreaming.getConfig( "serviceStatusNeverOpened", true ) )
+    {
+        reguStreaming.toggleServiceNotificationStatus( );
+        reguStreaming.setConfig( "serviceStatusNeverOpened", false );
+
+        // localStorage.setItem( "RS.nextServiceStateJoinOpen", Date.now( ) + 60 * 30 ); // 30분 동안 방 입장 시 서비스 공지 표시 안함.
+    }
+}
+
+reguStreaming.toggleServiceNotificationStatus = function( )
+{
+    var e = controls.innerHeaderServiceNotification;
+
+    if ( !e.is( ":visible" ) )
+    {
+        e.show( )
+            .startAnimation( "serviceNotificationFadeIn 0.5s" );
+
+        var offset = controls.innerHeaderServiceStatus.offset( );
+
+        console.log( offset );
+
+        e.offset(
+        {
+            left: offset.left - e.width( ) + 68 - 6
+        } );
+
+        // if ( controls.innerHeaderServiceStatus.css( "animation" ) !== "" )
+        //     controls.innerHeaderServiceStatus.css( "animation", "" );
+
+        $( "body" )
+            .one( "click", function( )
+            {
+                if ( e.is( ":visible" ) )
+                    reguStreaming.toggleServiceNotificationStatus( );
+            } );
+    }
+    else
+    {
+        e.startAnimation( "serviceNotificationFadeOut 0.5s", function( )
+        {
+            e.hide( );
+        } );
+    }
+}
+
+socket.on( "RS.notification", function( data )
+{
+    util.showModal( data.title || "공지사항", data.body, null, null, null, null, true, null );
+} );
+
+socket.on( "RS.refreshServiceStatus", function( )
+{
+    reguStreaming.ajaxServiceStatus( );
+} );
+
+socket.on( "RS.syncClientExtraVar", function( data )
+{
+    if ( data.value === VAR_NULL )
+    {
+        reguStreaming.clientExtraVar[ data.varName ] = null;
+        delete reguStreaming.clientExtraVar[ data.varName ];
+
+        reguStreaming.onClientExtraVarChanged( data.varName, null );
+    }
+    else
+    {
+        reguStreaming.clientExtraVar[ data.varName ] = data.value;
+        reguStreaming.onClientExtraVarChanged( data.varName, data.value );
+    }
+
+
 } );
 
 socket.on( "RS.initialize", function( data )
 {
-    reguStreaming.serverConfig = data ||
-    {
-        roomConfig:
+    reguStreaming.userSetting = data.userSetting ||
+    {}
+    reguStreaming.serverConfig = {
+        roomConfig: data.roomConfig ||
         {}
     };
 
     reguStreaming.initialize( );
 } );
 
-socket.on( "regu.voteStackFlagReceive", function( data )
+socket.on( "RS.voteStackFlagReceive", function( data )
 {
     if ( data.success )
     {
-        util.startCSSAnimation( "zoomOut 1s", controls.voteContainer );
-        controls.voteContainer.css( "opacity", "1" );
-        controls.voteContainer.animate(
-        {
-            opacity: "0"
-        }, 1000, function( )
-        {
-            $( this )
-                .hide( );
-        } );
+        // *TODO: 최적화 필요함
+        $( ".voteContainer-voteTrue" )
+            .attr( "disabled", true );
+        $( ".voteContainer-voteFalse" )
+            .attr( "disabled", true );
+
+        util.notification( util.notificationType.success,
+            "투표 완료 :",
+            "투표에 감사드립니다<br /><br />현재 찬성 " + Math.floor( data.percent * 100 ) + "% 반대 " + ( 100 - Math.floor( data.percent * 100 ) ) + "% 로 이 상태라면 " +
+            ( data.isTrue ? "투표가 가결됩니다." : "투표가 부결됩니다." ),
+            4000,
+            true
+        );
     }
     else
     {
@@ -2371,7 +4050,7 @@ socket.on( "regu.voteStackFlagReceive", function( data )
     }
 } );
 
-socket.on( "regu.voteRegisterReceive", function( data )
+socket.on( "RS.voteRegisterReceive", function( data )
 {
     if ( data.success )
     {
@@ -2381,6 +4060,39 @@ socket.on( "regu.voteRegisterReceive", function( data )
             2000,
             true
         );
+
+        reguStreaming.queueContinueVoteDelay = Date.now( ) + ( 1000 * 0 );
+
+        // *TODO: 서버 체크 추가바람..
+        controls.chatContainerQueueContinueVoteButton.attr( "src", "images/icon/circle_32.png" )
+            .attr( "title", "영상 스킵 투표를 요청하시려면 잠시 기다리세요." );
+
+        controls.chatContainerQueueContinueVoteButtonDelayRemain.stop( )
+            .css( "opacity", 0 )
+            .show( )
+            .animate(
+            {
+                opacity: "1"
+            }, 1000 )
+            .text( Math.floor( ( reguStreaming.queueContinueVoteDelay - Date.now( ) ) / 1000 ) );
+
+        reguStreaming.queueContinueVoteDelayIntervalObj = setInterval( function( )
+        {
+            if ( Date.now( ) < reguStreaming.queueContinueVoteDelay )
+            {
+                controls.chatContainerQueueContinueVoteButtonDelayRemain.text( Math.floor( ( reguStreaming.queueContinueVoteDelay - Date.now( ) ) / 1000 ) );
+            }
+            else
+            {
+                controls.chatContainerQueueContinueVoteButton.attr( "src", controls.chatContainerQueueContinueVoteButton.attr( "data-original" ) )
+                    .attr( "title", "영상 스킵 투표" );
+                controls.chatContainerQueueContinueVoteButtonDelayRemain.hide( );
+
+                clearInterval( reguStreaming.queueContinueVoteDelayIntervalObj );
+                reguStreaming.queueContinueVoteDelayIntervalObj = null;
+                reguStreaming.queueContinueVoteDelay = null;
+            }
+        }, 500 );
     }
     else
     {
@@ -2413,27 +4125,53 @@ socket.on( "RS.executeJS", function( data )
     catch ( exception )
     {
         if ( !data.hidden )
-            console.log( "%c[ReguStreaming] Failed to execute clientside Javascript!\n" + exception, "color: red; font-weight: bold;" );
+            reguStreaming.printError( "Failed to execute Clientside javascript. (exception: " + exception + ")" );
     }
 } );
 
-socket.on( "regu.voteEvent", function( data )
+socket.on( "RS.voteEvent", function( data )
 {
     if ( data.type === "register" )
     {
         reguStreaming.voteData = data;
 
+        $( ".voteContainer-voteTrue" )
+            .show( )
+            .attr( "disabled", false );
+        $( ".voteContainer-voteFalse" )
+            .show( )
+            .attr( "disabled", false );
+
         util.htmlNotification( "영상 스킵 투표가 시작되었습니다, 응답해주세요.", null, true );
 
-        controls.voteContainerStartUser.text( data.startUserName + "님이 투표를 시작하셨습니다." );
+        if ( !controls.voteRequesterProfileInformation.is( ":visible" ) )
+            controls.voteRequesterProfileInformation.show( )
+            .css( "opacity", "0" )
+            .opacityTo( "1", 500 );
 
-        util.startCSSAnimation( "zoomInDown 1s", controls.voteContainer );
-        controls.voteContainer.show( );
-        controls.voteContainer.css( "opacity", "0" );
-        controls.voteContainer.animate(
-        {
-            opacity: "1"
-        }, 1000 );
+        controls.voteContainerTitle.text( controls.voteContainerTitle.attr( "data-text" ) );
+        controls.voteRequesterProfileImage.attr( "src", data.startUser.avatar );
+        controls.voteRequesterProfileName.text( data.startUser.name );
+
+        var parent = controls.voteRequesterProfileInformation.parent( ".voteContainer" );
+        parent.css( "height", parent.attr( "data-height" ) );
+
+        controls.voteRequesterProfileInformation.css( "opacity", "1" )
+            .off( "click" )
+            .on( "click", function( )
+            {
+                reguStreaming.userInfoContainerStatus( true, data.startUser.userID );
+            } );
+
+        controls.voteContainerVoteStatusTrue.css( "width", ( data.percent * 100 ) + "%" );
+        controls.voteContainerVoteStatusFalse.css( "width", ( 100 - ( data.percent * 100 ) ) + "%" );
+        controls.voteContainerVoteStatusPercent.text( Math.floor( data.percent * 100 ) + "%" );
+
+        controls.voteContainer.show( )
+            .startAnimation( "bounceInDown 1s" )
+            .stop( )
+            .css( "opacity", "0" )
+            .opacityTo( "1", 1000 );
 
         if ( reguStreaming.voteInterval )
             clearInterval( reguStreaming.voteInterval );
@@ -2442,27 +4180,71 @@ socket.on( "regu.voteEvent", function( data )
         {
             if ( !reguStreaming.voteData ) return;
 
-            controls.voteContainerTime.text( --reguStreaming.voteData.endTime + "초 남았습니다." );
+            controls.voteContainerCounterText.text( "투표 종료까지 " + ( --reguStreaming.voteData.endTime ) + "초 남았습니다." );
         }, 1000 );
+    }
+    else if ( data.type === "register_local" )
+    {
+        reguStreaming.voteData = data;
+
+        $( ".voteContainer-voteTrue" )
+            .hide( )
+            .attr( "disabled", true );
+        $( ".voteContainer-voteFalse" )
+            .hide( )
+            .attr( "disabled", true );
+
+        controls.voteRequesterProfileInformation.hide( );
+
+        var parent = controls.voteRequesterProfileInformation.parent( ".voteContainer" );
+        parent.css( "height", "72px" );
+
+        controls.voteContainerTitle.text( controls.voteContainerTitle.attr( "data-localtext" ) );
+        controls.voteContainerVoteStatusTrue.css( "width", ( data.percent * 100 ) + "%" );
+        controls.voteContainerVoteStatusFalse.css( "width", ( 100 - ( data.percent * 100 ) ) + "%" );
+        controls.voteContainerVoteStatusPercent.text( Math.floor( data.percent * 100 ) + "%" );
+
+        controls.voteContainer.show( )
+            .startAnimation( "bounceInDown 1s" )
+            .stop( )
+            .css( "opacity", "0" )
+            .opacityTo( "1", 1000 );
+
+        if ( reguStreaming.voteInterval )
+            clearInterval( reguStreaming.voteInterval );
+
+        reguStreaming.voteInterval = setInterval( function( )
+        {
+            if ( !reguStreaming.voteData ) return;
+
+            controls.voteContainerCounterText.text( "투표 종료까지 " + ( --reguStreaming.voteData.endTime ) + "초 남았습니다." );
+        }, 1000 );
+    }
+    else if ( data.type === "flag" )
+    {
+        var percent = data.percent;
+
+        controls.voteContainerVoteStatusTrue.css( "width", ( percent * 100 ) + "%" );
+        controls.voteContainerVoteStatusFalse.css( "width", ( 100 - ( percent * 100 ) ) + "%" );
+        controls.voteContainerVoteStatusPercent.text( Math.floor( percent * 100 ) + "%" );
     }
     else if ( data.type === "finish" )
     {
         if ( controls.voteContainer.is( ":visible" ) )
         {
-            util.startCSSAnimation( "zoomOut 1s", controls.voteContainer );
-            controls.voteContainer.css( "opacity", "1" );
-            controls.voteContainer.animate(
-            {
-                opacity: "0"
-            }, 1000, function( )
-            {
-                $( this )
-                    .hide( );
-            } );
+            controls.voteContainer.startAnimation( "bounceOutUp 1s" )
+                .stop( )
+                .opacityTo( "0", 1000, function( self )
+                {
+                    self.hide( );
+                } );
         }
 
         if ( reguStreaming.voteInterval )
+        {
             clearInterval( reguStreaming.voteInterval );
+            reguStreaming.voteInterval = null;
+        }
 
         reguStreaming.voteData = null;
     }

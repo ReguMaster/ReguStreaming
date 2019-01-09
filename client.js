@@ -5,9 +5,14 @@
 
 'use strict';
 
+const ClientManager = {};
 const BanManager = require( "./modules/ban" );
 const Logger = require( "./modules/logger" );
 const hook = require( "./hook" );
+const Database = require( "./modules/db" );
+const timer = require( "./timer" );
+
+ClientManager.CLIENT_EXTRA_VAR_STOREAGE = {};
 
 module.exports = class Client
 {
@@ -17,7 +22,7 @@ module.exports = class Client
         this._config = {};
     }
 
-    initialize( roomID, roomConfig )
+    initialize( roomID, platform, roomConfig )
     {
         // too long!
         this._passport = this._socket.handshake.session.passport;
@@ -25,16 +30,48 @@ module.exports = class Client
         this._userName = this._passport.user.displayName;
         this._userID = this._passport.user.id.toString( );
         this._roomID = roomID;
-        this._rank = "admin";
+        this._platform = platform;
+        this._rank = this._userID === "76561198011675377" || this._userID === "972122558077198338" ? "admin" : "user";
+        this._extraVar = {};
         this._initialized = true;
 
-        if ( roomConfig )
+        if ( !ClientManager.CLIENT_EXTRA_VAR_STOREAGE[ this._userID ] )
+            ClientManager.CLIENT_EXTRA_VAR_STOREAGE[ this._userID ] = {};
+        else
         {
-            this.emit( "RS.initialize",
+            var myVar = ClientManager.CLIENT_EXTRA_VAR_STOREAGE[ this._userID ];
+            var keys = Object.keys( myVar );
+            var keysLength = keys.length;
+
+            for ( var i = 0; i < keysLength; i++ )
             {
+                var v = myVar[ keys[ i ] ];
+
+                this.setExtraVar( v.varName, v.value, v.sendToClient, v.shouldStore );
+            }
+        }
+
+        var self = this;
+
+        self.emit( "RS.initialize",
+        {
+            userSetting:
+            {},
+            roomConfig: roomConfig
+        } );
+
+        return;
+        Database.executeProcedure( "FETCH_USER_SETTING", [ this.userID ], function( status, result, fields ) {
+
+        }, function( )
+        {
+            self.emit( "RS.initialize",
+            {
+                userSetting:
+                {},
                 roomConfig: roomConfig
             } );
-        }
+        } );
     }
 
     getPassportField( field, defaultValue )
@@ -106,6 +143,11 @@ module.exports = class Client
         return this._passport.user.provider;
     }
 
+    get platform( )
+    {
+        return this._platform;
+    }
+
     // 이거 좀 바꾸기
     // args 에 필요한 field 적으면 알아서 배열로 리턴해주게 바꾸기
     informationStruct( containRoomID = false )
@@ -136,14 +178,17 @@ module.exports = class Client
         return this._roomID;
     }
 
-    emit( messageID, data )
+    emit( eventID, data, ack )
     {
         if ( this._socket )
         {
-            this._socket.emit( messageID, data );
+            if ( ack && typeof ack !== "undefined" )
+                this._socket.emit( eventID, data, ack );
+            else
+                this._socket.emit( eventID, data );
         }
         else
-            Logger.write( Logger.type.Error, `[Client] Failed to emit data! -> ${ this.information( ) }` );
+            Logger.error( `[Client] Failed to Socket [${ eventID }] emission! ${ this.information( ) }` );
     }
 
     // emitAll( messageID, data, filterArray )
@@ -202,39 +247,60 @@ module.exports = class Client
         this.logout( );
 
         hook.run( "OnBanned", this );
-
-
     }
 
     disconnect( )
     {
-        this._socket.disconnect( );
+        if ( this._socket )
+            this._socket.disconnect( );
     }
 
     logout( )
     {
-        if ( this._socket.handshake.session )
+        if ( this._socket && this._socket.handshake && this._socket.handshake.session )
             this._socket.handshake.session.destroy( );
     }
 
-    // config 개발하기
-    // 접속에 interval 제한 넣기!
-    registerConfig( configName, value )
+    setExtraVar( varName, value, sendToClient = false, shouldStore = false )
     {
-        this._config[ configName ] = value;
-
-        this._socket.emit( "regu.client.configChanged",
+        if ( value === VAR_NULL )
         {
-            configName: configName,
-            configValue: value
-        } );
+            this._extraVar[ varName ] = null;
+            delete this._extraVar[ varName ];
+        }
+        else
+        {
+            this._extraVar[ varName ] = value;
+        }
+
+        if ( sendToClient )
+            this.emit( "RS.syncClientExtraVar",
+            {
+                varName: varName,
+                value: value
+            } );
+
+        if ( shouldStore )
+        {
+            if ( !ClientManager.CLIENT_EXTRA_VAR_STOREAGE[ this._userID ] )
+                ClientManager.CLIENT_EXTRA_VAR_STOREAGE[ this._userID ] = {};
+
+            ClientManager.CLIENT_EXTRA_VAR_STOREAGE[ this._userID ][ varName ] = {
+                varName: varName,
+                value: value,
+                sendToClient: sendToClient,
+                shouldStore: shouldStore
+            };
+        }
+
+        Logger.info( `[Client] Clients extra var changed. [${ varName }] -> [${ value === VAR_NULL ? "VAR_NULL" : value }] (sendToClient: ${ sendToClient.toString( ) }, shouldStore: ${ shouldStore.toString( ) }) ${ this.information( ) }` );
     }
 
-    getConfig( configName, defaultValue )
+    getExtraVar( varName, defaultValue )
     {
-        var value = this._config[ configName ]
+        var value = this._extraVar[ varName ];
 
-        if ( typeof value == "undefined" )
+        if ( !this._extraVar.hasOwnProperty( varName ) || typeof value === "undefined" )
             return defaultValue;
 
         return value;
@@ -242,9 +308,71 @@ module.exports = class Client
 
     toString( )
     {
-        return "made in abyss";
+        return "[Object client]";
+
+        // ^-^
+        // return "made in abyss";
     }
 
-    // client toString 시 정보 반환
+    setSetting( )
+    {
+
+    }
+
+    pushWarning( )
+    {
+        var self = this;
+
+        this.setExtraVar( "warn", this.getExtraVar( "warn", 0 ) + 1, false );
+
+        var warn = this.getExtraVar( "warn", 0 );
+
+        if ( warn % 3 === 0 && ( Date.now( ) - this.getExtraVar( "lastWarnModal", 0 ) > 3000 ) )
+        {
+            this.setExtraVar( "lastWarnModal", Date.now( ) );
+            this.sendModal( "경고", "최근 이 계정에서 비정상적인 패킷 활동을 자주 감지했습니다, 귀하의 최근 활동이 관리자에게 보고되었습니다,<br />이러한 보고가 계속 누적되면 <p style='color: red; display: inline-block;'>서비스 약관 위반의 결과로 계정이 정지될 수 있습니다.</p>" );
+
+            Logger.impor( `[Client] Clients warning reached! (warn: ${ warn }) ${ this.information( ) }` );
+        }
+
+        if ( !timer.exists( "RS.client." + this.userID + ".popWarning" ) )
+        {
+            timer.create( "RS.client." + this.userID + ".popWarning", 15000, 0, function( )
+            {
+                if ( ( warn = self.getExtraVar( "warn", 0 ) ) > 0 )
+                {
+                    self.setExtraVar( "warn", warn = ( warn - 1 ), false );
+
+                    Logger.impor( `[Client] Clients warning deleted! (warn: ${ warn }) ${ self.information( ) }` );
+
+                    if ( ( warn = self.getExtraVar( "warn", 0 ) ) <= 0 )
+                    {
+                        self.setExtraVar( "warn", VAR_NULL, false );
+                        timer.remove( "RS.client." + self.userID + ".popWarning", "warning is zero." );
+                    }
+                }
+            } );
+        }
+    }
+
+    popWarning( )
+    {
+
+    }
+
+    sendModal( title, body, closeText )
+    {
+        //data.title, data.body, data.closeText
+        this.emit( "RS.modal",
+        {
+            title: title,
+            body: body,
+            closeText: closeText
+        } );
+
+        Logger.info( `[Client] Modal emissioned. (title: ${ title }, body: ${ body })` );
+    }
+
+    // client toString 시 정보 반환 -> success
     // 파일 다시 짜기
 }

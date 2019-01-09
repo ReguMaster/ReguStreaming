@@ -11,7 +11,6 @@
         <script src="/javascripts/root.js"></script>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
         <meta property="og:locale" content="ko_KR">
         <meta property="og:type" content="website">
@@ -26,16 +25,20 @@
         <link rel="shortcut icon" href="/favicon.ico">
         <link rel="icon" href="/favicon.ico">
 
-        <script src="//code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
 
+        <!-- <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script> -->
+        <script src="https://ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.js"></script>
+        <!-- <script src="//code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+-->
 
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+        <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
         <script src="/javascripts/external/bootstrap-notify.min.js"></script>
+        <!-- <script src="//code.jquery.com/ui/1.10.0/jquery-ui.js"></script> -->
+        <script src="https://code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 
-
-        <script src="https://code.jquery.com/ui/1.10.0/jquery-ui.js"></script>
+        <script src="//developers.kakao.com/sdk/js/kakao.min.js"></script>
 
         <link rel="stylesheet" type="text/css" href="/stylesheets/base.css">
         <link rel="stylesheet" type="text/css" href="/stylesheets/main.css">
@@ -44,10 +47,11 @@
         <script src="/javascripts/util.js"></script>
         <script src="/javascripts/base.js"></script>
         <script src="/javascripts/main.js"></script>
+        <!-- <script src="/javascripts/external/snow.js"></script> -->
 
         <script src="//www.google.com/recaptcha/api.js"></script>
-        <style type="text/css">
-        .tooltipUI {
+        <style>
+            .tooltipUI {
             background-color: rgba(235, 235, 235, 0.95);
         }
 
@@ -65,10 +69,9 @@
             border-width: 2px;
         }
         </style>
-
     </head>
-    <script type="text/javascript">
-    $( function( )
+    <script>
+        $( function( )
     {
         $( document ).tooltip(
         {
@@ -80,7 +83,7 @@
         } );
     } );
 
-    $( window ).load( function( )
+    $( window ).on( "load", function( )
     {
         $( ".processBackground" ).animate(
         {
@@ -98,7 +101,10 @@
     </script>
 
     <body>
-        <div class="background" id="background"></div>
+        <video loop autoplay muted width="100%" height="100%" class="backgroundVideo" id="backgroundVideo">
+            <source src="/videos/bg_snow.mp4" type="video/mp4" />
+        </video>
+        <!-- <div class="background" id="background"></div> -->
         <div class="backgroundCover" id="backgroundCover"></div>
         <div class="processBackground"></div>
 
@@ -106,17 +112,15 @@
             <p style="color: white; position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; height: 100px; text-align: center; font-size: 15px;">
                 <span class="glyphicon glyphicon-exclamation-sign" style="font-size: 32px; display: block; margin-bottom: 16px;"></span> 이 사이트의 기능을 모두 활용하기 위해서는 자바스크립트를 활성화 시킬 필요가 있습니다.
                 <br />
-                <a class="aRegu" href="http://www.enable-javascript.com/ko/" target="_blank">브라우저에서 자바스크립트를 활성화하는 방법</a>을 참고 하세요.</p>
+                <a href="http://www.enable-javascript.com/ko/" target="_blank">브라우저에서 자바스크립트를 활성화하는 방법</a>을 참고 하세요.</p>
         </noscript>
 
         <div class="modal modal-center fade" data-backdrop="static" data-keyboard="false" id="dialogModal" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-center" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title"></h4>
-                        <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button> -->
+                        <span class="glyphicon glyphicon-exclamation-sign modal-icon"></span>
+                        <p class="modal-title"></p>
                     </div>
 
                     <div class="modal-body"></div>
@@ -156,62 +160,86 @@
         -->
 
         <div class="header" id="header">
-            <div class="header-serviceStatusFloating" id="headerServiceStatusFloating" style="display: none;" onclick="reguStreaming.toggleServiceNotificationStatus( );">
-                <span class="glyphicon glyphicon-exclamation-sign" style="color: white; font-size: 15px; display: inline-block; margin-top: -3px;"></span>
-                <p class="header-serviceStatusFloating-message">현재 서비스를 이용하실 수 없습니다, 자세한 내용은 공지사항을 확인해주세요.</p>
+            <div class="header-serviceStatusFloating selectable" id="headerServiceStatusFloating" style="display: none;" onclick="reguStreaming.toggleServiceNotificationStatus( );">
+                <span class="glyphicon glyphicon-exclamation-sign" style="color: white; font-size: 15px; top: -1px;"></span>
+                <p class="header-serviceStatusFloating-message">현재 서비스를 이용하실 수 없습니다, 이곳을 눌러 공지사항을 참고하세요.</p>
             </div>
 
             <img src="images/logo.png" class="header-logo" alt="Logo" onclick="window.location = '/';" />
             <img src="images/service/warning.png" alt="Service Status" id="headerServiceStatus" style="display: none;" class="hvr-grow header-serviceStatus" onclick="reguStreaming.toggleServiceNotificationStatus( );" />
 
+            <!-- <div class="header-buttonList">
+                <div class="header-button">
+                    <a href="https://discord.gg/sFxRZBC" target="_blank"><p class="header-button-text">커뮤니티</p></a>
+                </div>
+
+                <div class="header-button">
+                    <a href="https://discord.gg/sFxRZBC" target="_blank"><p class="header-button-text">공지사항</p></a>
+                </div>
+            </div> -->
+
             <div class="header-serviceNotification" id="headerServiceNotification"></div>
 
             <div class="header-loginInformation" id="headerLoginInformation">
-                <p class="header-loginInformation-profileName" id="headerLoginInformationProfileName">불러오는 중 ...</p>
-                <p class="header-loginInformation-profileProvider" id="headerLoginInformationProfileProvider">계정으로 로그인됨</p>
-                <img class="header-loginInformation-profileImage" id="headerLoginInformationProfileImage" src="/images/avatar/guest_64.png" alt="Profile Image" />
                 <img class="header-loginInformation-logout" id="headerLoginInformationLogout" src="/images/icon/logout_64.png" alt="Logout" title="레그 스트리밍에서 로그아웃합니다." onclick="reguStreaming.logout( );" />
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-            </div>
-
-                <div class="header-login" id="headerLogin">
-                    <div class="header-login-button steam" title="스팀 계정을 사용해서 로그인합니다." data-provider="steam"></div>
-                    <div class="header-login-button twitter" title="트위터 계정을 사용해서 로그인합니다." data-provider="twitter"></div>
-                    <div class="header-login-button naver" title="네이버 계정을 사용해서 로그인합니다." data-provider="naver"></div>
-                    <div class="header-login-button google" title="구글 계정을 사용해서 로그인합니다." data-provider="google"></div>
-                    <div class="header-login-button kakao" title="카카오 계정을 사용해서 로그인합니다." data-provider="kakao"></div>
-                    <button type="button" class="btn btn-default header-login-button guest" title="손님 계정으로 로그인합니다." data-provider="guest">손님 계정 로그인</button>
-                    <p class="header-login-guestText" id="headerLoginGuestText">또는</p>
+                <img class="header-loginInformation-profileImage" id="headerLoginInformationProfileImage" src="/images/avatar/guest_64.png" alt="Profile Image" />
+                <p class="header-loginInformation-profileName" id="headerLoginInformationProfileName">불러오는 중 ...</p>
+                <p class="header-loginInformation-profileProvider" id="headerLoginInformationProfileProvider">손님 계정</p>
+                <div class="header-loginInformation-profileCredit" id="headerLoginInformationProfileCredit">
+                    <span class="glyphicon glyphicon-flash header-loginInformation-profileCredit-icon"></span>
+                    <p class="header-loginInformation-profileCredit-text" id="headerLoginInformationProfileCreditText">0 크레딧</p>
                 </div>
             </div>
 
-            <div class="roomListContainer" id="roomListContainer">
-                <div class="roomListContainer-list" id="roomListContainerList"></div>
-                <div class="roomListContainer-loginRequired" id="roomListContainerLoginRequired">
-                    <img src="/images/icon/empty.png" alt="Empty" class="roomListContainer-loginRequired-icon" />
-                    <p class="roomListContainer-loginRequired-text">레그 스트리밍에 접속하시려면 로그인이 필요합니다.</p>
-                </div>
+            <div class="header-login" id="headerLogin">
+                <div class="header-login-button steam" title="스팀 계정을 사용해서 로그인합니다." data-provider="steam"></div>
+                <div class="header-login-button twitter" title="트위터 계정을 사용해서 로그인합니다." data-provider="twitter"></div>
+                <div class="header-login-button naver" title="네이버 계정을 사용해서 로그인합니다." data-provider="naver"></div>
+                <div class="header-login-button google" title="구글 계정을 사용해서 로그인합니다." data-provider="google"></div>
+                <div class="header-login-button kakao" title="카카오 계정을 사용해서 로그인합니다." data-provider="kakao"></div>
+                <button type="button" class="btn btn-default header-login-button guest" title="손님 계정으로 로그인합니다." data-provider="guest">손님 계정 로그인</button>
+                <p class="header-login-guestText" id="headerLoginGuestText">또는</p>
             </div>
+        </div>
 
-            <div class="footer" id="footer">
-                <img src="/images/icon/discord_64.png" alt="Discord" class="footerCommunityDiscord" title="레그 스트리밍의 공식 디스코드에 접속합니다." onclick="window.open( 'https://discord.gg/sFxRZBC', '_blank' );" />
-                <!-- <img src="/images/icon/github_64.png" alt="Github" class="footerCommunityGithub" title="레그 스트리밍의 공식 Github에 접속합니다." onclick="" /> -->
-                <p class="footerTitle">Copyright 2018. <a href="https://steamcommunity.com/profiles/76561198011675377/" target="_blank" class="aRegu">ReguMaster</a> all rights reserved.</p>
+        <div class="roomListContainer" id="roomListContainer">
+            <div class="roomListContainer-list" id="roomListContainerList"></div>
+            <div class="roomListContainer-refreshHelp" id="roomListContainerRefreshHelp" style="display: none;">
+                <span class="glyphicon glyphicon-refresh roomListContainer-refreshHelp-icon rotating-normal"></span>
+                <p class="roomListContainer-refreshHelp-text" id="roomListContainerRefreshHelpText">30초 후에 다시 불러옵니다.</p>
             </div>
+            <div class="roomListContainer-loginRequired" id="roomListContainerLoginRequired">
+                <img src="/images/icon/empty.png" alt="Empty" class="roomListContainer-loginRequired-icon" />
+                <p class="roomListContainer-loginRequired-text">레그 스트리밍에 접속하시려면 로그인이 필요합니다.</p>
+            </div>
+        </div>
+
+        <footer>
+            <img src="/images/icon/discord_64.png" alt="Discord" class="footerCommunityDiscord" title="레그 스트리밍의 공식 디스코드 서버에 접속합니다." onclick="window.open( 'https://discord.gg/sFxRZBC', '_blank' );" />
+
+            <!-- <div class="footerCommunityKakao" id="plusfriend-addfriend-button"></div> -->
+            <div class="footerCommunityKakaoChat" id="plusfriend-chat-button" data-plusfriend-id="_xcLqmC" data-title="consult" data-size="small" data-color="mono" data-shape="pc" data-support-multiple-densities="true"></div>
+            <script type='text/javascript'>
+            //<![CDATA[
+            // 사용할 앱의 JavaScript 키를 설정해 주세요.
+            Kakao.init( "facfd2e2bb635518c7898f9b4fe536a1" );
+            // 플러스친구 친구추가 버튼을 생성합니다.
+            // Kakao.PlusFriend.createAddFriendButton(
+            // {
+            //     container: '#plusfriend-addfriend-button',
+            //     plusFriendId: '_euNKj' // 플러스친구 홈 URL에 명시된 id로 설정합니다.
+            // } );
+
+            Kakao.PlusFriend.createChatButton(
+            {
+                container: '#plusfriend-chat-button',
+                plusFriendId: '_euNKj' // 플러스친구 홈 URL에 명시된 id로 설정합니다.
+            } );
+            //]]>
+            </script>
+
+            <p class="footerTitle">Copyright 2019. <a href="https://github.com/ReguMaster" target="_blank">ReguMaster</a> all rights reserved.</p>
+        </footer>
     </body>
 
 </html>

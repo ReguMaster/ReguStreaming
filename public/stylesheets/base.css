@@ -3,9 +3,15 @@
 	Copyright 2018. ReguMaster all rights reserved.
 */
 
-@import url( //fonts.googleapis.com/earlyaccess/jejugothic.css);
-@import url( //fonts.googleapis.com/earlyaccess/nanumpenscript.css);
-@import url( //fonts.googleapis.com/earlyaccess/nanumgothic.css);
+@import url(//fonts.googleapis.com/earlyaccess/jejugothic.css);
+/* @import url(//fonts.googleapis.com/earlyaccess/nanumpenscript.css); */
+@import url(//fonts.googleapis.com/earlyaccess/nanumgothic.css);
+/* @import url(//fonts.googleapis.com/earlyaccess/notosanskr.css); */
+
+:root {
+    --loading-icon: url("/images/msg.gif");
+
+}
 
 .dialogModal {
     width: 450px;
@@ -38,9 +44,10 @@
     text-shadow: 0px 0px 12px rgba(100, 100, 100, 0.7);
 }
 
+/* 
 input[type=checkbox] {
     visibility: hidden;
-}
+} */
 
 html {
     width: 100%;
@@ -64,17 +71,108 @@ html {
 body {
     width: 100%;
     height: 100%;
+    min-height: 100%;
     margin: 0;
     padding: 0;
+    background-color: black;
 
     font-family: 'Jeju Gothic', '맑은 고딕', 'sans-serif';
     overflow-y: hidden !important;
     overflow-x: hidden !important;
 }
 
+img {
+    user-drag: none;
+    -webkit-user-drag: none;
+}
+
+img.draggable {
+    user-drag: auto;
+    -webkit-user-drag: auto;
+}
+
+img.selectable {
+    /* *NOTE: sclae transform 작업 중 가장자리 깨지는 스타일 우회 */
+    outline: 1px solid transparent;
+}
+
 p {
     color: white;
     font-size: 15px;
+    margin: 0;
+}
+
+/* Bootstrap Modal Override */
+.modal-content {
+    border-radius: 10px;
+}
+
+.modal-header {
+    padding: 0;
+    border-bottom: none;
+    width: 100%;
+    height: 32px;
+    background-color: rgb(50, 50, 50);
+    color: white;
+    box-shadow: 0 0 26px black;
+}
+
+.modal-icon {
+    font-size: 13px;
+    display: inline-block;
+    color: white;
+    margin: 8px;
+    margin-right: 3px;
+}
+
+.modal-title {
+    font-size: 13px;
+    margin: 8px;
+    margin-left: 0;
+    display: inline-block;
+    position: relative;
+    top: -1px
+}
+
+.modal-body {
+    padding: 20px;
+    text-align: center;
+}
+
+.modal-footer {
+    padding: 12px;
+    padding-top: 0;
+    text-align: center;
+    border-top: none;
+}
+
+.modal-footer button {
+    font-size: 12px;
+}
+
+.modal-footer button.btn-primary {
+    background-image: linear-gradient(to bottom, #428bca 0, #2d6ca2 100%);
+}
+
+.nodraggable {
+    user-drag: none;
+    user-select: none;
+    -moz-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-user-select: none;
+    -ms-user-select: none;
+}
+
+.selectable {
+    cursor: pointer;
+}
+
+.nopointerevent {
+    pointer-events: none;
+}
+
+.fontSupportUTF8 {
+    font-family: 'Nanum Gothic', '맑은 고딕', 'sans-serif';
 }
 
 .containerMiddleText {
@@ -89,7 +187,7 @@ p {
 .containerSmallText {
     margin: 6px;
     margin-left: 15px;
-    font-size: 13px;
+    font-size: 11px;
     position: relative;
 
     color: rgb(30, 30, 30);
@@ -154,17 +252,35 @@ p {
     transform: scale(1.1);
 }
 
-[data-notify="container"][class*="alert-pastel-"] {
-    background-color: rgb(255, 255, 255);
-    border-width: 0px;
-    border-left: 15px solid rgb(255, 240, 106);
-    border-radius: 6px;
-    box-shadow: 0px 0px 5px rgba(51, 51, 51, 0.3);
-    letter-spacing: 1px;
-    width: 512px;
+
+[data-notify="container"] {
+    width: 612px;
     max-width: 100%;
+    line-height: 13px;
 }
 
+[data-notify="icon"] {
+    top: 2px;
+}
+
+
+[data-notify="title"] {
+    margin-left: 6px;
+    margin-bottom: 6px;
+}
+
+[data-notify="title"]:after {
+    content: "\A\A";
+    white-space: pre;
+    /* or pre-wrap */
+}
+
+[data-notify="message"] {
+    font-size: 13px;
+    /* or pre-wrap */
+}
+
+/* 
 [data-notify="container"].alert-pastel-success {
     border-left-color: rgb(82, 212, 42);
 }
@@ -181,42 +297,53 @@ p {
     border-left-color: rgb(255, 103, 76);
 }
 
-[data-notify="container"][class*="alert-pastel-"]>[data-notify="title"] {
+[data-notify="container"][class*="alert-pastel-"] > [data-notify="title"] {
     color: rgb(80, 80, 80);
     display: inline-block;
     margin-bottom: 12px;
 }
 
-[data-notify="container"][class*="alert-pastel-"]>[data-notify="message"] {
+[data-notify="container"][class*="alert-pastel-"] > [data-notify="message"] {
     font-weight: normal;
     display: block;
-}
+} */
 
-.aRegu {
+a {
     transition: all ease 0.2s;
     text-decoration: none !important;
 }
 
-.aRegu:link {
+a:link {
     color: rgb(102, 179, 255)
 }
 
-.aRegu:visited {
+a:visited {
     color: rgb(102, 179, 255)
 }
 
-.aRegu:hover {
+a:hover {
     color: rgb(255, 51, 102)
 }
 
-.aRegu:active {
+a:active {
     color: rgb(102, 179, 255)
+}
+
+.backgroundVideo {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    -o-object-fit: cover;
+    background-size: cover;
+    z-index: -2;
+    /* filter: blur(3px); */
+    position: absolute;
 }
 
 .backgroundCover {
     width: 100%;
     height: 100%;
-    background-color: rgba(0, 0, 0, 0.7);
+    background-color: rgba(0, 0, 0, 0.5);
     z-index: -1;
 }
 
@@ -230,14 +357,13 @@ p {
     z-index: -2;
     /* filter: blur(5px);
     -webkit-filter: blur(5px); */
+    animation: backgroundZoomIn 1s cubic-bezier(0.645, 0.045, 0.355, 1);
     background-image: url("/background");
-    /* animation: backgroundZoomIn 1s; */
-    /* animation-timing-function: cubic-bezier(0.770, 0.000, 0.175, 1.000); */
 }
 
 @keyframes backgroundZoomIn {
     0% {
-        transform: scale(1.3);
+        transform: scale(1.2);
     }
 
     100% {
@@ -247,7 +373,6 @@ p {
 
 ::-webkit-scrollbar {
     width: 4px;
-    height: 0px;
     border: 0;
 }
 
@@ -352,4 +477,103 @@ p {
     -ms-transition: opacity 0.1s linear;
     -o-transition: opacity 0.1s linear;
     transition: opacity 0.1s linear;
+}
+
+.settingContainer-item {
+    color: rgb(50, 50, 50);
+    margin: 12px;
+}
+
+.settingContainer-item-icon {
+
+    font-size: 13px;
+    display: inline-block;
+    margin-right: 4px;
+    position: relative;
+    top: 2px;
+}
+
+.settingContainer-item-text {
+    color: rgb(50, 50, 50);
+    font-size: 13px;
+    display: inline-block;
+    margin-right: 6px;
+}
+
+.settingContainer-item-switch {
+    position: relative;
+    display: inline-block;
+    width: 40px;
+    height: 16px;
+    float: right;
+}
+
+/* Hide default HTML checkbox */
+.settingContainer-item-switch input {
+    appearance: none;
+    opacity: 0;
+    width: 0;
+    height: 0;
+}
+
+/* The slider */
+.settingContainer-item-switch-slider {
+    position: absolute;
+    cursor: pointer;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgb(100, 100, 100);
+    transition: 0.3s;
+    border-radius: 34px;
+}
+
+.settingContainer-item-switch-slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 2px;
+    bottom: 2px;
+    background-color: white;
+    transition: 0.3s;
+    border-radius: 50%;
+}
+
+input:checked + .settingContainer-item-switch-slider {
+    background-color: #2196F3;
+}
+
+input:focus + .settingContainer-item-switch-slider {}
+
+input:checked + .settingContainer-item-switch-slider:before {
+    -webkit-transform: translateX(24px);
+    -ms-transform: translateX(24px);
+    transform: translateX(24px);
+}
+
+input:disabled + .settingContainer-item-switch-slider {
+    background-color: silver;
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.settingContainer-item-select {
+    position: relative;
+    font-size: 13px;
+    float: right;
+}
+
+.settingContainer-item-select select {
+    padding: 4px;
+    border-radius: 6px;
+    box-shadow: 0 0 12px silver;
+    border: none;
+}
+
+.settingContainer-item-select select:disabled {
+    background-color: silver;
+    opacity: 0.5;
+    cursor: not-allowed;
 }

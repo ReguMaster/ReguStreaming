@@ -38,6 +38,29 @@ body {
     background-color: #161616;
 }
 
+.background {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -2;
+    filter: blur(8px);
+    background-size: cover;
+    background-repeat: no-repeat;
+    background-image: url('./bg.png');
+}
+
+.backgroundCover {
+    width: 100%;
+    height: 100%;
+    position: fixed;
+    top: 0;
+    left: 0;
+    z-index: -1;
+    background-color: rgba(0, 0, 0, 0.7);
+}
+
 .RS-logConsole {
     overflow-y: auto;
     white-space: normal;
@@ -55,14 +78,13 @@ body {
 
     font-size: 12px;
     font-family: '맑은 고딕';
-    font-style: italic;
 
     border: none;
 }
 
 .RS-commandField:focus {
     outline: none;
-    box-shadow: 0 0 16px #9ecaed;
+    box-shadow: 0 0 24px #9ecaed;
 }
 
 .RS-commandField::placeholder {
@@ -74,37 +96,144 @@ body {
     width: 100%;
     height: 32px;
     background-color: #1d1d1d;
-    -webkit-user-select: none;
 }
 
 .RS-status-icon {
     width: 16px;
-    height: 100%;
+    height: 16px;
     transition: all ease 0.5s;
     display: inline-block;
+    border-radius: 50%;
+    margin: 8px;
+    margin-right: 4px;
 }
 
-.RS-status-stats {
-    display: inline-block;
-    margin-top: 8px;
-    margin-right: 12px;
+.RS-status-CPU {
+    position: relative;
+    width: 130px;
+    height: 20px;
+    margin-top: 6px;
+    margin-right: 6px;
+    border-radius: 8px;
     float: right;
+    overflow: hidden;
+    background-color: #3a3a3a;
+}
+
+.RS-status-CPUInner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #f92a66;
+    transition: all ease 0.3s;
+}
+
+.RS-status-CPUText {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    font-size: 10px;
+    text-align: center;
+    padding-top: 1px;
+    text-shadow: 0 0 6px black;
+}
+
+.RS-status-CPUText:after {
+    content: attr(data-cpu);
+    font-size: 13px;
+}
+
+.RS-status-clientCount {
+    position: relative;
+    width: 130px;
+    height: 20px;
+    margin-top: 6px;
+    margin-right: 6px;
+    border-radius: 8px;
+    float: right;
+    overflow: hidden;
+    background-color: #3a3a3a;
+}
+
+.RS-status-clientCountInner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 0%;
+    height: 100%;
+    background-color: #00b1b7;
+    transition: all ease 0.3s;
+}
+
+.RS-status-clientCountText {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    font-size: 10px;
+    text-align: center;
+    padding-top: 1px;
+    text-shadow: 0 0 6px black;
+}
+
+.RS-status-clientCountText:after {
+    content: attr(data-count);
+    font-size: 13px;
+}
+
+.RS-status-RAM {
+    position: relative;
+    width: 130px;
+    height: 20px;
+    margin-top: 6px;
+    margin-right: 6px;
+    border-radius: 8px;
+    float: right;
+    overflow: hidden;
+    background-color: #3a3a3a;
+}
+
+.RS-status-RAMInner {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: #9649ff;
+    transition: all ease 0.3s;
+}
+
+.RS-status-RAMText {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    font-size: 10px;
+    text-align: center;
+    padding-top: 1px;
+    text-shadow: 0 0 6px black;
+}
+
+.RS-status-RAMText:after {
+    content: attr(data-ram);
+    font-size: 13px;
 }
 
 .RS-status-serverName {
-    font-size: 20px;
+    font-size: 15px;
+    margin-top: 6px;
     margin-left: 6px;
     display: inline-block;
     position: absolute;
-    top: 4px;
+    font-family: '맑은 고딕';
 }
 
 .online {
-    background-color: rgb(37, 255, 110);
+    background-color: #49ffc2;
 }
 
 .offline {
-    background-color: rgb(255, 37, 37);
+    background-color: #ff4949;
 }
 
 .RS-logItem {
@@ -113,20 +242,38 @@ body {
     padding-bottom: 0;
 }
 
-.logLevel-0 {}
+.RS-logItem.logLevel-0 {}
 
-.logLevel-1 {
-    color: yellow;
+.RS-logItem.logLevel-1 {
+    color: white;
+    background-color: #af3600;
+    text-shadow: 0px 0px 6px rgba(255, 255, 255, 0.55);
 }
 
-.logLevel-2 {
-    color: red;
+.RS-logItem.logLevel-2 {
+    color: white;
+    background-color: #840000;
+    text-shadow: 0px 0px 6px rgba(255, 255, 255, 0.55);
 }
 
-.logLevel-3 {
+.RS-logItem.logLevel-3 {
     color: cyan;
 }
 
-.logLevel-99 {
-    color: blue;
+.RS-logItem.logLevel-4 {
+    color: white;
+    background-color: #003046;
+    text-shadow: 0px 0px 6px rgba(255, 255, 255, 0.55);
+}
+
+.RS-logItem.logLevel-5 {
+    color: white;
+    background-color: #2f1b61;
+    text-shadow: 0px 0px 6px rgba(255, 255, 255, 0.55);
+}
+
+.RS-logItem.logLevel-6 {
+    color: white;
+    background-color: #61371b;
+    text-shadow: 0px 0px 6px rgba(255, 255, 255, 0.55);
 }

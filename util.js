@@ -12,10 +12,14 @@ const crypto = require( "crypto" );
 const xml2js = require( "xml2js" );
 const os = require( "os" );
 const merge = require( "merge" );
+const fileHash = require( "sha1-from-file" );
+const fileStream = require( "fs" );
 
-util.test = "test";
 JSON.empty = JSON.stringify(
 {} );
+
+// *NOTE: Client 클래스에 사용하는 EXTRA_VAR 시스템 null 값 설정
+global.VAR_NULL = "^NULL^";
 
 // *TODO: 코드 시스템 쓰는 logic 에 이 메소드 사용 적용
 util.getCodeID = function( codesObj, code )
@@ -110,6 +114,11 @@ Array.prototype.chain = function( startIndex, endIndex, concatenator = " " )
     return newVal;
 }
 
+Array.prototype.random = function( )
+{
+    return this[ Math.randomNumber( 0, this.length ) ];
+}
+
 var parser = new xml2js.Parser(
 {
     attrkey: "attr",
@@ -137,7 +146,7 @@ util.calcTime = function( time )
 }
 
 // https://stackoverflow.com/questions/3653065/get-local-ip-address-in-node-js
-util.getLocalIP = function( )
+util.getLocalNetworkInterface = function( )
 {
     var result = null;
     var ifaces = os.networkInterfaces( );
@@ -173,15 +182,19 @@ util.splitIP = function( ipAddress )
 util.censorshipIP = function( ipAddress )
 {
     var ipArray = ipAddress.split( "." ),
-        length = ipArray.length;
+        length = ipArray.length,
+        ipOutput = "";
 
     for ( var i = 0; i < length; i++ )
     {
         if ( ( i + 1 ) % 2 === 0 )
             ipArray[ i ] = "***";
+
+        ipOutput += ipArray[ i ] + ".";
     }
 
-    return ipArray.toString( );
+    // *NOTE: , 로 찍히는 이유가 여기 있음.
+    return ipOutput.substring( 0, ipOutput.length - 1 );
 }
 
 util.crypto = function( type, data )
@@ -217,6 +230,25 @@ util.sha512 = function( data )
     return crypto.createHash( "sha512" )
         .update( data )
         .digest( "hex" );
+}
+
+util.fileHash = function( location, callback )
+{
+    var hash = crypto.createHash( "sha1" );
+    var stream = fileStream.createReadStream( location );
+
+    stream.on( "data", function( v )
+        {
+            return hash.update( v );
+        } )
+        .on( "end", function( )
+        {
+            callback( hash.digest( "hex" ) );
+        } )
+        .on( "error", function( err )
+        {
+            callback( null );
+        } );
 }
 
 // http://sanghaklee.tistory.com/3
@@ -310,6 +342,11 @@ Math.clamp = function( value, min, max )
         return max;
 
     return value;
+}
+
+Math.randomNumber = function( min, max )
+{
+    return Math.floor( ( Math.random( ) * max ) + min );
 }
 
 // https://stackoverflow.com/questions/9006988/node-js-on-windows-how-to-clear-console

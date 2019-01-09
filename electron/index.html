@@ -9,97 +9,37 @@
     <head>
         <meta charset="utf-8">
         <link rel="stylesheet" type="text/css" href="./style.css">
+        <script>
+            window.$ = window.jQuery = require( "jquery" );
+            window.electron = require( "electron" );
+        </script>
     </head>
 
     <body>
+        <div class="background"></div>
+        <div class="backgroundCover"></div>
         <div class="RS-status">
             <div class="RS-status-icon"></div>
-            <p class="RS-status-serverName">ReguStreaming : SERVER</p>
-            <p class="RS-status-stats">CPU: 0%, RAM: 0bytes</p>
+            <p class="RS-status-serverName">ReguStreaming : MainServer #0</p>
+
+            <div class="RS-status-clientCount">
+                <div class="RS-status-clientCountInner"></div>
+                <p class="RS-status-clientCountText" data-count="0">Clients: </p>
+            </div>
+
+            <div class="RS-status-RAM">
+                <div class="RS-status-RAMInner"></div>
+                <p class="RS-status-RAMText" data-ram="0bytes">RAM: </p>
+            </div>
+
+            <div class="RS-status-CPU">
+                <div class="RS-status-CPUInner"></div>
+                <p class="RS-status-CPUText" data-cpu="0%">CPU: </p>
+            </div>
         </div>
         <div class="RS-logConsole"></div>
         <input type="text" name="commandField" class="RS-commandField" placeholder="> ..." autofocus />
-
-        <script>
-        let logCount = 0;
-
-        window.$ = window.jQuery = require( "jquery" );
-        window.electron = require( "electron" );
-
-        let controls = {
-            logConsole: $( ".RS-logConsole" ),
-            statusIcon: $( ".RS-status-icon" ),
-            statusStat: $( ".RS-status-stats" )
-        };
-
-        window.onbeforeunload = function( e )
-        {
-            return false;
-        }
-
-        window.onload = function( )
-        {
-            $( ".RS-commandField" ).on( "keypress", function( e )
-            {
-                if ( e.which === 13 ) // Enter 키
-                {
-                    var self = $( this );
-
-                    if ( self.val( ).length <= 0 ) return;
-
-                    electron.ipcRenderer.send( "commandExecute",
-                    {
-                        type: "command",
-                        command: self.val( )
-                    } );
-
-                    self.val( "" );
-                }
-            } );
-        }
-
-        electron.ipcRenderer.on( "serverStats", function( e, stats )
-        {
-            controls.statusStat.text( `CPU: ${ stats.cpu }%, RAM: ${ stats.memory }bytes` );
-        } );
-
-        electron.ipcRenderer.on( "serverStatus", function( e, code )
-        {
-            controls.statusIcon.removeClass( "online offline" );
-            switch ( code )
-            {
-                case 0:
-                    controls.statusIcon.addClass( "offline" );
-                    break;
-                case 1:
-                    controls.statusIcon.addClass( "online" );
-                    break;
-            }
-        } );
-
-        electron.ipcRenderer.on( "log", function( e, level, message )
-        {
-            if ( ++logCount > 500 )
-            {
-                logCount--;
-                $( "#logItem:first" ).remove( );
-            }
-
-            var isScrollOnBottom = controls.logConsole.scrollTop( ) + controls.logConsole.innerHeight( ) >= controls.logConsole.prop( "scrollHeight" );
-
-            controls.logConsole.append( `<div class="RS-logItem logLevel-${ level }" id="logItem">${ message }</div>` );
-
-            if ( isScrollOnBottom )
-                controls.logConsole.scrollTop( controls.logConsole.prop( "scrollHeight" ) );
-        } );
-
-
-        electron.ipcRenderer.on( "clearLog", function( e, stats )
-        {
-            controls.logConsole.empty( );
-            logCount = 0;
-        } );
-        </script>
+        <script src="./index.js"></script>
     </body>
 
 </html>

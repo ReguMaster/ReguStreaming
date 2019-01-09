@@ -27,12 +27,12 @@ Database.onConnect = function( err )
         {
             timer.create( "Database.reconnectTimer", config.reconnectDelay, 0, function( )
             {
-                Logger.warn( `[MySQL] Reconnecting to MySQL database ...` );
+                Logger.warn( `[MySQL] Reconnecting to MySQL server ...` );
                 Database.connect( );
             } );
         }
 
-        Logger.error( `[MySQL] Failed to connect to MySQL database! (error:${ err.message })` );
+        Logger.error( `[MySQL] Failed to connect to MySQL server! (error:${ err.message })` );
         hook.run( "OnConnectMySQL", !!!err, err );
         return;
     }
@@ -42,7 +42,7 @@ Database.onConnect = function( err )
             timer.remove( "Database.reconnectTimer" );
     }
 
-    Logger.info( `[MySQL] MySQL database connected to ${ config.user }@${ config.host }:${ config.port }.` );
+    Logger.info( `[MySQL] MySQL server connected to ${ config.user }@${ config.host }:${ config.port }.` );
     hook.run( "OnConnectMySQL", !!!err );
 }
 
@@ -59,11 +59,11 @@ Database.connect = function( )
     Database._connection.connect( Database.onConnect );
     Database._connection.on( "error", function( err )
     {
-        Logger.error( `[MySQL] MySQL database error: ${ err.message }` );
+        Logger.error( `[MySQL] MySQL server error: ${ err.message }` );
 
         timer.create( "Database.reconnectTimer", config.reconnectDelay, 0, function( )
         {
-            Logger.warn( `[MySQL] Reconnecting to MySQL database ...` );
+            Logger.warn( `[MySQL] Reconnecting to MySQL server ...` );
             Database.connect( );
         } );
     } );
@@ -87,10 +87,10 @@ Database.query = function( sql, onResult, onError )
         else
             result.status = ( result.affectedRows > 0 || result.changedRows > 0 ) ? "success" : "failed";
 
+        Logger.info( `[MySQL] Query executed. '${ sql }' -> ${ result.status }` );
+
         if ( onResult )
             onResult( result.status, result, fields );
-
-        Logger.info( `[MySQL] Query executed. '${ sql }' -> ${ result.status }` );
     } );
 }
 
@@ -112,10 +112,10 @@ Database.queryWithEscape = function( sql, escape, onResult, onError )
         else
             result.status = ( result.affectedRows > 0 || result.changedRows > 0 ) ? "success" : "failed";
 
+        Logger.info( `[MySQL] Query executed. '${ sql }' with ${ escape } -> ${ result.status }` );
+
         if ( onResult )
             onResult( result.status, result, fields );
-
-        Logger.info( `[MySQL] Query executed. '${ sql }' with ${ escape } ->` );
     } );
 }
 
@@ -142,8 +142,12 @@ Database.executeProcedure = function( id, args, onResult, onError )
 
 Database.registerProcedure( "FIND_USER_BY_IPADDRESS", `SELECT * FROM user WHERE _ipAddress = ?` );
 Database.registerProcedure( "REGISTER_GUEST", `INSERT IGNORE INTO user ( _provider, _name, _tag, _ipAddress ) VALUES ( ?, ?, ?, ? )` );
-Database.registerProcedure( "REGISTER_USERFILE", `INSERT IGNORE INTO userfile ( _id, _file, _originalFileName, _type, _adult ) VALUES ( ?, ?, ?, ?, ? )` );
-Database.registerProcedure( "FIND_USERFILE", `SELECT _id, _adult from userfile WHERE _file = ?` );
+Database.registerProcedure( "REGISTER_USERFILE",
+    `INSERT IGNORE INTO userfile ( _id, _originalFileName, _extension, _mimeType, _adult, _hash, _virus ) VALUES ( ?, ?, ?, ?, ?, ?, ? )` );
+Database.registerProcedure( "FIND_USERFILE", `SELECT _id, _adult, _virus, _extension, _mimeType, _originalFileName from userfile WHERE _id = ?` );
+Database.registerProcedure( "FIND_USERFILE_BY_HASH", `SELECT _id, _adult, _virus, _extension, _mimeType, _originalFileName from userfile WHERE _hash = ?` );
+
+Database.registerProcedure( "FETCH_USER_SETTING", `SELECT * from userfile WHERE _tag = ?` );
 
 // Database.build = function( )
 // {

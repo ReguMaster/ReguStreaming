@@ -11,7 +11,6 @@
         <script src="/javascripts/root.js"></script>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
-        <meta http-equiv="X-UA-Compatible" content="IE=edge">
 
         <meta property="og:locale" content="ko_KR">
         <meta property="og:type" content="website">
@@ -27,25 +26,28 @@
         <link rel="icon" href="/favicon.ico">
 
         <script src="/socket.io/socket.io.js"></script>
-        <script src="/siofu/client.js"></script>
+        <!-- <script src="/javascripts/sexy.js"></script> -->
+        <!-- <script src="/siofu/client.js"></script> -->
 
-        <script src="//code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
-
-
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
-        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
-        <script src="https://maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
+        <!-- *TODO: 외부 사이트 말고 내부로 전환바람 -->
+        <script src="//ajax.aspnetcdn.com/ajax/jQuery/jquery-3.3.1.js"></script>
+        <!-- <script src="//ajax.googleapis.com/ajax/libs/angularjs/1.7.5/angular.min.js"></script> -->
+        <!-- <script src="//code.jquery.com/jquery-2.2.4.min.js" integrity="sha256-BbhdlvQf/xTY9gja0Dq3HiwQF8LaCRTXxZKRutelT44=" crossorigin="anonymous"></script>
+-->
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap.min.css">
+        <link rel="stylesheet" href="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/css/bootstrap-theme.min.css">
+        <script src="//maxcdn.bootstrapcdn.com/bootstrap/3.2.0/js/bootstrap.min.js"></script>
         <script src="/javascripts/external/bootstrap-notify.min.js"></script>
-        <script src="https://code.jquery.com/ui/1.10.0/jquery-ui.js"></script>
+        <!--<script src="//code.jquery.com/ui/1.10.0/jquery-ui.js"></script>-->
+        <script src="//code.jquery.com/ui/1.12.1/jquery-ui.min.js" integrity="sha256-VazP97ZCwtekAsvgPBSUwPFKdrwD3unUfSGVYrahUqU=" crossorigin="anonymous"></script>
 
         <link rel="stylesheet" type="text/css" href="/stylesheets/base.css">
         <link rel="stylesheet" type="text/css" href="/stylesheets/player.css">
         <link rel="stylesheet" type="text/css" href="/stylesheets/animate.css">
         <link rel="stylesheet" type="text/css" href="/stylesheets/hover.min.css">
 
-
-
         <script src="/javascripts/external/xss.min.js"></script>
+        <script src="/javascripts/external/sha1.min.js"></script>
         <script src="/javascripts/util.js"></script>
         <script src="/javascripts/base.js"></script>
         <!-- <script src="/javascripts/external/microphone-stream.js"></script> -->
@@ -53,13 +55,12 @@
 
         <script>
             reguStreaming.setConfig( "roomID", "<%= roomID %>" );
-
         </script>
 
         <script src="/javascripts/player.js"></script>
         <script src="/javascripts/visualizer.js"></script>
-        <style type="text/css">
-        .tooltipUI {
+        <style>
+            .tooltipUI {
             background-color: rgba(235, 235, 235, 0.95);
         }
 
@@ -79,8 +80,8 @@
         </style>
 
     </head>
-    <script type="text/javascript">
-    $( function( )
+    <script>
+        $( function( )
     {
         $( document ).tooltip(
         {
@@ -93,7 +94,7 @@
     } );
     </script>
 
-    <body>
+    <body ondragstart="return false;" ondragenter="return false;" ondragover="return false;" ondrop="return false;">
         <div class="userRightMenu" id="userRightMenu">
             <div class="userRightMenu-item" id="userRightMenu-userInfo">사용자 정보</div>
             <div class="userRightMenu-item" id="userRightMenu-kick">강제 퇴장</div>
@@ -101,19 +102,21 @@
             <!-- <div class="menu-item">Share On Twitter</div> -->
             <!-- <hr> -->
         </div>
+        <div class="test" data-wow="sexy"></div>
         <div class="background" id="background"></div>
         <!-- <div id="backgroundBufferCover"></div> -->
         <div class="backgroundCover" id="backgroundCover"></div>
-        <div class="dialogBackground"></div>
-        <div class="processBackground">
-            <p class="processBackgroundText">잠시만 기다려주세요!</p>
-            <div class="processBackgroundSpinner" id="loader-content">
+        <div class="dialogBackground" id="dialogBackground"></div>
+        <div class="processBackground" id="processBackground">
+            <div class="processBackground-icon" data-icon="/images/msg.gif"></div>
+            <div class="processBackground-message">잠시만 기다려주세요!</div>
+            <!-- <div class="processBackgroundSpinner" id="loader-content">
                 <div class="rect1"></div>
                 <div class="rect2"></div>
                 <div class="rect3"></div>
                 <div class="rect4"></div>
                 <div class="rect5"></div>
-            </div>
+            </div> -->
         </div>
         <div class="centerNotification">
 
@@ -123,22 +126,19 @@
             <p style="color: white; position: absolute; top: 0; left: 0; right: 0; bottom: 0; margin: auto; height: 100px; text-align: center; font-size: 15px;">
                 <span class="glyphicon glyphicon-exclamation-sign" style="font-size: 32px; display: block; margin-bottom: 16px;"></span> 이 사이트의 기능을 모두 활용하기 위해서는 자바스크립트를 활성화 시킬 필요가 있습니다.
                 <br />
-                <a class="aRegu" href="http://www.enable-javascript.com/ko/" target="_blank">브라우저에서 자바스크립트를 활성화하는 방법</a>을 참고 하세요.</p>
+                <a href="http://www.enable-javascript.com/ko/" target="_blank">브라우저에서 자바스크립트를 활성화하는 방법</a>을 참고 하세요.</p>
         </noscript>
 
+        <!-- *TODO: 이거 유동식으로 바꾸기 -->
         <div class="modal modal-center fade" data-backdrop="static" data-keyboard="false" id="dialogModal" tabindex="-1" role="dialog">
             <div class="modal-dialog modal-center" role="document">
                 <div class="modal-content">
                     <div class="modal-header">
-                        <h4 class="modal-title"></h4>
-                        <!-- <button type="button" class="close" data-dismiss="modal" aria-label="Close">
-                            <span aria-hidden="true">&times;</span>
-                        </button> -->
+                        <span class="glyphicon glyphicon-exclamation-sign modal-icon"></span>
+                        <p class="modal-title"></p>
                     </div>
 
-                    <div class="modal-body">
-
-                    </div>
+                    <div class="modal-body"></div>
 
                     <div class="modal-footer">
                         <button type="button" class="btn btn-default" id="dialogModalClose" data-dismiss="modal">닫기</button>
@@ -149,17 +149,21 @@
         </div>
 
         <div class="innerHeader" id="innerHeader">
-            <img class="innerHeader-mainImage" src="/images/icon/main.png" onclick="window.location = '/';" />
+            <img class="innerHeader-mainImage selectable" src="/images/icon/main.png" onclick="window.location = '/';" />
+            <div class="innerHeader-fader"></div>
+
+            <img src="/images/service/warning.png" class="hvr-grow innerHeader-serviceStatus selectable" id="innerHeaderServiceStatus" style="display: none;" onclick="reguStreaming.toggleServiceNotificationStatus( );" />
             <!-- <img class="hvr-grow serviceStatusIcon" src="images/service/warning.png" id="serviceStatusIcon" style="display: none;" onclick="reguStreaming.toggleServiceNotificationStatus( );" />
 
             <div class="serviceNotificationContainer" id="serviceNotificationContainer"></div> -->
             <!-- <a class="videoURL" id="videoURL" href="" target="_blank"> -->
-            <p class="videoTitle" id="videoTitle" style="display: none;"></p>
+            <p class="innerHeader-videoTitle selectable fontSupportUTF8" id="videoTitle" style="display: none;"></p>
+            <div class="innerHeader-videoProvider nopointerevent" id="videoProvider" style="display: none;"></div>
             <!-- </a> -->
 
-            <div class="videoRequesterInformation" id="videoRequesterInformation" style="display: none;">
-                <img src="/images/avatar/guest_64.png" alt="Profile Image" class="videoRequesterProfileImage" id="videoRequesterProfileImage" />
-                <p class="videoRequesterProfileName" id="videoRequesterProfileName"></p>
+            <div class="profileInformation simple selectable" id="videoRequesterInformation" style="display: none; margin-left: 12px;">
+                <img src="/images/avatar/guest_64.png" alt="Profile Image" class="profileInformation-profileImage" id="videoRequesterProfileImage" />
+                <p class="profileInformation-profileName fontSupportUTF8" id="videoRequesterProfileName"></p>
             </div>
             <!-- <button class="reguImageButton" id="topSettingImageButton" onclick="reguStreaming.settingButtonClicked( );"></button>
             <button class="reguImageButton" id="queueRegisterImageButton" onclick="reguStreaming.queueContainerStatus( true );"></button> -->
@@ -175,87 +179,183 @@
             </button> -->
 
             <p class="currentRoomInformation" id="currentRoomInformation"></p>
-
-            <div class="innerHeader-roomPlayersContainer" id="innerHeaderRoomPlayersContainer">
-                <div class="innerHeader-roomPlayersContainer-item">
-                    <img class="innerHeader-roomPlayersContainer-item-avatar" src="images/icon/user_64.png" />
-                </div>
-                </div>
-
-                <!-- <div class="videoUnLikeButton" id="videoUnLikeButton" title="싫어요 .." onclick="reguStreaming.queueUserVote( 0 );"></div> -->
-                <!-- <div class="videoLikeButton" id="videoLikeButton" title="좋아요!" onclick="reguStreaming.queueUserVote( 1 );"></div> -->
+            <!-- <div class="videoUnLikeButton" id="videoUnLikeButton" title="싫어요 .." onclick="reguStreaming.queueUserVote( 0 );"></div> -->
+            <!-- <div class="videoLikeButton" id="videoLikeButton" title="좋아요!" onclick="reguStreaming.queueUserVote( 1 );"></div> -->
 
 
-                <div class="videoPositionBar" id="videoPositionBar">
-                    <div class="videoPositionFullBar" id="videoPositionFullBar">
-                        <!-- <div class="videoPositionKnobCenter" id="videoPositionKnobCenter"></div> -->
-                    </div>
+            <div class="videoPositionBar" id="videoPositionBar" data-height="4px">
+                <div class="videoPositionBar-full" id="videoPositionBarFull"></div>
+            </div>
+
+            <div class="innerHeader-videoPositionHelp" id="innerHeaderVideoPositionHelp" style="display: none; opacity: 0;">
+
+            </div>
+
+            <div class="innerHeader-rightAlignItem">
+                <p class="innerHeader-roomTitle" id="innerHeaderRoomTitle"></p>
+                <p class="innerHeader-roomPlayersCount" id="innerHeaderRoomPlayersCount"></p>
+
+                <div class="innerHeader-roomPlayersContainer" id="innerHeaderRoomPlayersContainer">
                 </div>
             </div>
 
-            <div id="voteContainer" style="display: none;">
-                <p class="containerMiddleText" style="color: white; margin: 0 auto; margin-top: 32px; text-align: center;">영상 스킵 투표에 응답해주세요.</p>
-                <p class="containerSmallText" id="voteContainerStartUser" style="color: rgb( 235, 235, 235 ); margin: 0 auto; margin-top: 3px; text-align: center;"></p>
-                <p class="containerSmallText" id="voteContainerTime" style="color: rgb( 200, 200, 200 ); margin: 0 auto; margin-top: 3px; text-align: center;"></p>
+            <div class="innerHeader-serviceNotification" id="innerHeaderServiceNotification"></div>
+        </div>
 
-                <img src="/images/msg.gif" width="32px" height="32px" style="bottom: 24px; position: absolute; left: 50%; margin-left: -16px;" />
-                <button type="button" class="btn btn-danger" id="voteContainerRejectButton" title="이 투표에 반대합니다." onclick="reguStreaming.voteSend( 0 );">반대</button>
-                <button type="button" class="btn btn-success hvr-grow" id="voteContainerAcceptButton" title="이 투표에 찬성합니다." onclick="reguStreaming.voteSend( 1 );">찬성</button>
+        <div class="voteContainer" id="voteContainer" style="display: none;" data-height="120px">
+            <div class="voteContainer-counter">
+                <p class="voteContainer-counterText" id="voteContainerCounterText">투표 종료까지 15초 남았습니다.</p>
             </div>
 
-            <div id="queueRegisterContainer" style="display: none;">
-                <div id="queueRegisterContainerTitleBar">
-                    <p id="queueRegisterContainerTitleText">
-                        대기열에 영상 추가
-                    </p>
-                </div>
+            <div class="voteContainer-voteStatus">
+                <p class="voteContainer-voteStatus-percent" id="voteContainerVoteStatusPercent">0%</p>
 
-                <p class="containerMiddleText" style="margin-top: 56px">대기열에 추가할 영상 주소를 입력하세요.</p>
-                <p class="containerSmallText" style="color: #444444;">- 대기열에 영상을 추가 후 1분 동안 새 영상 추가가 불가능합니다.</p>
-                <p class="containerSmallText" style="color: #831fab; font-size: 15px;">- YouTube/티비플/Ani24 영상을 지원합니다.</p>
-                <!-- <p class="containerSmallText">- 유튜브 영상의 경우 15분을 초과하는 영상 추가는 불가능합니다.</p> -->
-                <!-- <p class="containerSmallText">- 채널 규칙에 맞는 영상을 추가하십시오.</p> -->
-
-                <input type="text" name="queueRegisterURLTextField" class="reguTextField" id="queueRegisterURLTextField" autocomplete="off" placeholder="지원하는 사이트 영상 주소" autofocus />
-
-                <p id="queueRegisterStartTimeTitleText">영상 시작 시간</p>
-                <input type="number" name="queueRegisterStartTimeTextFieldMin" class="reguTextField" id="queueRegisterStartTimeTextFieldMin" placeholder="0" min="0" max="7" />
-                <p id="queueRegisterStartTimeHelpText">분</p>
-                <input type="number" name="queueRegisterStartTimeTextFieldSec" class="reguTextField" id="queueRegisterStartTimeTextFieldSec" placeholder="0" min="0" max="59" />
-                <p id="queueRegisterStartTimeHelpText">초</p>
-
-                <button type="button" class="btn btn-default" id="queueRegisterCancelButton" onclick="reguStreaming.queueContainerStatus( false );">취소</button>
-                <button type="button" class="btn btn-success" id="queueRegisterRunButton" onclick="reguStreaming.queueRegister( );">대기열에 추가</button>
+                <div class="voteContainer-voteStatus-true" id="voteContainerVoteStatusTrue"></div>
+                <div class="voteContainer-voteStatus-false" id="voteContainerVoteStatusFalse"></div>
             </div>
 
-            <div class="dialogContainer" id="settingContainer" style="display: none;">
-                <div class="dialogContainer-titleBar" id="settingContainerTitleBar">
-                    <p class="dialogContainer-titleBar-title">설정</p>
+            <p class="voteContainer-title" id="voteContainerTitle" data-text="영상 스킵 투표에 응답해주세요." data-localtext="영상 스킵 투표 진행 중"></p>
 
-                    <div class="slideOne" id="notificationEnableCheckBox">
-                        <input type="checkbox" value="None" id="slideOne" name="check" />
-                        <label for="slideOne"></label>
-                    </div>
-                    <p id="notificationEnableLabel">알림 활성화</p>
-
-                    <!-- <input id="notificationEnableCheckBox" name="notificationEnableCheckBox" type="checkbox" value="1" /> -->
-                </div>
-
-                <button type="button" class="btn btn-default" id="settingContainerCloseButton" onclick="reguStreaming.settingContainerStatus( false );">닫기</button>
+            <div class="profileInformation simple selectable" id="voteRequesterProfileInformation" style="margin: 12px; float: right;">
+                <img src="/images/avatar/guest_64.png" alt="Profile Image" class="profileInformation-profileImage" id="voteRequesterProfileImage" />
+                <p class="profileInformation-profileName fontSupportUTF8" id="voteRequesterProfileName"></p>
             </div>
 
-            <div class="dialogContainer" id="userInfoContainer" style="display: none;">
-                <div class="dialogContainer-titleBar" id="userInfoContainerTitleBar">
-                    <p class="dialogContainer-titleBar-title">사용자 정보</p>
+            <!-- <p class="containerSmallText" id="voteContainerStartUser" style="color: rgb( 235, 235, 235 ); margin: 0 auto; margin-top: 3px; text-align: center;">ReguMaster 님이 요청함</p> -->
+
+            <!-- <p class="containerSmallText" id="voteContainerTime" style="color: rgb( 200, 200, 200 ); margin: 0 auto; margin-top: 3px; text-align: center;">10초 남았습니다.</p> -->
+
+            <!-- <img src="/images/msg.gif" width="32px" height="32px" style="bottom: 24px; position: absolute; left: 50%; margin-left: -16px;" /> -->
+            <button type="button" class="btn btn-warning voteContainer-voteFalse" onclick="reguStreaming.voteSend( 0 );">반대</button>
+            <button type="button" class="btn btn-success voteContainer-voteTrue" onclick="reguStreaming.voteSend( 1 );">찬성</button>
+        </div>
+
+        <div class="dialogContainer" id="queueRegisterContainer" style="display: none;">
+            <div class="dialogContainer-titleBar nodraggable" id="queueRegisterContainerTitleBar">
+                <span class="glyphicon glyphicon-music dialogContainer-titleBar-icon"></span>
+                <p class="dialogContainer-titleBar-title">대기열 등록</p>
+
+                <span class="glyphicon glyphicon-remove dialogContainer-titleBar-close selectable"></span>
+            </div>
+
+            <p class="containerMiddleText">대기열에 추가할 영상 주소를 입력하세요.</p>
+            <p class="containerSmallText" style="color: #444444;">- 대기열에 영상을 추가 후 1분 동안 새 영상 추가가 불가능합니다.</p>
+            <p class="containerSmallText" style="color: #831fab; font-size: 15px;">- YouTube/Tvple/Ani24 영상을 지원합니다.</p>
+            <!-- <p class="containerSmallText">- 유튜브 영상의 경우 15분을 초과하는 영상 추가는 불가능합니다.</p> -->
+            <p class="containerSmallText">- 채널 규칙에 맞는 영상을 추가하십시오.</p>
+
+            <input type="text" name="queueRegisterURLTextField" class="reguTextField" id="queueRegisterURLTextField" autocomplete="off" placeholder="지원하는 사이트 영상 주소" autofocus />
+
+            <p id="queueRegisterStartTimeTitleText">영상 시작 시간</p>
+            <input type="number" name="queueRegisterStartTimeTextFieldMin" class="reguTextField" id="queueRegisterStartTimeTextFieldMin" placeholder="0" min="0" max="7" />
+            <p id="queueRegisterStartTimeHelpText">분</p>
+            <input type="number" name="queueRegisterStartTimeTextFieldSec" class="reguTextField" id="queueRegisterStartTimeTextFieldSec" placeholder="0" min="0" max="59" />
+            <p id="queueRegisterStartTimeHelpText">초</p>
+
+            <button type="button" class="btn btn-default" id="queueRegisterCancelButton" onclick="reguStreaming.queueContainerStatus( false );">취소</button>
+            <button type="button" class="btn btn-primary" id="queueRegisterRunButton" onclick="reguStreaming.queueRegister( );">대기열에 추가</button>
+        </div>
+
+        <div class="dialogContainer" id="settingContainer" style="display: none;">
+            <div class="dialogContainer-titleBar nodraggable" id="settingContainerTitleBar">
+                <span class="glyphicon glyphicon-wrench dialogContainer-titleBar-icon"></span>
+                <p class="dialogContainer-titleBar-title">사용자 설정</p>
+
+                <span class="glyphicon glyphicon-remove dialogContainer-titleBar-close selectable"></span>
+            </div>
+
+            <div class="settingContainer-item" data-config="play_chatsound" data-config-default="true">
+                <span class="glyphicon glyphicon-comment settingContainer-item-icon"></span>
+                <p class="settingContainer-item-text">채팅 사운드</p>
+
+                <label class="settingContainer-item-switch" data-option>
+                    <input type="checkbox">
+                    <span class="settingContainer-item-switch-slider round"></span>
+                </label>
+            </div>
+
+            <div class="settingContainer-item" data-config="show_caption" data-config-default="true">
+                <span class="glyphicon glyphicon-align-left settingContainer-item-icon"></span>
+                <p class="settingContainer-item-text" title="사용 가능한 자막이 있을 때 표시됩니다.">자막(YouTube) 표시</p>
+
+                <label class="settingContainer-item-switch" data-option>
+                    <input type="checkbox">
+                    <span class="settingContainer-item-switch-slider round"></span>
+                </label>
+            </div>
+
+            <div class="settingContainer-item" data-config="show_cloud" data-config-default="true">
+                <span class="	glyphicon glyphicon-cloud settingContainer-item-icon"></span>
+                <p class="settingContainer-item-text" title="사용 가능한 구름이 있을 때 표시됩니다.">구름(Tvple) 표시</p>
+
+                <label class="settingContainer-item-switch" data-option>
+                    <input type="checkbox">
+                    <span class="settingContainer-item-switch-slider round"></span>
+                </label>
+            </div>
+
+            <div class="settingContainer-item" data-config="show_debug" data-config-default="true">
+                <span class="glyphicon glyphicon-flash settingContainer-item-icon"></span>
+                <p class="settingContainer-item-text">디버그 모드</p>
+
+                <label class="settingContainer-item-switch" data-option>
+                    <input type="checkbox">
+                    <span class="settingContainer-item-switch-slider round"></span>
+                </label>
+            </div>
+
+            <div class="settingContainer-item">
+                <span class="glyphicon glyphicon-globe settingContainer-item-icon"></span>
+                <p class="settingContainer-item-text">자막(YouTube) 언어</p>
+
+                <div class="settingContainer-item-select" data-option>
+                    <select disabled="disabled">
+                        <option value="ko" selected="selected">한국어 (Korean)</option>
+                        <option value="en">영어 (English)</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="settingContainer-item">
+                <span class="glyphicon glyphicon-eye-open settingContainer-item-icon"></span>
+                <p class="settingContainer-item-text" title="화질 설정을 지원하는 서비스만 적용됩니다.">영상 화질</p>
+
+                <div class="settingContainer-item-select">
+                    <select disabled="disabled">
+                        <option value="max" selected="selected">최고 화질</option>
+                    </select>
+                </div>
+            </div>
+
+            <p id="settingContainerVersionText">ReguStreaming Client 2019-01-01</p>
+            <button type="button" class="btn btn-default" id="settingContainerCloseButton" onclick="reguStreaming.settingContainerStatus( false );">닫기</button>
+        </div>
+
+        <div class="dialogContainer" id="userInfoContainer" style="display: none;">
+            <div class="dialogContainer-titleBar nodraggable" id="userInfoContainerTitleBar">
+                <span class="glyphicon glyphicon-user dialogContainer-titleBar-icon"></span>
+                <p class="dialogContainer-titleBar-title">사용자 정보</p>
+
+                <span class="glyphicon glyphicon-remove dialogContainer-titleBar-close selectable"></span>
+            </div>
+
+            <div id="userInfoContainerProfileImageOverlay">
+                <img class="nodraggable" src="/images/avatar/guest_184.png" alt="Profile Image" id="userInfoContainerProfileImage" />
+            </div>
+
+                <div id="userInfoContainerProfileInformationContainer">
+                    <p id="userInfoContainerProfileName"></p>
+                    <p id="userInfoContainerProfileIP"></p>
+                    <p id="userInfoContainerProfileProvider"></p>
                 </div>
 
-                <img src="/images/avatar/guest_184.png" alt="Profile Image" id="userInfoContainerProfileImage" />
-                <p class="containerMiddleText" id="userInfoContainerProfileName" style="margin-top: 56px"></p>
-                <p class="containerSmallText" id="userInfoContainerProfileIP"></p>
-                <p class="containerSmallText" id="userInfoContainerProfileRank"></p>
-                <p class="containerSmallText" id="userInfoContainerProfileProvider"></p>
+                <div id="userInfoContainerProfileLevelContainer">
+                    <p id="userInfoContainerProfileLevelText">0</p>
+                </div>
 
-                <button type="button" class="btn btn-danger" id="userInfoContainerProfileReportButton" title="이 사용자를 신고합니다." onclick="reguStreaming.reportUser( );">사용자 신고</button>
+                <span class="glyphicon glyphicon-eye-open" id="userInfoContainerProfileRank" title="관리 권한을 소유하고 있습니다."></span>
+
+                <!-- <button type="button" class="btn btn-warning" id="userInfoContainerProfileReportButton" title="이 사용자를 신고합니다." onclick="reguStreaming.reportUser( );">사용자 신고</button> -->
                 <button type="button" class="btn btn-default" id="userInfoContainerCloseButton" onclick="reguStreaming.userInfoContainerStatus( false );">닫기</button>
             </div>
 
@@ -267,9 +367,14 @@
                 <div class="queueVideoInformation-bg" id="queueVideoInformationBG"></div>
                 <div class="queueVideoInformation-bgCover"></div>
 
-                <div class="queueVideoInformation-thumbnail" id="queueVideoInformationThumbnail"></div>
-                <a class="aRegu" target="_blank"><div class="queueVideoInformation-name" id="queueVideoInformationName">Media Name</div></a>
-                <div class="queueVideoInformation-timeleft" id="queueVideoInformationTimeleft">Media TimeLeft</div>
+                <div class="queueVideoInformation-thumbnail" id="queueVideoInformationThumbnail">
+                    <p class="queueVideoInformation-duration" id="queueVideoInformationDuration">0:00</p>
+                </div>
+                <a target="_blank"><p class="queueVideoInformation-name" id="queueVideoInformationName">영상 이름</p></a>
+                <img src="/images/loading2.gif" class="queueVideoInformation-profileImage" id="queueVideoInformationProfileImage" />
+                <p class="queueVideoInformation-profileName" id="queueVideoInformationProfileName">서버</p>
+                <p class="queueVideoInformation-removeHint" id="queueVideoInformationRemoveHint">아이콘을 마우스 오른쪽 클릭하시면 대기열에서 제거합니다.</p>
+                <!-- <p class="queueVideoInformation-timeleft" id="queueVideoInformationTimeleft">Media TimeLeft</p> -->
             </div>
 
             <div class="chatContainer" id="chatContainer">
@@ -280,35 +385,44 @@
                 </div>
 
                 <div class="chatContainer-extraButtonContainer">
-                    <img class="chatContainer-extraButtonContainer-button" id="chatContainerQueueRegisterButton" title="대기열에 영상 추가" src="images/icon/queue_register_32.png" onclick="reguStreaming.queueContainerStatus( true );" />
+                    <img class="chatContainer-extraButtonContainer-button" id="chatContainerQueueRegisterButton" title="대기열에 영상 추가" src="/images/icon/queue_register_32.png" data-original="/images/icon/queue_register_32.png" onclick="reguStreaming.queueContainerStatus( true );" />
                     <p style="display: none; user-select: none; position: absolute; pointer-events: none; width: 16px; text-align: center; top: 8px; left: 14px; font-size: 13px;" id="chatContainerQueueRegisterButtonDelayRemain">0</p>
 
-                    <img class="chatContainer-extraButtonContainer-button" title="영상 스킵 투표" src="images/icon/skip_vote_32.png" onclick="reguStreaming.queueSkipVote( );" />
-            </div>
+                    <img class="chatContainer-extraButtonContainer-button" id="chatContainerQueueContinueVoteButton" title="영상 스킵 투표" src="/images/icon/skip_vote_32.png" data-original="/images/icon/skip_vote_32.png" onclick="reguStreaming.queueSkipVote( );" />
+                    <p style="display: none; user-select: none; position: absolute; pointer-events: none; width: 16px; text-align: center; top: 8px; left: 56px; font-size: 13px;" id="chatContainerQueueContinueVoteButtonDelayRemain">0</p>
 
-                    <div class="chatInputContainer" id="chatInputContainer">
-                        <form id="form">
-                            <input id="imageFileInput" type="file" name="name" style="display: none;" accept=".jpg, .jpeg, .png, .gif" />
-                        </form>
+                    <img class="chatContainer-extraButtonContainer-button" title="사용자 설정" src="images/icon/option_32.png" onclick="reguStreaming.settingContainerStatus( true );" />
+                    <!-- <img class="chatContainer-extraButtonContainer-button" title="관리자 호출" src="images/icon/callowner_32.png" onclick="reguStreaming.callAdministrator( );" /> -->
+                </div>
 
-                        <input type="text" name="chat" class="reguTextField" id="chatTextField" placeholder="채팅 입력" autofocus />
+                <div class="chatInputContainer" id="chatInputContainer">
+                    <form id="fileUploadForm" action="/upload" method="POST">
+                        <!-- accept=".jpg, .jpeg, .png, .gif" -->
+                        <input id="fileInput" type="file" name="file" style="display: none;" />
+                    </form>
 
-                        <img src="images/icon/camera.png" title="이미지 업로드" class="chatBoxImageUploadButton" id="chatBoxImageUploadButton" onclick="reguStreaming.imageUploadButtonClicked( );" />
-                        <!-- <img src="images/icon/volume.png" class="videoVolumeControllerIcon" /> -->
-                        <!-- <button onclick="startVoiceRecord();">yeah</button> -->
-                        <input id="videoVolumeController" class="videoVolumeController" title="볼륨 설정" type="range" min="0" max="100" step="1" oninput="reguStreaming.setVolume( this.value )" onchange="reguStreaming.setVolume( this.value )" />
+                    <input type="text" name="chat" class="reguTextField" id="chatTextField" placeholder="채팅 입력" autofocus />
+
+                    <!-- <img src="/images/icon/sticker.png" title="스티커 업로드" class="chatBoxStickerUploadButton" id="chatBoxStickerUploadButton" onclick="reguStreaming.stickerUploadButtonClicked( );" /> -->
+                    <img src="/images/icon/camera_32.png" title="이미지 업로드" class="chatBoxImageUploadButton" id="chatBoxImageUploadButton" onclick="reguStreaming.imageUploadButtonClicked( );" />
+                    <input id="videoVolumeController" class="videoVolumeController" title="볼륨 설정" type="range" min="0" max="100" step="1" oninput="reguStreaming.setVolume( this.value )" onchange="reguStreaming.setVolume( this.value )" />
+                    <div class="chatInputContainer-dragHint" id="chatInputContainerDragHint">
+                        <span class="glyphicon glyphicon-file chatInputContainer-dragHint-icon"></span>
+                        <p class="chatInputContainer-dragHint-text">파일을 업로드하시려면 이곳에 파일을 놓으세요.</p>
                     </div>
                 </div>
+            </div>
 
-                <video width="100%" height="100%" id="videoContainer" type="video/mp4" poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
+            <video width="100%" height="100%" id="videoContainer" preload="none" muted type="video/mp4" poster="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///yH5BAEAAAAALAAAAAABAAEAAAIBRAA7"></video>
 
-                <div class="videoBuffering" id="videoBuffering"></div>>
-                <div class="videoAutoPlayAgree" id="videoAutoPlayAgree">
-                    <span class="glyphicon glyphicon-exclamation-sign videoAutoPlayAgreeIcon"></span>
-                    <p class="videoAutoPlayAgreeText">브라우저의 정책으로 인해 동영상 소리가 꺼져있습니다, 재생하시려면 클릭하세요.</p>
-                </div>
+            <div class="videoBuffering" id="videoBuffering"></div>>
+            <div class="videoAutoPlayAgree" id="videoAutoPlayAgree">
+                <span class="glyphicon glyphicon-exclamation-sign videoAutoPlayAgreeIcon"></span>
+                <p class="videoAutoPlayAgreeText">브라우저의 보안 정책으로 인해 동영상 소리가 꺼져있습니다, 재생하시려면 클릭하세요.</p>
+            </div>
 
-                <canvas class="canvas" id="canvas"></canvas>
+            <canvas class="canvas" id="canvas">
+            </canvas>
     </body>
 
 </html>
