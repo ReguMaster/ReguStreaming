@@ -73,37 +73,6 @@ Server.getGlobalVar = function( varName, defaultValue )
     return value;
 }
 
-// Server.createRoom( true, "main", "메인", "레그 스트리밍에 오신것을 환영합니다.", 3000, null,
-//     {
-//         video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
-//         video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
-//     } );
-
-//     // Server.createRoom( true, "main2", "메인 2", "레그 스트리밍에 오신것을 환영합니다.", 3000, null,
-//     // {
-//     //     video_position_bar_color: "rgba( 0, 255, 231, 0.3 )",
-//     //     video_position_bar_full_color: "rgba( 0, 255, 231, 1 )"
-//     // } );
-
-//     Server.createRoom( true, "everync", "나이트코어 어비스", "모든 영상이 나이트코어 스타일로 재생됩니다.", 50, null,
-//     {
-//         playbackRate: 1.15, // 1.15
-//         video_position_bar_color: "rgba( 49, 226, 79, 0.3 )",
-//         video_position_bar_full_color: "rgba( 49, 226, 79, 1 )"
-//     } );
-
-//     Server.createRoom( true, "nsfw", "성인", "NSFW(Not Safe For Work) 후방을 조심하세요!!", 10, null,
-//     {
-//         video_position_bar_color: "rgba( 255, 150, 150, 0.3 )",
-//         video_position_bar_full_color: "rgba( 255, 150, 150, 1 )"
-//     } );
-
-//     Server.createRoom( true, "admin", "관리자", "관리자 전용 채널입니다.", 0, null,
-//     {
-//         video_position_bar_color: "rgba( 255, 150, 150, 0.3 )",
-//         video_position_bar_full_color: "rgba( 255, 150, 150, 1 )"
-//     } );
-
 /*
     *TODO: binary flag
 
@@ -425,57 +394,47 @@ hook.register( "Initialize", function( )
         video_position_bar_style: "random"
     } );
 
-    Server.createRoom( true, "ncabyss", "나이트코어 어비스", "깊고 다크한 어비스, 나이트코어 어비스입니다.",
-    {
-        image: "/images/room/ncabyss.png",
-        shadow: "0px 0px 6px #2c5287"
-    }, 50, null,
-    {
-        video_position_bar_style: "random",
-        playbackRate: 1.08
-    } );
-
-    Server.createRoom( true, "mfspecial", "마후마후 스페셜", "24시간 동안 마후마후 곡이 재생됩니다.",
-    {
-        image: "/images/room/mfspecial.png",
-        shadow: "0px 0px 6px #ffffff"
-    }, 50, null,
-    {
-        disallow_queue_request: true,
-        video_position_bar_style: "random",
-        autoQueueEnable: true,
-        playlist: [
-            "https://www.youtube.com/playlist?list=PLgTeCdyjCZc20pGMHjWsT9IBFJtdLCaGi"
-        ]
-    } );
-
-    Server.createRoom( true, "nsfw", "성인", "NSFW(Not Safe For Work) 후방을 조심하세요!",
-    {
-        image: "/images/room/nsfw.png",
-        shadow: "0px 0px 6px #c9bd9a"
-    }, 50, null,
-    {
-        video_position_bar_style: "random"
-    } );
-
-    // Server.createRoom( true, "admin", "관리자", "관리자 전용 채널입니다.",
+    // Server.createRoom( true, "ncabyss", "나이트코어 어비스", "깊고 다크한 어비스, 나이트코어 어비스입니다.",
     // {
-    //     image: "/images/room/main.png",
-    //     shadow: "0px 0px 6px #191919"
-    // }, 10, null,
-    // {
-    //     chatDisable: true
-    // } );
-
-    // Server.createRoom( true, "hos", "혼돈 어비스", "레그의 엉덩이 구멍도 어비스입니다만?",
-    // {
-    //     image: "/images/room/hos.png",
-    //     shadow: "0px 0px 6px #191919"
-    // }, 1, null,
+    //     image: "/images/room/ncabyss.png",
+    //     shadow: "0px 0px 6px #2c5287"
+    // }, 50, null,
     // {
     //     video_position_bar_style: "random",
-    //     playbackRate: 2
+    //     playbackRate: 1.08
     // } );
+
+    // Server.createRoom( true, "mfspecial", "마후마후 스페셜", "24시간 동안 마후마후 곡이 재생됩니다.",
+    // {
+    //     image: "/images/room/mfspecial.png",
+    //     shadow: "0px 0px 6px #ffffff"
+    // }, 50, null,
+    // {
+    //     disallow_queue_request: true,
+    //     video_position_bar_style: "random",
+    //     autoQueueEnable: true,
+    //     playlist: [
+    //         "https://www.youtube.com/playlist?list=PLgTeCdyjCZc20pGMHjWsT9IBFJtdLCaGi"
+    //     ]
+    // } );
+
+    // Server.createRoom( true, "nsfw", "성인", "NSFW(Not Safe For Work) 후방을 조심하세요!",
+    // {
+    //     image: "/images/room/nsfw.png",
+    //     shadow: "0px 0px 6px #c9bd9a"
+    // }, 50, null,
+    // {
+    //     video_position_bar_style: "random"
+    // } );
+
+    Server.createRoom( true, "admin", "관리자", "관리자 전용 채널입니다.",
+    {
+        image: "/images/room/main.png",
+        shadow: "0px 0px 6px #191919"
+    }, 10, null,
+    {
+        chatDisable: true
+    } );
 
     Server.roomCreated = true;
 

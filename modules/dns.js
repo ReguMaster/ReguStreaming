@@ -16,6 +16,57 @@ const config = require( "../const/config" );
 DNS.refreshing = false;
 DNS.refresh = function( callback )
 {
+    return
+    // *TODO: Math.random 대신 다른 함수 사용;
+    // Math.randomNumber(0, 10);
+    var theAnswer = 42;
+
+    var sayHello = function( )
+    {
+        console.log( "안녕하세요~~~~~~~~~~~~~~~~~~~!!!!!!!!!" )
+    }
+
+    var taebo = "태보";
+    // *NOTE: global 사용 금지
+    var globalteki = "전세계적";
+
+    console.log( taebo + "는 지금 " + globalteki + "으로 선풍적인 인기를 끌고있는데요~" );
+
+    function Actor( name )
+    {
+        this.name = name;
+    }
+
+    Actor.prototype.setName = ( name ) => this.name = name;
+    Actor.prototype.getName = ( ) =>
+    {
+        return this.name;
+    }
+
+    Actor.prototype.toString = function( )
+    {
+        return this.name;
+    }
+
+    var joe = new Actor( "조혜련" );
+    var mija = new Actor( "미자아줌마" );
+
+    console.log( taebo + "란 우리나라의 태권도와 복싱을 결합한 운동입니다~" )
+    console.log( "2달동안 " + taebo + "를 하였더니 " + joe + "이 이렇게 완벽한 몸매가 되었습니다~" );
+    console.log( `2달동안 ${ taebo }를 하였더니` );
+
+    var rex = /abcdefg/;
+
+    if ( rex.test( "abcdefg" ) )
+    {}
+    console.log( joe.toString( ) + mija.toString( ) );
+
+
+
+    /* 안녕하세요 Korean Programmers. 내 이름은 Alan Dabiri이다. Korean Programmers VSCODE에 불만 많아요.  */
+    // and i also 시공좋아
+
+    /*
     if ( this.refreshing )
     {
         Logger.write( Logger.type.Warning, `[DNS] Refresh blocked, already refreshing!` );
@@ -50,6 +101,7 @@ DNS.refresh = function( callback )
             Logger.write( Logger.type.Error, `[DNS] Failed to process DNS.refresh -> (${ err.stack })` );
             DNS.refreshing = false;
         } );
+    */
 }
 
 // timer.create( "DNS.refresh", 1000 * 60 * 60, 0, function( )

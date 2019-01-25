@@ -12,7 +12,6 @@ const crypto = require( "crypto" );
 const xml2js = require( "xml2js" );
 const os = require( "os" );
 const merge = require( "merge" );
-const fileHash = require( "sha1-from-file" );
 const fileStream = require( "fs" );
 
 JSON.empty = JSON.stringify(
@@ -355,11 +354,12 @@ console.reset = function( )
     var lines = process.stdout.getWindowSize( )[ 1 ];
     for ( var i = 0; i < lines; i++ )
     {
-        console.log( '\r\n' );
+        console.log( "\r\n" );
     }
-    process.stdout.write( '\x1Bc' );
+    process.stdout.write( "\x1Bc" );
 }
 
+// 기존 nodejs 자체 util 모듈 상속
 util = Object.assign( util, nodeUtil );
 
 module.exports = util;

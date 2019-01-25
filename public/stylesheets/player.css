@@ -338,9 +338,10 @@
     position: absolute;
     width: 350px;
     top: 62px;
-    /* right: 10px; */
+    left: 12px;
     border-radius: 12px;
-    background-color: white;
+    background-color: rgba(235, 235, 235, 0.95);
+    box-shadow: 0 0 24px black;
     z-index: 10;
     display: none;
 }
@@ -349,7 +350,7 @@
     content: '';
     position: absolute;
     top: 0;
-    right: 34px;
+    left: 32px;
     width: 0;
     height: 0;
     border: 16px solid transparent;
@@ -362,7 +363,7 @@
     content: '';
     position: absolute;
     top: 0;
-    right: 34px;
+    left: 32px;
     width: 0;
     height: 0;
     border: 16px solid transparent;
@@ -375,7 +376,7 @@
     content: '';
     position: absolute;
     top: 0;
-    right: 34px;
+    left: 32px;
     width: 0;
     height: 0;
     border: 16px solid transparent;
@@ -392,14 +393,10 @@
 }
 
 .innerHeader-serviceNotification-item-title {
-    font-size: 13px;
+    font-size: 15px;
     padding: 8px;
     padding-left: 12px;
     margin: 0;
-    background-color: rgba(255, 141, 58);
-
-    /* border-top-left-radius: 12px;
-    border-top-right-radius: 12px; */
 }
 
 .innerHeader-serviceNotification-item-message {
@@ -924,11 +921,10 @@
 } */
 
 .queueItem {
-    /* padding: 6px; */
+    position: relative;
+
     margin: 0;
     margin-right: 12px;
-
-    /* width: 230px; */
     width: 42px;
     height: 42px;
 
@@ -1207,7 +1203,7 @@
     right: 84px;
     font-size: 20px;
     color: white;
-    text-shadow: 0 0 16px orangered;
+    text-shadow: 0 0 6px red;
     cursor: help;
 }
 
@@ -1761,8 +1757,6 @@
 
 .innerHeader-videoTitle {
     font-size: 13px;
-    margin: 0;
-    margin-left: 8px;
 }
 
 .innerHeader-videoProvider {

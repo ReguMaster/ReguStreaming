@@ -440,7 +440,7 @@ QueueManager.getYoutubeHighestQualityResource = function( data )
         var hqVideoIndexValue = 0;
         var hqSoundIndexValue = 0;
 
-        fileStream.writeFileSync( "./sexy.json", JSON.stringify( data ) );
+        fileStream.writeFileSync( "./processYoutube-HQR.json", JSON.stringify( data ) );
 
         // data.videoFormats.forEach( ( value, index, ar ) =>
         // {
@@ -907,7 +907,7 @@ QueueManager._processRegisterYoutube = function( client, roomID, url, videoID, s
                 information: client.information( )
             };
 
-        fileStream.writeFileSync( "./sexy-output.json", JSON.stringify( queueData ) );
+        fileStream.writeFileSync( "./processYoutube-output.json", JSON.stringify( queueData ) );
 
         var newQueueData = hook.run( "ModifyQueueData", roomID, queueData );
 

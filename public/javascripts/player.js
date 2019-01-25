@@ -3788,7 +3788,7 @@ reguStreaming.registerTimer = function( )
     }, 120 * 1000 );
 }
 
-reguStreaming.ajaxServiceStatus = function( )
+reguStreaming.ajaxServiceStatus = function( forceShow )
 {
     $.ajax(
     {
@@ -3802,7 +3802,7 @@ reguStreaming.ajaxServiceStatus = function( )
             controls.innerHeaderServiceNotification.empty( );
 
             if ( data.notification.length !== 0 )
-                reguStreaming.buildServiceNotification( data.notification );
+                reguStreaming.buildServiceNotification( data.notification, forceShow );
             else
             {
                 if ( controls.innerHeaderServiceStatus.is( ":visible" ) )
@@ -3845,7 +3845,7 @@ const serviceNotificationChildHTML = '<div class="innerHeader-serviceNotificatio
                 <p class="innerHeader-serviceNotification-item-message">{2}</p> \
             </div>';
 
-reguStreaming.buildServiceNotification = function( data )
+reguStreaming.buildServiceNotification = function( data, forceShow )
 {
     var length = data.length;
     var typeHighest = 0;
@@ -3888,8 +3888,7 @@ reguStreaming.buildServiceNotification = function( data )
         newObj.find( ".innerHeader-serviceNotification-item-title" )
             .css(
             {
-                "background-color": color,
-                "box-shadow": "0 0 16px " + color
+                "background-color": color
             } );
     }
 
@@ -3935,12 +3934,20 @@ reguStreaming.buildServiceNotification = function( data )
         reguStreaming.setConfig( "serviceStatusLastType", typeHighest )
     }
 
-    if ( !controls.innerHeaderServiceNotification.is( ":visible" ) && typeHighest > 0 && reguStreaming.getConfig( "serviceStatusNeverOpened", true ) )
+    if ( forceShow )
     {
         reguStreaming.toggleServiceNotificationStatus( );
         reguStreaming.setConfig( "serviceStatusNeverOpened", false );
+    }
+    else
+    {
+        if ( !controls.innerHeaderServiceNotification.is( ":visible" ) && typeHighest > 0 && reguStreaming.getConfig( "serviceStatusNeverOpened", true ) )
+        {
+            reguStreaming.toggleServiceNotificationStatus( );
+            reguStreaming.setConfig( "serviceStatusNeverOpened", false );
 
-        // localStorage.setItem( "RS.nextServiceStateJoinOpen", Date.now( ) + 60 * 30 ); // 30분 동안 방 입장 시 서비스 공지 표시 안함.
+            // localStorage.setItem( "RS.nextServiceStateJoinOpen", Date.now( ) + 60 * 30 ); // 30분 동안 방 입장 시 서비스 공지 표시 안함.
+        }
     }
 }
 
@@ -3957,10 +3964,10 @@ reguStreaming.toggleServiceNotificationStatus = function( )
 
         console.log( offset );
 
-        e.offset(
-        {
-            left: offset.left - e.width( ) + 68 - 6
-        } );
+        // e.offset(
+        // {
+        //     left: offset.left - e.width( ) + 68 - 6
+        // } );
 
         // if ( controls.innerHeaderServiceStatus.css( "animation" ) !== "" )
         //     controls.innerHeaderServiceStatus.css( "animation", "" );
@@ -3988,7 +3995,7 @@ socket.on( "RS.notification", function( data )
 
 socket.on( "RS.refreshServiceStatus", function( )
 {
-    reguStreaming.ajaxServiceStatus( );
+    reguStreaming.ajaxServiceStatus( true );
 } );
 
 socket.on( "RS.syncClientExtraVar", function( data )
